@@ -71,5 +71,8 @@ Thumbs.db
 .vs/
 .vscode/
 
+# Screenshots
+[Ss]creenshots/
+
 # Claude Code
 .claude/
