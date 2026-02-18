@@ -173,15 +173,39 @@ public class SceneWiring : MonoBehaviour
 
         // --- Wire Ballista ---
         var ballistaObj = GameObject.Find("BallistaBase");
-        if (ballistaObj != null)
+        if (ballistaObj == null) ballistaObj = GameObject.Find("ScorpioBase");
+        if (ballistaObj == null)
+        {
+            // Create ScorpioBase on top of tower
+            ballistaObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            ballistaObj.name = "ScorpioBase";
+            ballistaObj.transform.position = new Vector3(0, 3.2f, 0);
+            ballistaObj.transform.localScale = new Vector3(0.5f, 0.3f, 1.5f);
+            ballistaObj.AddComponent<Ballista>();
+
+            var scorpioMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ScorpioBase.mat");
+            if (scorpioMat != null) ballistaObj.GetComponent<Renderer>().sharedMaterial = scorpioMat;
+
+            // Create firePoint
+            var firePoint = new GameObject("FirePoint");
+            firePoint.transform.SetParent(ballistaObj.transform, false);
+            firePoint.transform.localPosition = new Vector3(0, 0, 0.5f);
+
+            var ballistaComp = ballistaObj.GetComponent<Ballista>();
+            var fpSO = new SerializedObject(ballistaComp);
+            fpSO.FindProperty("firePoint").objectReferenceValue = firePoint.transform;
+            fpSO.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
+            fpSO.ApplyModifiedProperties();
+
+            Debug.Log("[SceneWiring] Created ScorpioBase with Ballista on tower.");
+        }
+        else
         {
             var ballista = ballistaObj.GetComponent<Ballista>();
-            if (ballista != null)
-            {
-                var ballistaSO = new SerializedObject(ballista);
-                ballistaSO.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
-                ballistaSO.ApplyModifiedProperties();
-            }
+            if (ballista == null) ballista = ballistaObj.AddComponent<Ballista>();
+            var ballistaSO = new SerializedObject(ballista);
+            ballistaSO.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
+            ballistaSO.ApplyModifiedProperties();
         }
 
         // --- Wire WallManager ---
@@ -228,9 +252,36 @@ public class SceneWiring : MonoBehaviour
         var ballMgrObj = GameObject.Find("BallistaManager");
         if (ballMgrObj == null)
         {
-            ballMgrObj = ballistaObj != null ? ballistaObj : new GameObject("BallistaManager");
-            if (ballMgrObj.GetComponent<BallistaManager>() == null)
-                ballMgrObj.AddComponent<BallistaManager>();
+            ballMgrObj = new GameObject("BallistaManager");
+            ballMgrObj.AddComponent<BallistaManager>();
+        }
+        if (ballMgrObj.GetComponent<BallistaManager>() == null)
+            ballMgrObj.AddComponent<BallistaManager>();
+        // Parent ScorpioBase under BallistaManager so GetComponentsInChildren finds it
+        if (ballistaObj != null && ballistaObj.transform.parent != ballMgrObj.transform)
+        {
+            ballistaObj.transform.SetParent(ballMgrObj.transform, true);
+        }
+
+        // --- Wire DayNightCycle ---
+        var dncObj = GameObject.Find("DayNightCycle");
+        if (dncObj == null)
+        {
+            dncObj = new GameObject("DayNightCycle");
+            dncObj.AddComponent<DayNightCycle>();
+        }
+        var dnc = dncObj.GetComponent<DayNightCycle>();
+        var dirLight = GameObject.FindAnyObjectByType<Light>();
+        if (dirLight != null && dirLight.type == LightType.Directional)
+        {
+            var dncSO = new SerializedObject(dnc);
+            dncSO.FindProperty("directionalLight").objectReferenceValue = dirLight;
+            dncSO.ApplyModifiedProperties();
+            Debug.Log($"[SceneWiring] DayNightCycle wired with directional light: {dirLight.name}");
+        }
+        else
+        {
+            Debug.LogWarning("[SceneWiring] No directional light found for DayNightCycle!");
         }
 
         Debug.Log("Scene wired successfully!");

@@ -10,7 +10,6 @@ public class EnemySpawnManager : MonoBehaviour
     [SerializeField] private float mapRadius = 40f;
     [SerializeField] private float initialSpawnInterval = 3f;
     [SerializeField] private float minSpawnInterval = 0.5f;
-    [SerializeField] private float difficultyRampTime = 300f; // 5 minutes to max difficulty
 
     [Header("Enemy Prefabs")]
     [SerializeField] private GameObject enemyPrefab;
@@ -26,6 +25,7 @@ public class EnemySpawnManager : MonoBehaviour
     public GameObject TreasurePrefab => treasurePickupPrefab;
 
     private float spawnTimer;
+    private float dawnGraceTimer;
     private List<Enemy> activeEnemies = new List<Enemy>();
 
     private void Awake()
@@ -58,18 +58,46 @@ public class EnemySpawnManager : MonoBehaviour
     private void OnDestroy()
     {
         Enemy.OnEnemyDied -= HandleEnemyDied;
+        if (DayNightCycle.Instance != null)
+            DayNightCycle.Instance.OnDayStarted -= HandleDayStarted;
     }
+
+    private void HandleDayStarted()
+    {
+        dawnGraceTimer = 2f;
+        Debug.Log("[EnemySpawnManager] Dawn grace period started (2s).");
+    }
+
+    private bool dncSubscribed;
 
     private void Update()
     {
         if (!spawnEnabled) return;
         if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameManager.GameState.Playing) return;
 
+        // Late-subscribe to DayNightCycle events (it may init after us)
+        if (!dncSubscribed && DayNightCycle.Instance != null)
+        {
+            DayNightCycle.Instance.OnDayStarted += HandleDayStarted;
+            dncSubscribed = true;
+        }
+
+        // Don't spawn at night
+        if (DayNightCycle.Instance != null && DayNightCycle.Instance.IsNight) return;
+
+        // Dawn grace period
+        if (dawnGraceTimer > 0f)
+        {
+            dawnGraceTimer -= Time.deltaTime;
+            return;
+        }
+
         spawnTimer -= Time.deltaTime;
         if (spawnTimer <= 0)
         {
             SpawnEnemy();
-            float difficulty = Mathf.Clamp01(GameManager.Instance.GameTime / difficultyRampTime);
+            int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
+            float difficulty = Mathf.Clamp01((dayNumber - 1) / 10f);
             spawnTimer = Mathf.Lerp(initialSpawnInterval, minSpawnInterval, difficulty);
         }
     }
@@ -93,25 +121,25 @@ public class EnemySpawnManager : MonoBehaviour
 
     private EnemyData ChooseEnemyType()
     {
-        float gameTime = GameManager.Instance != null ? GameManager.Instance.GameTime : 0;
+        int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
 
-        // Progressive enemy type unlocks based on game time
+        // Progressive enemy type unlocks based on day number
         float roll = Random.value;
 
-        // After 4 min: cannoneers (5%)
-        if (gameTime > 240f && roll < 0.05f && goblinCannoneerData != null)
+        // Day 5+: cannoneers (5%)
+        if (dayNumber >= 5 && roll < 0.05f && goblinCannoneerData != null)
             return goblinCannoneerData;
 
-        // After 3 min: suicide goblins (10%)
-        if (gameTime > 180f && roll < 0.15f && suicideGoblinData != null)
+        // Day 4+: suicide goblins (10%)
+        if (dayNumber >= 4 && roll < 0.15f && suicideGoblinData != null)
             return suicideGoblinData;
 
-        // After 2 min: trolls (15%)
-        if (gameTime > 120f && roll < 0.25f && trollData != null)
+        // Day 3+: trolls (15%)
+        if (dayNumber >= 3 && roll < 0.25f && trollData != null)
             return trollData;
 
-        // After 1 min: bow orcs (30%)
-        if (gameTime > 60f && roll < 0.45f && bowOrcData != null)
+        // Day 2+: bow orcs (30%)
+        if (dayNumber >= 2 && roll < 0.45f && bowOrcData != null)
             return bowOrcData;
 
         // Default: orc grunts

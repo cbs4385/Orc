@@ -88,9 +88,10 @@ public class GameOverScreen : MonoBehaviour
             float time = GameManager.Instance.GameTime;
             int minutes = Mathf.FloorToInt(time / 60);
             int seconds = Mathf.FloorToInt(time % 60);
+            int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
             statsText.text = string.Format(
-                "Survival Time: {0}:{1:00}\nGold Collected: {2}",
-                minutes, seconds, GameManager.Instance.Treasure);
+                "Survived {0} Day{1}\nSurvival Time: {2}:{3:00}\nGold Collected: {4}",
+                dayNumber, dayNumber != 1 ? "s" : "", minutes, seconds, GameManager.Instance.Treasure);
         }
     }
 

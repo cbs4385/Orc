@@ -51,6 +51,8 @@ public class UIBuilder : MonoBehaviour
         var menialText = CreateText(topBar.transform, "MenialText", "Menials: 3/3", 24, new Color(0.4f, 0.7f, 1f), 250);
         var timerText = CreateText(topBar.transform, "TimerText", "0:00", 24, Color.white, 120);
         var enemyText = CreateText(topBar.transform, "EnemyCountText", "Enemies: 0", 24, new Color(1f, 0.5f, 0.5f), 200);
+        var phaseText = CreateText(topBar.transform, "PhaseText", "DAY 1", 24, Color.yellow, 120);
+        var phaseTimerText = CreateText(topBar.transform, "PhaseTimerText", "10s", 24, Color.white, 60);
 
         // Pause button
         var pauseBtn = CreateUIButton(topBar.transform, "PauseButton", "PAUSE [Space]", 160, 35);
@@ -62,6 +64,8 @@ public class UIBuilder : MonoBehaviour
         hudSO.FindProperty("menialText").objectReferenceValue = menialText.GetComponent<TextMeshProUGUI>();
         hudSO.FindProperty("timerText").objectReferenceValue = timerText.GetComponent<TextMeshProUGUI>();
         hudSO.FindProperty("enemyCountText").objectReferenceValue = enemyText.GetComponent<TextMeshProUGUI>();
+        hudSO.FindProperty("phaseText").objectReferenceValue = phaseText.GetComponent<TextMeshProUGUI>();
+        hudSO.FindProperty("phaseTimerText").objectReferenceValue = phaseTimerText.GetComponent<TextMeshProUGUI>();
         hudSO.FindProperty("pauseButton").objectReferenceValue = pauseBtn.GetComponent<Button>();
         hudSO.FindProperty("pauseButtonText").objectReferenceValue = pauseBtn.GetComponentInChildren<TextMeshProUGUI>();
         hudSO.ApplyModifiedProperties();

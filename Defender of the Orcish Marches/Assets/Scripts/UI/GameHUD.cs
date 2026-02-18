@@ -10,6 +10,8 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private TextMeshProUGUI menialText;
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI enemyCountText;
+    [SerializeField] private TextMeshProUGUI phaseText;
+    [SerializeField] private TextMeshProUGUI phaseTimerText;
 
     [Header("Pause")]
     [SerializeField] private Button pauseButton;
@@ -83,6 +85,30 @@ public class GameHUD : MonoBehaviour
         if (enemyCountText != null && EnemySpawnManager.Instance != null)
         {
             enemyCountText.text = "Enemies: " + EnemySpawnManager.Instance.GetActiveEnemyCount();
+        }
+
+        // Update day/night phase display
+        if (DayNightCycle.Instance != null)
+        {
+            if (phaseText != null)
+            {
+                if (DayNightCycle.Instance.IsDay)
+                {
+                    phaseText.text = "DAY " + DayNightCycle.Instance.DayNumber;
+                    phaseText.color = Color.yellow;
+                }
+                else
+                {
+                    phaseText.text = "NIGHT";
+                    phaseText.color = new Color(0.4f, 0.6f, 1f);
+                }
+            }
+
+            if (phaseTimerText != null)
+            {
+                int remaining = Mathf.CeilToInt(DayNightCycle.Instance.PhaseTimeRemaining);
+                phaseTimerText.text = remaining + "s";
+            }
         }
     }
 

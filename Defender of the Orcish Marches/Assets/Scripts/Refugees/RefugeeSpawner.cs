@@ -19,6 +19,9 @@ public class RefugeeSpawner : MonoBehaviour
     {
         if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameManager.GameState.Playing) return;
 
+        // Don't spawn refugees at night
+        if (DayNightCycle.Instance != null && DayNightCycle.Instance.IsNight) return;
+
         spawnTimer -= Time.deltaTime;
         if (spawnTimer <= 0)
         {
