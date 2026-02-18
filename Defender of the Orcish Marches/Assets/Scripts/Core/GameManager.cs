@@ -1,0 +1,128 @@
+using System;
+using UnityEngine;
+
+public class GameManager : MonoBehaviour
+{
+    public static GameManager Instance { get; private set; }
+
+    public enum GameState { Playing, GameOver }
+
+    [Header("Starting Resources")]
+    [SerializeField] private int startingTreasure = 500;
+    [SerializeField] private int startingMenials = 3;
+
+    public GameState CurrentState { get; private set; } = GameState.Playing;
+    public int Treasure { get; private set; }
+    public int MenialCount { get; private set; }
+    public int IdleMenialCount { get; set; }
+    public float GameTime { get; private set; }
+
+    public event Action<int> OnTreasureChanged;
+    public event Action<int> OnMenialsChanged;
+    public event Action OnGameOver;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        Debug.Log("[GameManager] Instance registered in Awake.");
+        Application.runInBackground = true;
+
+        // Initialize resources in Awake so other scripts can read them in Start
+        Treasure = startingTreasure;
+        MenialCount = startingMenials;
+        IdleMenialCount = startingMenials;
+    }
+
+    private void OnEnable()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            Debug.Log("[GameManager] Instance re-registered in OnEnable after domain reload.");
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (Instance == this) Instance = null;
+    }
+
+    private void Start()
+    {
+        OnTreasureChanged?.Invoke(Treasure);
+        OnMenialsChanged?.Invoke(MenialCount);
+    }
+
+    private void Update()
+    {
+        if (CurrentState == GameState.Playing)
+        {
+            GameTime += Time.deltaTime;
+        }
+    }
+
+    public void AddTreasure(int amount)
+    {
+        if (CurrentState != GameState.Playing) return;
+        Treasure += amount;
+        OnTreasureChanged?.Invoke(Treasure);
+    }
+
+    public bool SpendTreasure(int amount)
+    {
+        if (CurrentState != GameState.Playing || Treasure < amount) return false;
+        Treasure -= amount;
+        OnTreasureChanged?.Invoke(Treasure);
+        return true;
+    }
+
+    public void AddMenial(int count = 1)
+    {
+        if (CurrentState != GameState.Playing) return;
+        MenialCount += count;
+        IdleMenialCount += count;
+        OnMenialsChanged?.Invoke(MenialCount);
+    }
+
+    public void RemoveMenial(int count = 1)
+    {
+        if (CurrentState != GameState.Playing) return;
+        MenialCount = Mathf.Max(0, MenialCount - count);
+        IdleMenialCount = Mathf.Max(0, IdleMenialCount - count);
+        OnMenialsChanged?.Invoke(MenialCount);
+    }
+
+    public bool SpendMenials(int count)
+    {
+        if (CurrentState != GameState.Playing || IdleMenialCount < count) return false;
+        MenialCount -= count;
+        IdleMenialCount -= count;
+        OnMenialsChanged?.Invoke(MenialCount);
+        return true;
+    }
+
+    public bool CanAfford(int treasureCost, int menialCost)
+    {
+        return Treasure >= treasureCost && IdleMenialCount >= menialCost;
+    }
+
+    public void TriggerGameOver()
+    {
+        if (CurrentState == GameState.GameOver) return;
+        CurrentState = GameState.GameOver;
+        Time.timeScale = 0f;
+        OnGameOver?.Invoke();
+    }
+
+    public void RestartGame()
+    {
+        Time.timeScale = 1f;
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+    }
+}

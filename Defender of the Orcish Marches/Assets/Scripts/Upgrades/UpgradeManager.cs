@@ -1,0 +1,197 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class UpgradeManager : MonoBehaviour
+{
+    public static UpgradeManager Instance { get; private set; }
+
+    [SerializeField] private List<UpgradeData> availableUpgrades = new List<UpgradeData>();
+    [SerializeField] private GameObject engineerPrefab;
+    [SerializeField] private GameObject pikemanPrefab;
+    [SerializeField] private GameObject crossbowmanPrefab;
+    [SerializeField] private GameObject wizardPrefab;
+
+    public event Action<UpgradeData> OnUpgradePurchased;
+
+    private Dictionary<UpgradeType, int> purchaseCounts = new Dictionary<UpgradeType, int>();
+
+    public IReadOnlyList<UpgradeData> AvailableUpgrades => availableUpgrades;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Instance = this;
+        Debug.Log("[UpgradeManager] Instance registered in Awake.");
+    }
+
+    private void OnEnable()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            Debug.Log("[UpgradeManager] Instance re-registered in OnEnable after domain reload.");
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (Instance == this) Instance = null;
+    }
+
+    public bool CanPurchase(UpgradeData upgrade)
+    {
+        if (GameManager.Instance == null) return false;
+        if (!upgrade.repeatable && GetPurchaseCount(upgrade.upgradeType) > 0) return false;
+        bool canAfford = GameManager.Instance.CanAfford(upgrade.treasureCost, upgrade.menialCost);
+        return canAfford;
+    }
+
+    public bool Purchase(UpgradeData upgrade)
+    {
+        Debug.Log($"[UpgradeManager] Purchase called: {upgrade.upgradeName} (type={upgrade.upgradeType}, cost={upgrade.treasureCost}g {upgrade.menialCost}m)");
+
+        if (!CanPurchase(upgrade))
+        {
+            Debug.Log($"[UpgradeManager] CanPurchase returned false for {upgrade.upgradeName}");
+            return false;
+        }
+
+        if (!GameManager.Instance.SpendTreasure(upgrade.treasureCost))
+        {
+            Debug.Log($"[UpgradeManager] SpendTreasure failed for {upgrade.treasureCost}");
+            return false;
+        }
+
+        Debug.Log($"[UpgradeManager] Spent {upgrade.treasureCost}g. IsHire={IsHireUpgrade(upgrade.upgradeType)}, menialCost={upgrade.menialCost}");
+
+        // For hire upgrades, consume menials via walk-to-tower instead of instant removal
+        if (upgrade.menialCost > 0 && IsHireUpgrade(upgrade.upgradeType))
+        {
+            GameObject prefab = GetDefenderPrefab(upgrade.upgradeType);
+            if (MenialManager.Instance == null || !MenialManager.Instance.ConsumeMenials(upgrade.menialCost, () =>
+            {
+                // Callback: all menials entered the tower - spawn the hireling
+                SpawnDefenderAtTower(prefab);
+            }))
+            {
+                // Failed to consume menials - refund
+                GameManager.Instance.AddTreasure(upgrade.treasureCost);
+                return false;
+            }
+
+            Debug.Log($"[UpgradeManager] Hired {upgrade.upgradeName}: menials walking to tower.");
+        }
+        else
+        {
+            // Non-hire upgrades: spend menials instantly if needed
+            if (upgrade.menialCost > 0 && !GameManager.Instance.SpendMenials(upgrade.menialCost))
+            {
+                GameManager.Instance.AddTreasure(upgrade.treasureCost);
+                return false;
+            }
+            ApplyNonHireUpgrade(upgrade);
+        }
+
+        IncrementPurchaseCount(upgrade.upgradeType);
+        OnUpgradePurchased?.Invoke(upgrade);
+        return true;
+    }
+
+    private bool IsHireUpgrade(UpgradeType type)
+    {
+        return type == UpgradeType.SpawnEngineer || type == UpgradeType.SpawnPikeman ||
+               type == UpgradeType.SpawnCrossbowman || type == UpgradeType.SpawnWizard;
+    }
+
+    private GameObject GetDefenderPrefab(UpgradeType type)
+    {
+        switch (type)
+        {
+            case UpgradeType.SpawnEngineer: return engineerPrefab;
+            case UpgradeType.SpawnPikeman: return pikemanPrefab;
+            case UpgradeType.SpawnCrossbowman: return crossbowmanPrefab;
+            case UpgradeType.SpawnWizard: return wizardPrefab;
+            default: return null;
+        }
+    }
+
+    private void ApplyNonHireUpgrade(UpgradeData upgrade)
+    {
+        switch (upgrade.upgradeType)
+        {
+            case UpgradeType.NewBallista:
+                if (BallistaManager.Instance != null)
+                    BallistaManager.Instance.AddBallista();
+                break;
+
+            case UpgradeType.BallistaDamage:
+                if (BallistaManager.Instance != null && BallistaManager.Instance.ActiveBallista != null)
+                    BallistaManager.Instance.ActiveBallista.UpgradeDamage(10);
+                break;
+
+            case UpgradeType.BallistaFireRate:
+                if (BallistaManager.Instance != null && BallistaManager.Instance.ActiveBallista != null)
+                    BallistaManager.Instance.ActiveBallista.UpgradeFireRate(0.5f);
+                break;
+
+            case UpgradeType.NewWall:
+                var wallPlacement = FindAnyObjectByType<WallPlacement>();
+                Debug.Log($"[UpgradeManager] NewWall: WallPlacement found={wallPlacement != null}");
+                if (wallPlacement != null)
+                {
+                    Debug.Log($"[UpgradeManager] NewWall: Calling StartPlacement. WallPlacement.IsPlacing={wallPlacement.IsPlacing}");
+                    wallPlacement.StartPlacement();
+                }
+                else
+                {
+                    Debug.LogError("[UpgradeManager] NewWall: No WallPlacement component found in scene!");
+                }
+                break;
+        }
+    }
+
+    private void SpawnDefenderAtTower(GameObject prefab)
+    {
+        if (prefab == null)
+        {
+            Debug.LogError("[UpgradeManager] SpawnDefenderAtTower: prefab is null!");
+            return;
+        }
+
+        // Spawn near the tower but not inside it - offset to a random courtyard position
+        float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
+        float dist = UnityEngine.Random.Range(2f, 3f);
+        Vector3 spawnPos = new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
+
+        // Ensure valid NavMesh position
+        UnityEngine.AI.NavMeshHit hit;
+        if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            spawnPos = hit.position;
+        }
+
+        var go = Instantiate(prefab, spawnPos, Quaternion.identity);
+        var defender = go.GetComponent<Defender>();
+        if (defender != null && defender.Data != null)
+        {
+            defender.Initialize(defender.Data);
+            Debug.Log($"[UpgradeManager] {defender.Data.defenderName} emerged from the tower at {spawnPos}!");
+        }
+        else
+        {
+            Debug.LogWarning($"[UpgradeManager] Spawned defender at tower but no DefenderData assigned!");
+        }
+    }
+
+    private int GetPurchaseCount(UpgradeType type)
+    {
+        return purchaseCounts.TryGetValue(type, out int count) ? count : 0;
+    }
+
+    private void IncrementPurchaseCount(UpgradeType type)
+    {
+        if (!purchaseCounts.ContainsKey(type)) purchaseCounts[type] = 0;
+        purchaseCounts[type]++;
+    }
+}

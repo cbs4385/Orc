@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a469246eac60444ea6d88ce7bc4b46e, type: 3}
+  m_Name: GoblinCannoneer
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyName: Goblin Cannoneer
+  enemyType: 4
+  maxHP: 40
+  moveSpeed: 1
+  damage: 50
+  attackRange: 15
+  attackRate: 0.3
+  treasureDrop: 30
+  bodyColor: {r: 0.2, g: 0.4, b: 0.2, a: 1}
+  bodyScale: {x: 1, y: 1, z: 1}
+  projectilePrefab: {fileID: 2032667182577132761, guid: 62b19a65de1f2c7429ce607c9922482a, type: 3}

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a469246eac60444ea6d88ce7bc4b46e, type: 3}
+  m_Name: OrcGrunt
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyName: Orc Grunt
+  enemyType: 0
+  maxHP: 30
+  moveSpeed: 3
+  damage: 5
+  attackRange: 1.5
+  attackRate: 1
+  treasureDrop: 10
+  bodyColor: {r: 0.27, g: 0.67, b: 0.27, a: 1}
+  bodyScale: {x: 1, y: 1, z: 1}
+  projectilePrefab: {fileID: 0}
