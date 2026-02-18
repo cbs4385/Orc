@@ -139,7 +139,7 @@ Transform:
   m_GameObject: {fileID: 2597142491401613653}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.083333254, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -167,7 +167,7 @@ NavMeshAgent:
   m_AutoRepath: 1
   m_Height: 1
   m_BaseOffset: 0
-  m_WalkableMask: 4294967287
+  m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
 --- !u!114 &815034032512128839
 MonoBehaviour:
@@ -183,6 +183,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Wizard
   data: {fileID: 11400000, guid: e7726813d0f4e3645bbec0418cb198cb, type: 2}
   attackCooldown: 0
+  fireMissilePrefab: {fileID: 297277779081511221, guid: d4104d663d668df41b589daece4f34fa, type: 3}
+  projectileSpeed: 12
   aoeRadius: 3
 --- !u!1 &3859008576218983807
 GameObject:

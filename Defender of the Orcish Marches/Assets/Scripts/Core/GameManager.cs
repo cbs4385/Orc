@@ -58,6 +58,7 @@ public class GameManager : MonoBehaviour
     {
         OnTreasureChanged?.Invoke(Treasure);
         OnMenialsChanged?.Invoke(MenialCount);
+        GameSettings.ApplySettings();
     }
 
     private void Update()
@@ -67,18 +68,15 @@ public class GameManager : MonoBehaviour
             GameTime += Time.deltaTime;
         }
 
-        // ESC quits the application (skip if wall placement is active — it uses ESC to cancel)
+        // ESC returns to main menu (skip if wall placement is active — it uses ESC to cancel)
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             var wp = FindAnyObjectByType<WallPlacement>();
             if (wp == null || !wp.IsPlacing)
             {
-                Debug.Log("[GameManager] ESC pressed — quitting application.");
-#if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
-#else
-                Application.Quit();
-#endif
+                Debug.Log("[GameManager] ESC pressed — returning to main menu.");
+                Time.timeScale = 1f;
+                UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
             }
         }
     }
@@ -110,7 +108,8 @@ public class GameManager : MonoBehaviour
     {
         if (CurrentState != GameState.Playing) return;
         MenialCount = Mathf.Max(0, MenialCount - count);
-        IdleMenialCount = Mathf.Max(0, IdleMenialCount - count);
+        // Don't touch IdleMenialCount here — callers (Die, SendToTower, AssignLoot)
+        // already handle idle count transitions before calling this.
         OnMenialsChanged?.Invoke(MenialCount);
     }
 
@@ -158,7 +157,6 @@ public class GameManager : MonoBehaviour
     public void RestartGame()
     {
         Time.timeScale = 1f;
-        UnityEngine.SceneManagement.SceneManager.LoadScene(
-            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
     }
 }

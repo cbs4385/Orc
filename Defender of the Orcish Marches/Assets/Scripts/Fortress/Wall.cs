@@ -34,6 +34,7 @@ public class Wall : MonoBehaviour
 
         if (CurrentHP <= 0)
         {
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayWallHit(transform.position);
             OnWallDestroyed?.Invoke(this);
             gameObject.SetActive(false);
         }

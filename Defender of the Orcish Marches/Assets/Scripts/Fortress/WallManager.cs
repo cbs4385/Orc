@@ -96,22 +96,28 @@ public class WallManager : MonoBehaviour
 
     public Wall GetNearestDamagedWall(Vector3 position)
     {
-        Wall nearest = null;
-        float nearestDist = float.MaxValue;
+        return GetMostDamagedWall();
+    }
+
+    /// <summary>
+    /// Returns the wall with the lowest HP percentage. Destroyed walls (breaches) always come first.
+    /// </summary>
+    public Wall GetMostDamagedWall()
+    {
+        Wall best = null;
+        float bestHpPct = float.MaxValue;
         foreach (var wall in allWalls)
         {
-            // Include destroyed walls (breaches) so engineers can rebuild them
             if (wall.CurrentHP >= wall.MaxHP) continue;
-            float dist = Vector3.Distance(position, wall.transform.position);
-            // Prioritize destroyed walls (breaches) by halving their effective distance
-            if (wall.IsDestroyed) dist *= 0.5f;
-            if (dist < nearestDist)
+            // Destroyed walls get -1 so they always win
+            float hpPct = wall.IsDestroyed ? -1f : (float)wall.CurrentHP / wall.MaxHP;
+            if (hpPct < bestHpPct)
             {
-                nearestDist = dist;
-                nearest = wall;
+                bestHpPct = hpPct;
+                best = wall;
             }
         }
-        return nearest;
+        return best;
     }
 
     public Vector3 GetNearestWallPosition(Vector3 fromPosition)

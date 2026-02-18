@@ -79,6 +79,14 @@ public class EnemyAttack : MonoBehaviour
 
     private void RangedAttack(Transform target)
     {
+        if (SoundManager.Instance != null)
+        {
+            if (enemy.Data.enemyType == EnemyType.Artillery)
+                SoundManager.Instance.PlayGoblinCannonFire(transform.position);
+            else
+                SoundManager.Instance.PlayOrcArcherFire(transform.position);
+        }
+
         if (enemy.Data.projectilePrefab != null)
         {
             Vector3 dir = (target.position - transform.position).normalized;
@@ -99,6 +107,8 @@ public class EnemyAttack : MonoBehaviour
 
     private void SuicideAttack(Transform target)
     {
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayGoblinBomberExplode(transform.position);
+
         // Deal massive damage and die
         var wall = target.GetComponent<Wall>();
         if (wall != null) wall.TakeDamage(enemy.Data.damage);

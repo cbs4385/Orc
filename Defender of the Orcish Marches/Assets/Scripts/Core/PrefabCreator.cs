@@ -21,6 +21,8 @@ public class PrefabCreator : MonoBehaviour
         CreateCrossbowmanPrefab();
         CreateWizardPrefab();
         CreateWallSegmentPrefab();
+        CreateCrossbowBoltPrefab();
+        CreateFireMissilePrefab();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("All prefabs created!");
@@ -436,6 +438,59 @@ static void CreateRefugeePrefab()
         Debug.Log("[PrefabCreator] Scorpio rebuilt with arms, mounts, bowstring, and trough as children of ScorpioBase.");
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
             UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+    }
+
+    static void CreateCrossbowBoltPrefab()
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = "CrossbowBolt";
+        go.transform.localScale = new Vector3(0.06f, 0.06f, 0.4f);
+
+        Object.DestroyImmediate(go.GetComponent<BoxCollider>());
+        var col = go.AddComponent<BoxCollider>();
+        col.isTrigger = true;
+
+        go.AddComponent<DefenderProjectile>();
+        go.AddComponent<Rigidbody>().isKinematic = true;
+
+        // Brown wooden bolt color
+        var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        mat.color = new Color(0.45f, 0.3f, 0.15f);
+        mat.SetFloat("_Smoothness", 0f);
+        AssetDatabase.CreateAsset(mat, "Assets/Materials/CrossbowBolt.mat");
+        go.GetComponent<Renderer>().sharedMaterial = mat;
+
+        PrefabUtility.SaveAsPrefabAsset(go, "Assets/Prefabs/Weapons/CrossbowBolt.prefab");
+        Object.DestroyImmediate(go);
+        Debug.Log("[PrefabCreator] CrossbowBolt prefab created.");
+    }
+
+    static void CreateFireMissilePrefab()
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        go.name = "FireMissile";
+        go.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+
+        Object.DestroyImmediate(go.GetComponent<SphereCollider>());
+        var col = go.AddComponent<SphereCollider>();
+        col.isTrigger = true;
+
+        go.AddComponent<DefenderProjectile>();
+        go.AddComponent<Rigidbody>().isKinematic = true;
+
+        // Bright orange-red fire color
+        var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        mat.color = new Color(1f, 0.4f, 0.1f);
+        mat.SetFloat("_Smoothness", 0f);
+        mat.SetFloat("_Surface", 0); // opaque
+        mat.EnableKeyword("_EMISSION");
+        mat.SetColor("_EmissionColor", new Color(1f, 0.3f, 0f) * 2f);
+        AssetDatabase.CreateAsset(mat, "Assets/Materials/FireMissile.mat");
+        go.GetComponent<Renderer>().sharedMaterial = mat;
+
+        PrefabUtility.SaveAsPrefabAsset(go, "Assets/Prefabs/Weapons/FireMissile.prefab");
+        Object.DestroyImmediate(go);
+        Debug.Log("[PrefabCreator] FireMissile prefab created.");
     }
 
     static void AssignDefenderData(GameObject root, string assetPath)

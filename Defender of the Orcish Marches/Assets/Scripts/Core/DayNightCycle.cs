@@ -77,6 +77,7 @@ public class DayNightCycle : MonoBehaviour
         phaseTimer = 0f;
         isFirstDay = true;
         Debug.Log($"[DayNightCycle] Day {DayNumber} started (first day, {firstDayDuration}s).");
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayAttackStart(Vector3.zero);
         OnDayStarted?.Invoke();
         OnNewDay?.Invoke(DayNumber);
     }
@@ -114,6 +115,7 @@ public class DayNightCycle : MonoBehaviour
         DayNumber++;
         phaseTimer = 0f;
         Debug.Log($"[DayNightCycle] Day {DayNumber} started. Duration={dayDuration}s.");
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayAttackStart(Vector3.zero);
         OnDayStarted?.Invoke();
         OnNewDay?.Invoke(DayNumber);
     }

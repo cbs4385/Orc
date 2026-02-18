@@ -467,6 +467,7 @@ public class Menial : MonoBehaviour
     private void Die()
     {
         IsDead = true;
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayMenialHit(transform.position);
         if (CurrentState == MenialState.Idle && GameManager.Instance != null)
             GameManager.Instance.IdleMenialCount--;
 

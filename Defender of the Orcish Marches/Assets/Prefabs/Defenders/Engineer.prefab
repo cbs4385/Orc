@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 3182348307093194963}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.083333254, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -55,7 +55,7 @@ NavMeshAgent:
   m_AutoRepath: 1
   m_Height: 1
   m_BaseOffset: 0
-  m_WalkableMask: 4294967287
+  m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
 --- !u!114 &5103889067431083401
 MonoBehaviour:
@@ -71,7 +71,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Engineer
   data: {fileID: 11400000, guid: 74c9a395366ff6248bd158fcff82442e, type: 2}
   attackCooldown: 0
-  repairAmount: 2
+  repairAmount: 5
   repairInterval: 1
 --- !u!1 &5005676875808071454
 GameObject:

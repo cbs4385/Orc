@@ -9,8 +9,11 @@ public class MenialManager : MonoBehaviour
     [SerializeField] private GameObject menialPrefab;
     [SerializeField] private Transform menialSpawnPoint;
 
+    [SerializeField] private float lootSearchRadius = 5f;
+
     private List<Menial> allMenials = new List<Menial>();
     private UnityEngine.Camera mainCam;
+    private GameObject activeBanner;
 
     private void Awake()
     {
@@ -94,7 +97,7 @@ public class MenialManager : MonoBehaviour
 
         // Find nearest treasure pickup to click
         TreasurePickup nearestLoot = null;
-        float nearestDist = 5f;
+        float nearestDist = lootSearchRadius;
         foreach (var pickup in allPickups)
         {
             if (pickup.IsCollected) continue;
@@ -106,13 +109,16 @@ public class MenialManager : MonoBehaviour
             }
         }
 
+        // Always show banner at click position so player sees the search radius
+        SpawnBanner(clickPos);
+
         if (nearestLoot == null)
         {
-            Debug.Log("No loot found near click position");
+            Debug.Log("[MenialManager] No loot found near click position.");
             return;
         }
 
-        Debug.Log($"Selected loot at {nearestLoot.transform.position}, value={nearestLoot.Value}");
+        Debug.Log($"[MenialManager] Selected loot at {nearestLoot.transform.position}, value={nearestLoot.Value}");
 
         // Find nearest idle menial
         Menial bestMenial = null;
@@ -183,6 +189,61 @@ public class MenialManager : MonoBehaviour
             if (m != null && m.IsIdle && !m.IsDead) count++;
         }
         return count;
+    }
+
+    private void SpawnBanner(Vector3 position)
+    {
+        // Destroy previous banner
+        if (activeBanner != null) Destroy(activeBanner);
+
+        var root = new GameObject("LootBanner");
+        root.transform.position = new Vector3(position.x, 0f, position.z);
+
+        // Pole
+        var pole = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Object.Destroy(pole.GetComponent<BoxCollider>());
+        pole.transform.SetParent(root.transform, false);
+        pole.transform.localPosition = new Vector3(0, 0.75f, 0);
+        pole.transform.localScale = new Vector3(0.06f, 1.5f, 0.06f);
+        pole.GetComponent<Renderer>().material.color = new Color(0.6f, 0.2f, 0.1f);
+
+        // Flag
+        var flag = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Object.Destroy(flag.GetComponent<BoxCollider>());
+        flag.transform.SetParent(root.transform, false);
+        flag.transform.localPosition = new Vector3(0.15f, 1.3f, 0);
+        flag.transform.localScale = new Vector3(0.25f, 0.2f, 0.04f);
+        flag.GetComponent<Renderer>().material.color = new Color(0.9f, 0.8f, 0.1f);
+
+        // Radius circle using LineRenderer
+        var circleObj = new GameObject("RadiusCircle");
+        circleObj.transform.SetParent(root.transform, false);
+        circleObj.transform.localPosition = new Vector3(0, 0.05f, 0);
+        var lr = circleObj.AddComponent<LineRenderer>();
+        int segments = 48;
+        lr.positionCount = segments + 1;
+        lr.loop = false;
+        lr.useWorldSpace = false;
+        lr.startWidth = 0.08f;
+        lr.endWidth = 0.08f;
+        lr.material = new Material(Shader.Find("Sprites/Default"));
+        lr.startColor = new Color(1f, 0.9f, 0.2f, 0.7f);
+        lr.endColor = new Color(1f, 0.9f, 0.2f, 0.7f);
+        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        lr.receiveShadows = false;
+
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = (i / (float)segments) * Mathf.PI * 2f;
+            lr.SetPosition(i, new Vector3(Mathf.Cos(angle) * lootSearchRadius, 0, Mathf.Sin(angle) * lootSearchRadius));
+        }
+
+        // Auto-destroy after 4 seconds
+        var banner = root.AddComponent<LootBanner>();
+        banner.lifetime = 4f;
+
+        activeBanner = root;
+        Debug.Log($"[MenialManager] Banner placed at {position}, search radius={lootSearchRadius}");
     }
 
     /// <summary>

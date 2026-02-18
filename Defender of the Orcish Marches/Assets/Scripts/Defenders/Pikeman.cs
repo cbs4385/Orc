@@ -2,6 +2,12 @@ using UnityEngine;
 
 public class Pikeman : Defender
 {
+    protected override void Attack()
+    {
+        base.Attack();
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayPikemanAttack(transform.position);
+    }
+
     // Pikeman attacks melee enemies near the wall it's stationed on
     protected override void FindTarget()
     {

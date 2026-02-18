@@ -22,6 +22,10 @@ public class Ballista : MonoBehaviour
     private float doubleShotSpreadAngle = 8f;
     private float burstDamageRadius = 3f;
 
+    // Aim lines
+    private LineRenderer aimLine;
+    private LineRenderer aimLineSpread;
+
     public int Damage => damage;
     public float FireRate => fireRate;
     public bool HasDoubleShot => hasDoubleShot;
@@ -31,6 +35,26 @@ public class Ballista : MonoBehaviour
     {
         mainCam = UnityEngine.Camera.main;
         if (firePoint == null) firePoint = transform;
+        aimLine = CreateAimLine("AimLine");
+        aimLineSpread = CreateAimLine("AimLineSpread");
+        aimLineSpread.enabled = false;
+    }
+
+    private LineRenderer CreateAimLine(string name)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(transform, false);
+        var lr = go.AddComponent<LineRenderer>();
+        lr.positionCount = 2;
+        lr.startWidth = 0.05f;
+        lr.endWidth = 0.05f;
+        lr.material = new Material(Shader.Find("Sprites/Default"));
+        lr.startColor = new Color(1f, 0f, 0f, 0.6f);
+        lr.endColor = new Color(1f, 0f, 0f, 0.15f);
+        lr.useWorldSpace = true;
+        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        lr.receiveShadows = false;
+        return lr;
     }
 
     private void Update()
@@ -41,10 +65,38 @@ public class Ballista : MonoBehaviour
         fireCooldown -= Time.deltaTime;
 
         RotateTowardsMouse();
+        UpdateAimLines();
 
         if (Mouse.current != null && Mouse.current.leftButton.isPressed && fireCooldown <= 0f)
         {
             Fire();
+        }
+    }
+
+    private void UpdateAimLines()
+    {
+        if (aimLine == null) return;
+
+        Vector3 mouseWorld = GetMouseWorldPosition();
+        Vector3 direction = mouseWorld - firePoint.position;
+        direction.y = 0;
+        if (direction.sqrMagnitude < 0.01f) return;
+        direction.Normalize();
+
+        Vector3 origin = new Vector3(firePoint.position.x, 0.5f, firePoint.position.z);
+
+        aimLine.SetPosition(0, origin);
+        aimLine.SetPosition(1, origin + direction * maxRange);
+
+        if (aimLineSpread != null)
+        {
+            aimLineSpread.enabled = hasDoubleShot;
+            if (hasDoubleShot)
+            {
+                Vector3 spreadDir = Quaternion.Euler(0, doubleShotSpreadAngle, 0) * direction;
+                aimLineSpread.SetPosition(0, origin);
+                aimLineSpread.SetPosition(1, origin + spreadDir * maxRange);
+            }
         }
     }
 
@@ -74,6 +126,7 @@ public class Ballista : MonoBehaviour
         Vector3 spawnPos = new Vector3(firePoint.position.x, 0.5f, firePoint.position.z);
 
         // Fire main projectile
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayScorpioFire(spawnPos);
         SpawnProjectile(spawnPos, direction);
 
         // Double shot: fire a second projectile at a slight angle

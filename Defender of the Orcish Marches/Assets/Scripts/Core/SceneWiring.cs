@@ -121,6 +121,34 @@ public class SceneWiring : MonoBehaviour
         var crossbowmanPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Defenders/Crossbowman.prefab");
         var wizardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Defenders/Wizard.prefab");
 
+        // Load defender projectile prefabs
+        var boltPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Weapons/CrossbowBolt.prefab");
+        var fireMissilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Weapons/FireMissile.prefab");
+
+        // Wire projectiles into defender prefabs
+        if (crossbowmanPrefab != null && boltPrefab != null)
+        {
+            var xbow = crossbowmanPrefab.GetComponent<Crossbowman>();
+            if (xbow != null)
+            {
+                var xbowSO = new SerializedObject(xbow);
+                xbowSO.FindProperty("boltPrefab").objectReferenceValue = boltPrefab;
+                xbowSO.ApplyModifiedProperties();
+                Debug.Log("[SceneWiring] Wired CrossbowBolt prefab to Crossbowman.");
+            }
+        }
+        if (wizardPrefab != null && fireMissilePrefab != null)
+        {
+            var wiz = wizardPrefab.GetComponent<Wizard>();
+            if (wiz != null)
+            {
+                var wizSO = new SerializedObject(wiz);
+                wizSO.FindProperty("fireMissilePrefab").objectReferenceValue = fireMissilePrefab;
+                wizSO.ApplyModifiedProperties();
+                Debug.Log("[SceneWiring] Wired FireMissile prefab to Wizard.");
+            }
+        }
+
         // --- Create/find GameManager ---
         var gmObj = GameObject.Find("GameManager");
         if (gmObj == null)
@@ -283,6 +311,30 @@ public class SceneWiring : MonoBehaviour
         {
             Debug.LogWarning("[SceneWiring] No directional light found for DayNightCycle!");
         }
+
+        // --- Wire SoundManager ---
+        var sndObj = GameObject.Find("SoundManager");
+        if (sndObj == null)
+        {
+            sndObj = new GameObject("SoundManager");
+            sndObj.AddComponent<SoundManager>();
+        }
+        var sndMgr = sndObj.GetComponent<SoundManager>();
+        var sndSO = new SerializedObject(sndMgr);
+        sndSO.FindProperty("scorpioFire").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/scorpio.wav");
+        sndSO.FindProperty("crossbowFire").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/crossbow.wav");
+        sndSO.FindProperty("pikemanAttack").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/pikeman.wav");
+        sndSO.FindProperty("wizardFire").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/firebolt.wav");
+        sndSO.FindProperty("orcArcherFire").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/orc_archer.wav");
+        sndSO.FindProperty("goblinBomberExplode").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/goblin_bomber.wav");
+        sndSO.FindProperty("goblinCannonFire").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/goblin_cannon.wav");
+        sndSO.FindProperty("orcHit").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/orc_hit.wav");
+        sndSO.FindProperty("trollHit").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/troll_hit.wav");
+        sndSO.FindProperty("menialHit").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/menial_hit.wav");
+        sndSO.FindProperty("wallHit").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/wall_hit.wav");
+        sndSO.FindProperty("attackStart").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/attack_start.wav");
+        sndSO.ApplyModifiedProperties();
+        Debug.Log("[SceneWiring] SoundManager wired with 12 audio clips.");
 
         Debug.Log("Scene wired successfully!");
     }

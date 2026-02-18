@@ -251,7 +251,7 @@ Transform:
   m_GameObject: {fileID: 3798302314053220078}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.083333254, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -279,7 +279,7 @@ NavMeshAgent:
   m_AutoRepath: 1
   m_Height: 1
   m_BaseOffset: 0
-  m_WalkableMask: 4294967287
+  m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
 --- !u!114 &5097760885486199931
 MonoBehaviour:
@@ -295,3 +295,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Crossbowman
   data: {fileID: 11400000, guid: 0dd07353508f7474abc74b8a79efad85, type: 2}
   attackCooldown: 0
+  boltPrefab: {fileID: 8066752816650746196, guid: e962644ca714a97478be2805ebfd8bf9, type: 3}
+  projectileSpeed: 20

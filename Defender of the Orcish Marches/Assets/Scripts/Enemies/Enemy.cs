@@ -67,6 +67,15 @@ public class Enemy : MonoBehaviour
     {
         IsDead = true;
 
+        // Play death sound based on enemy type
+        if (SoundManager.Instance != null && data != null)
+        {
+            if (data.enemyType == EnemyType.WallBreaker)
+                SoundManager.Instance.PlayTrollHit(transform.position);
+            else
+                SoundManager.Instance.PlayOrcHit(transform.position);
+        }
+
         // Spawn loot
         if (data.maxLootDrops > 0)
         {
