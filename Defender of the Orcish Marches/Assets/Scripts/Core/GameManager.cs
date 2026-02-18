@@ -68,17 +68,7 @@ public class GameManager : MonoBehaviour
             GameTime += Time.deltaTime;
         }
 
-        // ESC returns to main menu (skip if wall placement is active — it uses ESC to cancel)
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            var wp = FindAnyObjectByType<WallPlacement>();
-            if (wp == null || !wp.IsPlacing)
-            {
-                Debug.Log("[GameManager] ESC pressed — returning to main menu.");
-                Time.timeScale = 1f;
-                UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
-            }
-        }
+        // ESC is handled by PauseMenu overlay
     }
 
     public void AddTreasure(int amount)

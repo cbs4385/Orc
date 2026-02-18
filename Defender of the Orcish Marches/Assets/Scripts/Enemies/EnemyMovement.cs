@@ -78,7 +78,32 @@ public class EnemyMovement : MonoBehaviour
         float bestDist = float.MaxValue;
         targetingTowerPosition = false;
 
-        // PRIORITY 1: Check if there's a breach - rush the tower
+        // PRIORITY 1: Menials outside walls — always highest priority (deny resources)
+        //   Ranged enemies engage within attack range; melee chase without limit.
+        var menials = FindObjectsByType<Menial>(FindObjectsSortMode.None);
+        foreach (var menial in menials)
+        {
+            if (menial.IsOutsideWalls && !menial.IsDead)
+            {
+                float dist = Vector3.Distance(transform.position, menial.transform.position);
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    bestTarget = menial.transform;
+                }
+            }
+        }
+
+        if (bestTarget != null)
+        {
+            currentTarget = bestTarget;
+            if (agent.isOnNavMesh)
+                agent.SetDestination(currentTarget.position);
+            Debug.Log($"[EnemyMovement] {enemy.Data.enemyName} targeting menial at dist={bestDist:F1}");
+            return;
+        }
+
+        // PRIORITY 2: Breach rush — if a wall is breached, rush the tower
         if (WallManager.Instance != null && WallManager.Instance.HasBreach())
         {
             NavMeshPath path = new NavMeshPath();
@@ -100,7 +125,7 @@ public class EnemyMovement : MonoBehaviour
                             return;
                         }
 
-                        // No one in the way - rush the tower
+                        // No one in the way — rush the tower
                         agent.SetDestination(TowerPosition);
                         targetingTowerPosition = true;
                         currentTarget = null;
@@ -110,30 +135,7 @@ public class EnemyMovement : MonoBehaviour
             }
         }
 
-        // PRIORITY 2: Check for menials outside walls (always chase - they're easy pickings)
-        var menials = FindObjectsByType<Menial>(FindObjectsSortMode.None);
-        foreach (var menial in menials)
-        {
-            if (menial.IsOutsideWalls && !menial.IsDead)
-            {
-                float dist = Vector3.Distance(transform.position, menial.transform.position);
-                if (dist < bestDist)
-                {
-                    bestDist = dist;
-                    bestTarget = menial.transform;
-                }
-            }
-        }
-
-        if (bestTarget != null)
-        {
-            currentTarget = bestTarget;
-            if (agent.isOnNavMesh)
-                agent.SetDestination(currentTarget.position);
-            return;
-        }
-
-        // PRIORITY 3: Check for refugees - only chase if close (within 8 units)
+        // PRIORITY 3: Check for refugees — only chase if close (within 8 units)
         const float REFUGEE_CHASE_RANGE = 8f;
         var refugees = FindObjectsByType<Refugee>(FindObjectsSortMode.None);
         foreach (var refugee in refugees)
@@ -154,7 +156,7 @@ public class EnemyMovement : MonoBehaviour
             return;
         }
 
-        // PRIORITY 4: Default - target nearest wall
+        // PRIORITY 4: Default — target nearest wall
         if (WallManager.Instance != null)
         {
             Wall wall = WallManager.Instance.GetNearestWall(transform.position);

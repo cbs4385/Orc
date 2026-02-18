@@ -18,11 +18,24 @@ public class UpgradeManager : MonoBehaviour
 
     public IReadOnlyList<UpgradeData> AvailableUpgrades => availableUpgrades;
 
+    // TODO: Remove after testing
+    [Header("Debug")]
+    [SerializeField] private bool startWithPikeman = false;
+
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         Debug.Log("[UpgradeManager] Instance registered in Awake.");
+    }
+
+    private void Start()
+    {
+        if (startWithPikeman && pikemanPrefab != null)
+        {
+            SpawnDefenderAtTower(pikemanPrefab);
+            Debug.Log("[UpgradeManager] Debug: spawned starting pikeman.");
+        }
     }
 
     private void OnEnable()

@@ -52,35 +52,16 @@ public class Defender : MonoBehaviour
 
         if (currentTarget != null)
         {
-            // Move toward target if out of range, but stay inside the courtyard
-            if (agent != null && agent.isOnNavMesh)
-            {
-                float dist = Vector3.Distance(transform.position, currentTarget.transform.position);
-                float range = data != null ? data.range : 5f;
-                if (dist > range)
-                {
-                    // Path toward enemy but clamp destination inside the courtyard
-                    Vector3 targetPos = currentTarget.transform.position;
-                    float targetDistFromCenter = new Vector2(targetPos.x, targetPos.z).magnitude;
-                    if (targetDistFromCenter > 3.5f)
-                    {
-                        // Enemy is outside courtyard - move to the courtyard edge toward them
-                        Vector3 dir = (targetPos - Vector3.zero).normalized;
-                        targetPos = dir * 3f;
-                        targetPos.y = 0;
-                    }
-                    agent.isStopped = false;
-                    agent.SetDestination(targetPos);
-                }
-                else
-                {
-                    agent.isStopped = true;
-                }
-            }
+            MoveTowardTarget();
 
             if (attackCooldown <= 0)
             {
-                Attack();
+                float dist = Vector3.Distance(transform.position, currentTarget.transform.position);
+                float range = data != null ? data.range : 5f;
+                if (dist <= range)
+                {
+                    Attack();
+                }
             }
         }
         else
@@ -109,6 +90,34 @@ public class Defender : MonoBehaviour
                 bestDist = dist;
                 currentTarget = enemy;
             }
+        }
+    }
+
+    protected virtual void MoveTowardTarget()
+    {
+        if (agent == null || !agent.isOnNavMesh || currentTarget == null) return;
+
+        float dist = Vector3.Distance(transform.position, currentTarget.transform.position);
+        float range = data != null ? data.range : 5f;
+
+        if (dist > range)
+        {
+            // Path toward enemy but clamp destination inside the courtyard
+            Vector3 targetPos = currentTarget.transform.position;
+            float targetDistFromCenter = new Vector2(targetPos.x, targetPos.z).magnitude;
+            if (targetDistFromCenter > 3.5f)
+            {
+                // Enemy is outside courtyard - move to the courtyard edge toward them
+                Vector3 dir = (targetPos - Vector3.zero).normalized;
+                targetPos = dir * 3f;
+                targetPos.y = 0;
+            }
+            agent.isStopped = false;
+            agent.SetDestination(targetPos);
+        }
+        else
+        {
+            agent.isStopped = true;
         }
     }
 
