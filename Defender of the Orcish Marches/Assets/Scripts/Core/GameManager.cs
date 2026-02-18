@@ -1,14 +1,15 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    public enum GameState { Playing, GameOver }
+    public enum GameState { Playing, Paused, GameOver }
 
     [Header("Starting Resources")]
-    [SerializeField] private int startingTreasure = 500;
+    [SerializeField] private int startingTreasure = 100;
     [SerializeField] private int startingMenials = 3;
 
     public GameState CurrentState { get; private set; } = GameState.Playing;
@@ -20,6 +21,7 @@ public class GameManager : MonoBehaviour
     public event Action<int> OnTreasureChanged;
     public event Action<int> OnMenialsChanged;
     public event Action OnGameOver;
+    public event Action<bool> OnPauseChanged;
 
     private void Awake()
     {
@@ -63,6 +65,21 @@ public class GameManager : MonoBehaviour
         if (CurrentState == GameState.Playing)
         {
             GameTime += Time.deltaTime;
+        }
+
+        // ESC quits the application (skip if wall placement is active — it uses ESC to cancel)
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            var wp = FindAnyObjectByType<WallPlacement>();
+            if (wp == null || !wp.IsPlacing)
+            {
+                Debug.Log("[GameManager] ESC pressed — quitting application.");
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+                Application.Quit();
+#endif
+            }
         }
     }
 
@@ -109,6 +126,25 @@ public class GameManager : MonoBehaviour
     public bool CanAfford(int treasureCost, int menialCost)
     {
         return Treasure >= treasureCost && IdleMenialCount >= menialCost;
+    }
+
+    public void TogglePause()
+    {
+        if (CurrentState == GameState.GameOver) return;
+
+        if (CurrentState == GameState.Paused)
+        {
+            CurrentState = GameState.Playing;
+            Time.timeScale = 1f;
+            Debug.Log("[GameManager] Unpaused.");
+        }
+        else
+        {
+            CurrentState = GameState.Paused;
+            Time.timeScale = 0f;
+            Debug.Log("[GameManager] Paused.");
+        }
+        OnPauseChanged?.Invoke(CurrentState == GameState.Paused);
     }
 
     public void TriggerGameOver()

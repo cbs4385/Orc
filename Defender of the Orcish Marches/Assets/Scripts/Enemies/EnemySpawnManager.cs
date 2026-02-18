@@ -6,7 +6,7 @@ public class EnemySpawnManager : MonoBehaviour
     public static EnemySpawnManager Instance { get; private set; }
 
     [Header("Spawn Settings")]
-    [SerializeField] private bool spawnEnabled = false;
+    [SerializeField] private bool spawnEnabled = true;
     [SerializeField] private float mapRadius = 40f;
     [SerializeField] private float initialSpawnInterval = 3f;
     [SerializeField] private float minSpawnInterval = 0.5f;

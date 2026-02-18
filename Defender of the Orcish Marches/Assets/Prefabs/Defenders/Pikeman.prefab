@@ -233,6 +233,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8386887336674590612}
+  - component: {fileID: 1929080879773449514}
   - component: {fileID: 7174048960805237734}
   m_Layer: 0
   m_Name: Pikeman
@@ -250,7 +251,7 @@ Transform:
   m_GameObject: {fileID: 9086173963891186942}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.083333254, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -258,6 +259,28 @@ Transform:
   - {fileID: 7521420925243786241}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!195 &1929080879773449514
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9086173963891186942}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.25
+  m_Speed: 3
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 1
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967287
+  m_ObstacleAvoidanceType: 4
 --- !u!114 &7174048960805237734
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -270,5 +293,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05a2041b8af0456419c16a0fa7f9d120, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Pikeman
-  data: {fileID: 0}
+  data: {fileID: 11400000, guid: 082e514d548b856408334c208971453a, type: 2}
   attackCooldown: 0

@@ -52,6 +52,9 @@ public class UIBuilder : MonoBehaviour
         var timerText = CreateText(topBar.transform, "TimerText", "0:00", 24, Color.white, 120);
         var enemyText = CreateText(topBar.transform, "EnemyCountText", "Enemies: 0", 24, new Color(1f, 0.5f, 0.5f), 200);
 
+        // Pause button
+        var pauseBtn = CreateUIButton(topBar.transform, "PauseButton", "PAUSE [Space]", 160, 35);
+
         // Add GameHUD component
         var hud = canvasObj.AddComponent<GameHUD>();
         var hudSO = new SerializedObject(hud);
@@ -59,6 +62,8 @@ public class UIBuilder : MonoBehaviour
         hudSO.FindProperty("menialText").objectReferenceValue = menialText.GetComponent<TextMeshProUGUI>();
         hudSO.FindProperty("timerText").objectReferenceValue = timerText.GetComponent<TextMeshProUGUI>();
         hudSO.FindProperty("enemyCountText").objectReferenceValue = enemyText.GetComponent<TextMeshProUGUI>();
+        hudSO.FindProperty("pauseButton").objectReferenceValue = pauseBtn.GetComponent<Button>();
+        hudSO.FindProperty("pauseButtonText").objectReferenceValue = pauseBtn.GetComponentInChildren<TextMeshProUGUI>();
         hudSO.ApplyModifiedProperties();
 
         // ===== UPGRADE PANEL (Bottom) =====

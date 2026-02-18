@@ -69,6 +69,9 @@ public class EnemyMovement : MonoBehaviour
         }
     }
 
+    // How close an enemy must be to attack something in its path while rushing the tower
+    private const float BREACH_AGGRO_RANGE = 3f;
+
     private void FindTarget()
     {
         Transform bestTarget = null;
@@ -78,24 +81,29 @@ public class EnemyMovement : MonoBehaviour
         // PRIORITY 1: Check if there's a breach - rush the tower
         if (WallManager.Instance != null && WallManager.Instance.HasBreach())
         {
-            // Try to path to the tower through the breach
             NavMeshPath path = new NavMeshPath();
             if (agent.isOnNavMesh && NavMesh.CalculatePath(transform.position, TowerPosition, enemyAreaMask, path))
             {
-                // Accept both complete and partial paths - partial means we get close to the tower
                 if (path.status != NavMeshPathStatus.PathInvalid && path.corners.Length > 1)
                 {
-                    // Check if this path actually goes inside the wall ring (closer than ~3.5 units from center)
                     Vector3 finalPoint = path.corners[path.corners.Length - 1];
                     float distToCenter = Vector3.Distance(finalPoint, TowerPosition);
                     if (distToCenter < 3.5f)
                     {
-                        // We can reach near the tower - go for it!
+                        // Before rushing tower, check for menials/defenders in our path
+                        Transform blockingTarget = FindNearestBlockingTarget();
+                        if (blockingTarget != null)
+                        {
+                            currentTarget = blockingTarget;
+                            if (agent.isOnNavMesh)
+                                agent.SetDestination(blockingTarget.position);
+                            return;
+                        }
+
+                        // No one in the way - rush the tower
                         agent.SetDestination(TowerPosition);
                         targetingTowerPosition = true;
-                        // Use a nearby wall as currentTarget for attack purposes
-                        var nearestWall = WallManager.Instance.GetNearestWall(transform.position);
-                        currentTarget = nearestWall != null ? nearestWall.transform : null;
+                        currentTarget = null;
                         return;
                     }
                 }
@@ -117,19 +125,15 @@ public class EnemyMovement : MonoBehaviour
             }
         }
 
-        // If we found a menial outside walls, go for it
         if (bestTarget != null)
         {
             currentTarget = bestTarget;
             if (agent.isOnNavMesh)
-            {
                 agent.SetDestination(currentTarget.position);
-            }
             return;
         }
 
         // PRIORITY 3: Check for refugees - only chase if close (within 8 units)
-        // Otherwise keep attacking walls. Uses effective distance that penalizes far refugees.
         const float REFUGEE_CHASE_RANGE = 8f;
         var refugees = FindObjectsByType<Refugee>(FindObjectsSortMode.None);
         foreach (var refugee in refugees)
@@ -142,14 +146,11 @@ public class EnemyMovement : MonoBehaviour
             }
         }
 
-        // If we found a nearby refugee, chase them
         if (bestTarget != null)
         {
             currentTarget = bestTarget;
             if (agent.isOnNavMesh)
-            {
                 agent.SetDestination(currentTarget.position);
-            }
             return;
         }
 
@@ -158,16 +159,49 @@ public class EnemyMovement : MonoBehaviour
         {
             Wall wall = WallManager.Instance.GetNearestWall(transform.position);
             if (wall != null)
-            {
                 bestTarget = wall.transform;
-            }
         }
 
         currentTarget = bestTarget;
         if (currentTarget != null && agent.isOnNavMesh)
-        {
             agent.SetDestination(currentTarget.position);
+    }
+
+    /// <summary>
+    /// Find the nearest menial or defender between this enemy and the tower (within aggro range).
+    /// </summary>
+    private Transform FindNearestBlockingTarget()
+    {
+        Transform best = null;
+        float bestDist = BREACH_AGGRO_RANGE;
+
+        // Check all menials (not just outside walls — they may be inside the courtyard)
+        var menials = FindObjectsByType<Menial>(FindObjectsSortMode.None);
+        foreach (var menial in menials)
+        {
+            if (menial.IsDead) continue;
+            float dist = Vector3.Distance(transform.position, menial.transform.position);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = menial.transform;
+            }
         }
+
+        // Check all defenders
+        var defenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
+        foreach (var defender in defenders)
+        {
+            if (defender.IsDead) continue;
+            float dist = Vector3.Distance(transform.position, defender.transform.position);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = defender.transform;
+            }
+        }
+
+        return best;
     }
 
     public void Stop()

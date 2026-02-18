@@ -20,6 +20,10 @@ MonoBehaviour:
   attackRange: 15
   attackRate: 0.3
   treasureDrop: 30
+  minLootDrops: 2
+  maxLootDrops: 4
+  minLootValue: 6
+  maxLootValue: 12
   bodyColor: {r: 0.2, g: 0.4, b: 0.2, a: 1}
   bodyScale: {x: 1, y: 1, z: 1}
   projectilePrefab: {fileID: 2032667182577132761, guid: 62b19a65de1f2c7429ce607c9922482a, type: 3}

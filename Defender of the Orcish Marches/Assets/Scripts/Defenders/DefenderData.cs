@@ -18,5 +18,6 @@ public class DefenderData : ScriptableObject
     public int damage = 10;
     public float range = 5f;
     public float attackRate = 1f;
+    public int maxHP = 40;
     public Color bodyColor = new Color(0.2f, 0.4f, 0.8f);
 }

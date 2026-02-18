@@ -9,8 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1137804021362969295}
-  - component: {fileID: 5103889067431083401}
   - component: {fileID: 7527958152354733692}
+  - component: {fileID: 5103889067431083401}
   m_Layer: 0
   m_Name: Engineer
   m_TagString: Untagged
@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 3182348307093194963}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.083333254, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -35,22 +35,6 @@ Transform:
   - {fileID: 5966167306821185581}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5103889067431083401
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3182348307093194963}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8060ed603661b424c8e300c0a3673538, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Engineer
-  data: {fileID: 0}
-  attackCooldown: 0
-  repairAmount: 2
-  repairInterval: 1
 --- !u!195 &7527958152354733692
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -71,8 +55,24 @@ NavMeshAgent:
   m_AutoRepath: 1
   m_Height: 1
   m_BaseOffset: 0
-  m_WalkableMask: 4294967295
+  m_WalkableMask: 4294967287
   m_ObstacleAvoidanceType: 4
+--- !u!114 &5103889067431083401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3182348307093194963}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8060ed603661b424c8e300c0a3673538, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Engineer
+  data: {fileID: 11400000, guid: 74c9a395366ff6248bd158fcff82442e, type: 2}
+  attackCooldown: 0
+  repairAmount: 2
+  repairInterval: 1
 --- !u!1 &5005676875808071454
 GameObject:
   m_ObjectHideFlags: 0

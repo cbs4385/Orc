@@ -3,7 +3,7 @@ using UnityEngine.AI;
 
 public class Engineer : Defender
 {
-    [SerializeField] private int repairAmount = 2;
+    [SerializeField] private int repairAmount = 5;
     [SerializeField] private float repairInterval = 1f;
 
     private float repairTimer;
@@ -11,6 +11,7 @@ public class Engineer : Defender
 
     protected override void Update()
     {
+        if (IsDead) return;
         if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameManager.GameState.Playing) return;
 
         repairTimer -= Time.deltaTime;
@@ -24,9 +25,11 @@ public class Engineer : Defender
             }
         }
 
+        float repairRange = data != null ? data.range : 2f;
+
         if (targetWall != null)
         {
-            // Move toward the inside face of the wall (right up against it)
+            // Move toward the inside face of the wall
             if (agent != null && agent.isOnNavMesh)
             {
                 Vector3 wallPos = targetWall.transform.position;
@@ -36,12 +39,13 @@ public class Engineer : Defender
                 agent.SetDestination(insidePos);
             }
 
-            // Repair only when directly adjacent to wall
+            // Repair when within range — wide enough for multiple engineers to work side-by-side
             float dist = Vector3.Distance(transform.position, targetWall.transform.position);
-            if (dist < 1f && repairTimer <= 0)
+            if (dist < repairRange && repairTimer <= 0)
             {
                 targetWall.Repair(repairAmount);
                 repairTimer = repairInterval;
+                Debug.Log($"[Engineer] Repaired {targetWall.name} for {repairAmount} HP (now {targetWall.CurrentHP}/{targetWall.MaxHP})");
             }
         }
     }

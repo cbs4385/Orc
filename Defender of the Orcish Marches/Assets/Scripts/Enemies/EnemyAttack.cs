@@ -53,6 +53,14 @@ public class EnemyAttack : MonoBehaviour
             return;
         }
 
+        // Attack defender
+        var defender = target.GetComponent<Defender>();
+        if (defender != null)
+        {
+            defender.TakeDamage(enemy.Data.damage);
+            return;
+        }
+
         // Attack menial
         var menial = target.GetComponent<Menial>();
         if (menial != null)
@@ -94,6 +102,9 @@ public class EnemyAttack : MonoBehaviour
         // Deal massive damage and die
         var wall = target.GetComponent<Wall>();
         if (wall != null) wall.TakeDamage(enemy.Data.damage);
+
+        var defender = target.GetComponent<Defender>();
+        if (defender != null) defender.TakeDamage(enemy.Data.damage);
 
         var menial = target.GetComponent<Menial>();
         if (menial != null) menial.TakeDamage(enemy.Data.damage);

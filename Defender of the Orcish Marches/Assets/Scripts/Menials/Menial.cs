@@ -7,7 +7,8 @@ public enum MenialState
     WalkingToGate,
     Collecting,
     Returning,
-    EnteringTower
+    EnteringTower,
+    PickingUp // Brief pause while grabbing a loot item
 }
 
 [RequireComponent(typeof(NavMeshAgent))]
@@ -22,11 +23,22 @@ public class Menial : MonoBehaviour
     private int carriedTreasure;
     private Gate targetGate;
 
+    // Pickup radius — menial grabs any loot within this distance
+    private const float PICKUP_RADIUS = 2.0f;
+    // Time to pause per loot item collected
+    private const float PICKUP_DELAY = 0.25f;
+    private float pickupTimer;
+    private MenialState stateBeforePickup; // state to resume after pickup delay
+
     // Wandering
     private float wanderTimer;
     private const float WANDER_INTERVAL_MIN = 3f;
     private const float WANDER_INTERVAL_MAX = 8f;
     private const float WANDER_RADIUS = 2.5f;
+
+    // Scan throttle — don't scan every frame
+    private float scanTimer;
+    private const float SCAN_INTERVAL = 0.15f;
 
     public MenialState CurrentState { get; private set; } = MenialState.Idle;
     public bool IsOutsideWalls { get; private set; }
@@ -67,6 +79,9 @@ public class Menial : MonoBehaviour
                 break;
             case MenialState.EnteringTower:
                 UpdateEnteringTower();
+                break;
+            case MenialState.PickingUp:
+                UpdatePickingUp();
                 break;
         }
 
@@ -169,11 +184,16 @@ public class Menial : MonoBehaviour
     {
         if (targetLoot == null || targetLoot.IsCollected)
         {
+            // Original target gone — check if there's other loot nearby to collect
+            targetLoot = null;
             ReturnHome();
             return;
         }
 
         if (!agent.isOnNavMesh) return;
+
+        // Scan for loot along the way
+        if (TryGrabNearbyLoot(MenialState.WalkingToGate)) return;
 
         // Check if we're close to the gate
         if (targetGate != null)
@@ -203,21 +223,20 @@ public class Menial : MonoBehaviour
 
     private void UpdateCollecting()
     {
-        if (targetLoot == null || targetLoot.IsCollected)
-        {
-            ReturnHome();
-            return;
-        }
-
         if (!agent.isOnNavMesh) return;
 
-        // Check if we've reached the loot (direct distance)
-        float dist = Vector3.Distance(transform.position, targetLoot.transform.position);
-        if (dist < 1.5f)
+        // Scan for loot along the way (including the target)
+        if (TryGrabNearbyLoot(MenialState.Collecting)) return;
+
+        if (targetLoot == null || targetLoot.IsCollected)
         {
-            carriedTreasure = targetLoot.Value;
-            targetLoot.Collect();
-            targetLoot = null;
+            // Original target gone — look for more loot nearby
+            targetLoot = FindNearestUncollectedLoot();
+            if (targetLoot != null)
+            {
+                agent.SetDestination(targetLoot.transform.position);
+                return;
+            }
             ReturnHome();
             return;
         }
@@ -233,6 +252,9 @@ public class Menial : MonoBehaviour
     {
         if (!agent.isOnNavMesh) return;
 
+        // Scan for loot along the way home
+        if (TryGrabNearbyLoot(MenialState.Returning)) return;
+
         // Check if we're back inside the courtyard
         float distFromCenter = new Vector2(transform.position.x, transform.position.z).magnitude;
         if (distFromCenter < 3.5f)
@@ -241,7 +263,7 @@ public class Menial : MonoBehaviour
             if (carriedTreasure > 0 && GameManager.Instance != null)
             {
                 GameManager.Instance.AddTreasure(carriedTreasure);
-                Debug.Log($"Menial deposited {carriedTreasure} gold!");
+                Debug.Log($"[Menial] Deposited {carriedTreasure} gold!");
                 carriedTreasure = 0;
             }
             CurrentState = MenialState.Idle;
@@ -258,6 +280,88 @@ public class Menial : MonoBehaviour
             Vector3 homePos = new Vector3(Mathf.Cos(angle) * homeDist, 0, Mathf.Sin(angle) * homeDist);
             agent.SetDestination(homePos);
         }
+    }
+
+    /// <summary>
+    /// Scan for loot within PICKUP_RADIUS. If found, collect it and enter PickingUp state
+    /// with a brief delay. Returns true if a pickup was initiated.
+    /// </summary>
+    private bool TryGrabNearbyLoot(MenialState resumeState)
+    {
+        scanTimer -= Time.deltaTime;
+        if (scanTimer > 0) return false;
+        scanTimer = SCAN_INTERVAL;
+
+        var allPickups = FindObjectsByType<TreasurePickup>(FindObjectsSortMode.None);
+        TreasurePickup closest = null;
+        float closestDist = PICKUP_RADIUS;
+
+        foreach (var pickup in allPickups)
+        {
+            if (pickup == null || pickup.IsCollected) continue;
+            float dist = Vector3.Distance(transform.position, pickup.transform.position);
+            if (dist < closestDist)
+            {
+                closestDist = dist;
+                closest = pickup;
+            }
+        }
+
+        if (closest != null)
+        {
+            carriedTreasure += closest.Value;
+            Debug.Log($"[Menial] Picked up {closest.Value} gold (carrying {carriedTreasure} total) at {closest.transform.position}");
+            closest.Collect();
+
+            if (closest == targetLoot)
+                targetLoot = null;
+
+            // Pause briefly
+            stateBeforePickup = resumeState;
+            CurrentState = MenialState.PickingUp;
+            pickupTimer = PICKUP_DELAY;
+            if (agent.isOnNavMesh)
+                agent.isStopped = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void UpdatePickingUp()
+    {
+        pickupTimer -= Time.deltaTime;
+        if (pickupTimer > 0) return;
+
+        // Resume previous state
+        CurrentState = stateBeforePickup;
+        if (agent.isOnNavMesh)
+            agent.isStopped = false;
+
+        // After pickup, check if there's more loot in range — will be caught next frame's scan
+        // If we were collecting and our target is gone, UpdateCollecting will find new loot or return home
+    }
+
+    /// <summary>
+    /// Find the nearest uncollected loot in the world (used when original target is gone).
+    /// </summary>
+    private TreasurePickup FindNearestUncollectedLoot()
+    {
+        var allPickups = FindObjectsByType<TreasurePickup>(FindObjectsSortMode.None);
+        TreasurePickup best = null;
+        float bestDist = 10f; // Only look within 10 units
+
+        foreach (var pickup in allPickups)
+        {
+            if (pickup == null || pickup.IsCollected) continue;
+            float dist = Vector3.Distance(transform.position, pickup.transform.position);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = pickup;
+            }
+        }
+        return best;
     }
 
     private void ReturnHome()

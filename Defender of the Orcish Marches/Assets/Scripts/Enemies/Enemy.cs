@@ -66,16 +66,15 @@ public class Enemy : MonoBehaviour
     private void Die()
     {
         IsDead = true;
-        Debug.Log($"[Enemy] {data.enemyName} died at {transform.position}. treasureDrop={data.treasureDrop}");
 
         // Spawn loot
-        if (data.treasureDrop > 0)
+        if (data.maxLootDrops > 0)
         {
             SpawnLoot();
         }
         else
         {
-            Debug.LogWarning($"[Enemy] {data.enemyName} has treasureDrop=0, no loot spawned.");
+            Debug.Log($"[Enemy] {data.enemyName} died at {transform.position}, no loot configured.");
         }
 
         OnEnemyDied?.Invoke(this);
@@ -84,7 +83,6 @@ public class Enemy : MonoBehaviour
 
     private void SpawnLoot()
     {
-        // Find TreasurePickup prefab from EnemySpawnManager
         var spawner = EnemySpawnManager.Instance;
         if (spawner == null)
         {
@@ -97,16 +95,29 @@ public class Enemy : MonoBehaviour
             return;
         }
 
-        var loot = Instantiate(spawner.TreasurePrefab, transform.position, Quaternion.identity);
-        Debug.Log($"[Enemy] Loot spawned at {transform.position}, value={data.treasureDrop}, obj={loot.name}");
-        var pickup = loot.GetComponent<TreasurePickup>();
-        if (pickup != null)
+        int dropCount = UnityEngine.Random.Range(data.minLootDrops, data.maxLootDrops + 1);
+        int totalValue = 0;
+
+        for (int i = 0; i < dropCount; i++)
         {
-            pickup.Initialize(data.treasureDrop);
+            // Scatter loot around the death position
+            Vector2 offset = UnityEngine.Random.insideUnitCircle * 0.5f;
+            Vector3 spawnPos = transform.position + new Vector3(offset.x, 0, offset.y);
+
+            var loot = Instantiate(spawner.TreasurePrefab, spawnPos, Quaternion.identity);
+            var pickup = loot.GetComponent<TreasurePickup>();
+            if (pickup != null)
+            {
+                int lootValue = UnityEngine.Random.Range(data.minLootValue, data.maxLootValue + 1);
+                pickup.Initialize(lootValue);
+                totalValue += lootValue;
+            }
+            else
+            {
+                Debug.LogError("[Enemy] SpawnLoot: TreasurePickup component missing from prefab!");
+            }
         }
-        else
-        {
-            Debug.LogError("[Enemy] SpawnLoot: TreasurePickup component missing from prefab!");
-        }
+
+        Debug.Log($"[Enemy] {data.enemyName} died at {transform.position}. Dropped {dropCount} loot (total value={totalValue})");
     }
 }

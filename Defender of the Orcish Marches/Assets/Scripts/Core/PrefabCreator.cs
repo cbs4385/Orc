@@ -205,11 +205,13 @@ static void CreateRefugeePrefab()
         wrench.transform.localPosition = new Vector3(0.3f, 0.6f, 0);
         wrench.transform.localScale = new Vector3(0.1f, 0.3f, 0.05f);
 
-        root.AddComponent<Engineer>();
         var agent = root.AddComponent<NavMeshAgent>();
         agent.radius = 0.25f;
         agent.height = 1f;
         agent.speed = 3f;
+
+        root.AddComponent<Engineer>();
+        AssignDefenderData(root, "Assets/ScriptableObjects/Defenders/Engineer.asset");
 
         var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Menial.mat");
         if (mat != null)
@@ -238,7 +240,13 @@ static void CreateRefugeePrefab()
         pike.transform.localPosition = new Vector3(0, 0.9f, 0.3f);
         pike.transform.localScale = new Vector3(0.05f, 0.05f, 1.2f);
 
+        var agent = root.AddComponent<NavMeshAgent>();
+        agent.radius = 0.25f;
+        agent.height = 1f;
+        agent.speed = 3f;
+
         root.AddComponent<Pikeman>();
+        AssignDefenderData(root, "Assets/ScriptableObjects/Defenders/Pikeman.asset");
 
         var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Menial.mat");
         if (mat != null)
@@ -267,7 +275,13 @@ static void CreateRefugeePrefab()
         bow.transform.localPosition = new Vector3(0.3f, 0.5f, 0);
         bow.transform.localScale = new Vector3(0.05f, 0.4f, 0.05f);
 
+        var agent = root.AddComponent<NavMeshAgent>();
+        agent.radius = 0.25f;
+        agent.height = 1f;
+        agent.speed = 3f;
+
         root.AddComponent<Crossbowman>();
+        AssignDefenderData(root, "Assets/ScriptableObjects/Defenders/Crossbowman.asset");
 
         var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Menial.mat");
         if (mat != null)
@@ -295,7 +309,13 @@ static void CreateRefugeePrefab()
         head.transform.localPosition = new Vector3(0, 0.8f, 0);
         head.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
+        var agent = root.AddComponent<NavMeshAgent>();
+        agent.radius = 0.25f;
+        agent.height = 1f;
+        agent.speed = 3f;
+
         root.AddComponent<Wizard>();
+        AssignDefenderData(root, "Assets/ScriptableObjects/Defenders/Wizard.asset");
 
         var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Wizard.mat");
         if (mat != null)
@@ -324,6 +344,21 @@ static void CreateRefugeePrefab()
 
         PrefabUtility.SaveAsPrefabAsset(go, "Assets/Prefabs/Fortress/WallSegment.prefab");
         Object.DestroyImmediate(go);
+    }
+
+    static void AssignDefenderData(GameObject root, string assetPath)
+    {
+        var defenderData = AssetDatabase.LoadAssetAtPath<DefenderData>(assetPath);
+        if (defenderData == null)
+        {
+            Debug.LogWarning($"[PrefabCreator] DefenderData not found at {assetPath}. Run Game/Create ScriptableObjects first.");
+            return;
+        }
+        var defender = root.GetComponent<Defender>();
+        if (defender == null) return;
+        var so = new SerializedObject(defender);
+        so.FindProperty("data").objectReferenceValue = defenderData;
+        so.ApplyModifiedProperties();
     }
 #endif
 }

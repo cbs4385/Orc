@@ -19,4 +19,5 @@ MonoBehaviour:
   damage: 25
   range: 3
   attackRate: 0.5
+  maxHP: 25
   bodyColor: {r: 0.53, g: 0.27, b: 0.8, a: 1}

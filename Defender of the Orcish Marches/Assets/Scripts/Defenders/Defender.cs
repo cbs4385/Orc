@@ -8,8 +8,10 @@ public class Defender : MonoBehaviour
 
     protected Enemy currentTarget;
     protected NavMeshAgent agent;
+    private int currentHP;
 
     public DefenderData Data => data;
+    public bool IsDead { get; private set; }
 
     protected virtual void Awake()
     {
@@ -24,6 +26,8 @@ public class Defender : MonoBehaviour
     public virtual void Initialize(DefenderData defenderData)
     {
         data = defenderData;
+        currentHP = data.maxHP;
+
         var rend = GetComponentInChildren<Renderer>();
         if (rend != null)
         {
@@ -34,10 +38,13 @@ public class Defender : MonoBehaviour
         {
             agent.stoppingDistance = 0.3f;
         }
+
+        Debug.Log($"[Defender] {data.defenderName} initialized, HP={currentHP}");
     }
 
     protected virtual void Update()
     {
+        if (IsDead) return;
         if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameManager.GameState.Playing) return;
 
         attackCooldown -= Time.deltaTime;
@@ -110,5 +117,23 @@ public class Defender : MonoBehaviour
         if (data == null || currentTarget == null) return;
         attackCooldown = 1f / data.attackRate;
         currentTarget.TakeDamage(data.damage);
+    }
+
+    public void TakeDamage(int damage)
+    {
+        if (IsDead) return;
+        currentHP -= damage;
+        Debug.Log($"[Defender] {(data != null ? data.defenderName : name)} took {damage} damage, HP={currentHP}");
+        if (currentHP <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        IsDead = true;
+        Debug.Log($"[Defender] {(data != null ? data.defenderName : name)} died at {transform.position}");
+        Destroy(gameObject);
     }
 }

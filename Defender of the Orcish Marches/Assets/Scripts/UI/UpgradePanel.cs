@@ -28,6 +28,13 @@ public class UpgradePanel : MonoBehaviour
         TryCreateButtons();
     }
 
+    // Number keys mapped to button indices
+    private static readonly Key[] HotkeyMap = new Key[]
+    {
+        Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5,
+        Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9
+    };
+
     private void Update()
     {
         // Retry button creation if it failed on Start (singleton timing)
@@ -41,6 +48,19 @@ public class UpgradePanel : MonoBehaviour
         {
             isOpen = !isOpen;
             if (panelRoot != null) panelRoot.SetActive(isOpen);
+        }
+
+        // Hotkeys 1-9 to purchase upgrades
+        if (Keyboard.current != null && buttonsCreated)
+        {
+            for (int i = 0; i < buttons.Count && i < HotkeyMap.Length; i++)
+            {
+                if (Keyboard.current[HotkeyMap[i]].wasPressedThisFrame)
+                {
+                    OnUpgradeClicked(buttons[i].data);
+                    break;
+                }
+            }
         }
 
         UpdateButtonStates();
@@ -60,6 +80,7 @@ public class UpgradePanel : MonoBehaviour
     {
         if (buttonPrefab == null || buttonContainer == null) return;
 
+        int index = 0;
         foreach (var upgrade in UpgradeManager.Instance.AvailableUpgrades)
         {
             var go = Instantiate(buttonPrefab, buttonContainer);
@@ -72,8 +93,10 @@ public class UpgradePanel : MonoBehaviour
                 costText = go.transform.Find("Cost")?.GetComponent<TextMeshProUGUI>()
             };
 
+            // Show hotkey number in label (1-9)
+            index++;
             if (entry.label != null)
-                entry.label.text = upgrade.upgradeName;
+                entry.label.text = index <= 9 ? $"[{index}] {upgrade.upgradeName}" : upgrade.upgradeName;
 
             if (entry.costText != null)
             {
