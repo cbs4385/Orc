@@ -346,6 +346,98 @@ static void CreateRefugeePrefab()
         Object.DestroyImmediate(go);
     }
 
+    [MenuItem("Game/Rebuild Scorpio")]
+    public static void RebuildScorpio()
+    {
+        // Find ScorpioBase in scene
+        var scorpioBase = GameObject.Find("ScorpioBase");
+        if (scorpioBase == null)
+        {
+            Debug.LogError("[PrefabCreator] ScorpioBase not found in scene!");
+            return;
+        }
+
+        // Remove any existing child objects
+        for (int i = scorpioBase.transform.childCount - 1; i >= 0; i--)
+            Object.DestroyImmediate(scorpioBase.transform.GetChild(i).gameObject);
+
+        // Also remove any orphaned scorpio parts at root
+        foreach (var name in new[] { "ScorpioArmLeft", "ScorpioArmRight", "ScorpioMountLeft", "ScorpioMountRight" })
+        {
+            var orphan = GameObject.Find(name);
+            if (orphan != null && orphan.transform.parent == null)
+                Object.DestroyImmediate(orphan);
+        }
+
+        var armMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ScorpioArm.mat");
+        var bowMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/BallistaBow.mat");
+        var stringMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/BallistaString.mat");
+
+        // Base scale is (0.5, 0.3, 1.5) — non-uniform, so rotated children
+        // would be skewed. Use an intermediate "ArmPivot" with inverse scale
+        // so arms/mounts can use world-scale coordinates without distortion.
+        Vector3 baseScale = scorpioBase.transform.localScale;
+
+        var armPivot = new GameObject("ArmPivot");
+        armPivot.transform.SetParent(scorpioBase.transform, false);
+        armPivot.transform.localPosition = Vector3.zero;
+        armPivot.transform.localScale = new Vector3(
+            1f / baseScale.x, 1f / baseScale.y, 1f / baseScale.z);
+        // Now children of armPivot use real world units relative to base center
+
+        // Mount brackets on sides near front of base
+        var mountL = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        mountL.name = "ScorpioMountLeft";
+        mountL.transform.SetParent(armPivot.transform, false);
+        mountL.transform.localPosition = new Vector3(-0.2f, 0f, 0.6f);
+        mountL.transform.localScale = new Vector3(0.1f, 0.15f, 0.15f);
+        if (armMat != null) mountL.GetComponent<Renderer>().sharedMaterial = armMat;
+
+        var mountR = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        mountR.name = "ScorpioMountRight";
+        mountR.transform.SetParent(armPivot.transform, false);
+        mountR.transform.localPosition = new Vector3(0.2f, 0f, 0.6f);
+        mountR.transform.localScale = new Vector3(0.1f, 0.15f, 0.15f);
+        if (armMat != null) mountR.GetComponent<Renderer>().sharedMaterial = armMat;
+
+        // Torsion arms — extend forward from mounts in a V shape
+        var armL = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        armL.name = "ScorpioArmLeft";
+        armL.transform.SetParent(armPivot.transform, false);
+        armL.transform.localPosition = new Vector3(-0.28f, 0f, 0.65f);
+        armL.transform.localEulerAngles = new Vector3(0, -20, 0);
+        armL.transform.localScale = new Vector3(0.4f, 0.08f, 0.06f);
+        if (bowMat != null) armL.GetComponent<Renderer>().sharedMaterial = bowMat;
+
+        var armR = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        armR.name = "ScorpioArmRight";
+        armR.transform.SetParent(armPivot.transform, false);
+        armR.transform.localPosition = new Vector3(0.28f, 0f, 0.65f);
+        armR.transform.localEulerAngles = new Vector3(0, 20, 0);
+        armR.transform.localScale = new Vector3(0.4f, 0.08f, 0.06f);
+        if (bowMat != null) armR.GetComponent<Renderer>().sharedMaterial = bowMat;
+
+        // Bowstring connecting arm tips
+        var bowstring = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        bowstring.name = "ScorpioBowstring";
+        bowstring.transform.SetParent(armPivot.transform, false);
+        bowstring.transform.localPosition = new Vector3(0f, 0f, 0.78f);
+        bowstring.transform.localScale = new Vector3(0.5f, 0.02f, 0.02f);
+        if (stringMat != null) bowstring.GetComponent<Renderer>().sharedMaterial = stringMat;
+
+        // Trough/rail along top of base
+        var trough = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        trough.name = "ScorpioTrough";
+        trough.transform.SetParent(armPivot.transform, false);
+        trough.transform.localPosition = new Vector3(0f, 0.16f, 0f);
+        trough.transform.localScale = new Vector3(0.06f, 0.03f, 1.3f);
+        if (armMat != null) trough.GetComponent<Renderer>().sharedMaterial = armMat;
+
+        Debug.Log("[PrefabCreator] Scorpio rebuilt with arms, mounts, bowstring, and trough as children of ScorpioBase.");
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
+            UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+    }
+
     static void AssignDefenderData(GameObject root, string assetPath)
     {
         var defenderData = AssetDatabase.LoadAssetAtPath<DefenderData>(assetPath);
