@@ -23,8 +23,36 @@ public class Enemy : MonoBehaviour
         data = enemyData;
         CurrentHP = data.maxHP;
 
-        // Cache animator
-        animator = GetComponentInChildren<Animator>();
+        // Swap model if the EnemyData specifies a custom model
+        if (data.modelPrefab != null)
+        {
+            var existingModel = transform.Find("Model");
+            if (existingModel != null)
+            {
+                Debug.Log($"[Enemy] Destroying default Model for {data.enemyName}, replacing with custom model");
+                Destroy(existingModel.gameObject);
+            }
+
+            var newModel = Instantiate(data.modelPrefab, transform);
+            newModel.name = "Model";
+            newModel.transform.localPosition = Vector3.zero;
+            newModel.transform.localRotation = Quaternion.identity;
+            newModel.transform.localScale = Vector3.one;
+
+            animator = newModel.GetComponentInChildren<Animator>();
+            if (animator == null)
+                animator = newModel.AddComponent<Animator>();
+            if (data.animatorController != null)
+                animator.runtimeAnimatorController = data.animatorController;
+            animator.applyRootMotion = false;
+
+            Debug.Log($"[Enemy] Custom model loaded for {data.enemyName}");
+        }
+        else
+        {
+            // Cache animator from existing model
+            animator = GetComponentInChildren<Animator>();
+        }
 
         // Cache all renderers and their original colors
         bodyRenderers = GetComponentsInChildren<Renderer>();

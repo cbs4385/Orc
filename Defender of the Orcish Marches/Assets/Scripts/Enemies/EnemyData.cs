@@ -28,4 +28,7 @@ public class EnemyData : ScriptableObject
     public Color bodyColor = new Color(0.27f, 0.67f, 0.27f);
     public Vector3 bodyScale = Vector3.one;
     public GameObject projectilePrefab;
+    [Header("Model Override")]
+    public GameObject modelPrefab;
+    public RuntimeAnimatorController animatorController;
 }

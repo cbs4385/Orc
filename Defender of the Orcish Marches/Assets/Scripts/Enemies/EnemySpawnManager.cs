@@ -149,6 +149,9 @@ public class EnemySpawnManager : MonoBehaviour
 
     private EnemyData ChooseEnemyType()
     {
+        // DEBUG: force troll spawns for testing
+        if (trollData != null) return trollData;
+
         int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
 
         // Progressive enemy type unlocks based on day number

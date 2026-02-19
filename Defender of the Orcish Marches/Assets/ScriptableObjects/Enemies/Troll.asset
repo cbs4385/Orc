@@ -27,3 +27,5 @@ MonoBehaviour:
   bodyColor: {r: 0.13, g: 0.4, b: 0.13, a: 1}
   bodyScale: {x: 1.5, y: 1.5, z: 1.5}
   projectilePrefab: {fileID: 0}
+  modelPrefab: {fileID: 919132149155446097, guid: 4664b53486bfb3143812e51c9a09717d, type: 3}
+  animatorController: {fileID: 9100000, guid: 180a4df158926334b80fb58b10b24ff5, type: 2}
