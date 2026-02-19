@@ -149,8 +149,8 @@ public class EnemySpawnManager : MonoBehaviour
 
     private EnemyData ChooseEnemyType()
     {
-        // DEBUG: force troll spawns for testing
-        if (trollData != null) return trollData;
+        // DEBUG: force suicide goblin spawns for testing
+        if (suicideGoblinData != null) return suicideGoblinData;
 
         int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
 
