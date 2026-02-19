@@ -17,7 +17,7 @@ MonoBehaviour:
   maxHP: 500
   moveSpeed: 1.5
   damage: 50
-  attackRange: 1.5
+  attackRange: 1.7
   attackRate: 0.5
   treasureDrop: 100
   minLootDrops: 5
@@ -27,3 +27,5 @@ MonoBehaviour:
   bodyColor: {r: 0.6, g: 0.15, b: 0.1, a: 1}
   bodyScale: {x: 2.5, y: 2.5, z: 2.5}
   projectilePrefab: {fileID: 0}
+  modelPrefab: {fileID: 919132149155446097, guid: ad6225e5a6a8b0e44a6495794e3b2a2a, type: 3}
+  animatorController: {fileID: 9100000, guid: be9d9a55e5a925543b8627135a522125, type: 2}
