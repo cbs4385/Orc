@@ -5,6 +5,7 @@ public class MainMenuManager : MonoBehaviour
 {
     [SerializeField] private Button playButton;
     [SerializeField] private Button optionsButton;
+    [SerializeField] private Button tutorialButton;
     [SerializeField] private Button exitButton;
 
     private SceneLoader sceneLoader;
@@ -24,6 +25,8 @@ public class MainMenuManager : MonoBehaviour
             playButton.onClick.AddListener(OnPlayClicked);
         if (optionsButton != null)
             optionsButton.onClick.AddListener(OnOptionsClicked);
+        if (tutorialButton != null)
+            tutorialButton.onClick.AddListener(OnTutorialClicked);
         if (exitButton != null)
             exitButton.onClick.AddListener(OnExitClicked);
     }
@@ -34,6 +37,8 @@ public class MainMenuManager : MonoBehaviour
             playButton.onClick.RemoveListener(OnPlayClicked);
         if (optionsButton != null)
             optionsButton.onClick.RemoveListener(OnOptionsClicked);
+        if (tutorialButton != null)
+            tutorialButton.onClick.RemoveListener(OnTutorialClicked);
         if (exitButton != null)
             exitButton.onClick.RemoveListener(OnExitClicked);
     }
@@ -48,6 +53,12 @@ public class MainMenuManager : MonoBehaviour
     {
         Debug.Log("[MainMenuManager] Options clicked.");
         sceneLoader.LoadOptionsScene();
+    }
+
+    private void OnTutorialClicked()
+    {
+        Debug.Log("[MainMenuManager] Tutorial clicked.");
+        sceneLoader.LoadTutorialScene();
     }
 
     private void OnExitClicked()

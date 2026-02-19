@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2a469246eac60444ea6d88ce7bc4b46e, type: 3}
-  m_Name: Troll
+  m_Name: OrcWarBoss
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
-  enemyName: Troll
-  enemyType: 2
-  maxHP: 150
+  enemyName: Orc War Boss
+  enemyType: 0
+  maxHP: 500
   moveSpeed: 1.5
-  damage: 30
-  attackRange: 2
+  damage: 50
+  attackRange: 2.5
   attackRate: 0.5
-  treasureDrop: 40
-  minLootDrops: 1
-  maxLootDrops: 2
-  minLootValue: 3
-  maxLootValue: 7
-  bodyColor: {r: 0.13, g: 0.4, b: 0.13, a: 1}
-  bodyScale: {x: 1.5, y: 1.5, z: 1.5}
+  treasureDrop: 100
+  minLootDrops: 5
+  maxLootDrops: 8
+  minLootValue: 10
+  maxLootValue: 25
+  bodyColor: {r: 0.6, g: 0.15, b: 0.1, a: 1}
+  bodyScale: {x: 2.5, y: 2.5, z: 2.5}
   projectilePrefab: {fileID: 0}

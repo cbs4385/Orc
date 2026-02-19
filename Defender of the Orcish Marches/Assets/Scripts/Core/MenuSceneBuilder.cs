@@ -157,24 +157,25 @@ public class MenuSceneBuilder : MonoBehaviour
         titleRect.sizeDelta = new Vector2(1200, 200);
         titleRect.anchoredPosition = Vector2.zero;
 
-        // Button panel
+        // Button panel (horizontal bar across the top)
         var panelObj = new GameObject("ButtonPanel");
         panelObj.transform.SetParent(canvasObj.transform, false);
         var panelRect = panelObj.AddComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.5f, 0.15f);
-        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(400, 300);
-        panelRect.anchoredPosition = Vector2.zero;
-        var vlg = panelObj.AddComponent<VerticalLayoutGroup>();
-        vlg.spacing = 20;
-        vlg.childAlignment = TextAnchor.MiddleCenter;
-        vlg.childControlWidth = true;
-        vlg.childControlHeight = true;
-        vlg.childForceExpandWidth = true;
-        vlg.childForceExpandHeight = true;
+        panelRect.anchorMin = new Vector2(0.1f, 0.92f);
+        panelRect.anchorMax = new Vector2(0.9f, 0.98f);
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
+        var hlg = panelObj.AddComponent<HorizontalLayoutGroup>();
+        hlg.spacing = 5;
+        hlg.childAlignment = TextAnchor.MiddleCenter;
+        hlg.childControlWidth = true;
+        hlg.childControlHeight = true;
+        hlg.childForceExpandWidth = true;
+        hlg.childForceExpandHeight = true;
 
         // Buttons
         var playBtn = CreateMenuButton("PlayButton", "PLAY", panelObj.transform);
+        var tutorialBtn = CreateMenuButton("TutorialButton", "TUTORIAL", panelObj.transform);
         var optionsBtn = CreateMenuButton("OptionsButton", "OPTIONS", panelObj.transform);
         var exitBtn = CreateMenuButton("ExitButton", "EXIT", panelObj.transform);
 
@@ -187,6 +188,7 @@ public class MenuSceneBuilder : MonoBehaviour
         var mmSO = new SerializedObject(mainMenu);
         mmSO.FindProperty("playButton").objectReferenceValue = playBtn;
         mmSO.FindProperty("optionsButton").objectReferenceValue = optionsBtn;
+        mmSO.FindProperty("tutorialButton").objectReferenceValue = tutorialBtn;
         mmSO.FindProperty("exitButton").objectReferenceValue = exitBtn;
         mmSO.ApplyModifiedProperties();
 
@@ -385,6 +387,11 @@ public class MenuSceneBuilder : MonoBehaviour
         txtRect.offsetMin = Vector2.zero;
         txtRect.offsetMax = Vector2.zero;
 
+        // Drop shadow
+        var shadow = txtObj.AddComponent<Shadow>();
+        shadow.effectColor = new Color(0f, 0f, 0f, 0.7f);
+        shadow.effectDistance = new Vector2(2f, -2f);
+
         return btn;
     }
 
@@ -514,9 +521,10 @@ public class MenuSceneBuilder : MonoBehaviour
             new EditorBuildSettingsScene("Assets/Scenes/MainMenu.unity", true),
             new EditorBuildSettingsScene("Assets/Scenes/GameScene.unity", true),
             new EditorBuildSettingsScene("Assets/Scenes/Options.unity", true),
+            new EditorBuildSettingsScene("Assets/Scenes/TutorialScene.unity", true),
         };
         EditorBuildSettings.scenes = scenes;
-        Debug.Log("[MenuSceneBuilder] Build Settings updated: MainMenu (0), GameScene (1), Options (2).");
+        Debug.Log("[MenuSceneBuilder] Build Settings updated: MainMenu (0), GameScene (1), Options (2), TutorialScene (3).");
     }
 }
 #endif

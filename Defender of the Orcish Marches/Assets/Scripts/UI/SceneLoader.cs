@@ -23,6 +23,12 @@ public class SceneLoader : MonoBehaviour
         SceneManager.LoadScene("Options");
     }
 
+    public void LoadTutorialScene()
+    {
+        Debug.Log("[SceneLoader] Loading TutorialScene.");
+        SceneManager.LoadScene("TutorialScene");
+    }
+
     public void QuitGame()
     {
         Debug.Log("[SceneLoader] Quitting application.");

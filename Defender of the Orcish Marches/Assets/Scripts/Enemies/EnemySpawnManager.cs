@@ -21,11 +21,13 @@ public class EnemySpawnManager : MonoBehaviour
     [SerializeField] private EnemyData trollData;
     [SerializeField] private EnemyData suicideGoblinData;
     [SerializeField] private EnemyData goblinCannoneerData;
+    [SerializeField] private EnemyData orcWarBossData;
 
     public GameObject TreasurePrefab => treasurePickupPrefab;
 
     private float spawnTimer;
     private float dawnGraceTimer;
+    private bool bossSpawnedThisDay;
     private List<Enemy> activeEnemies = new List<Enemy>();
 
     private void Awake()
@@ -65,7 +67,33 @@ public class EnemySpawnManager : MonoBehaviour
     private void HandleDayStarted()
     {
         dawnGraceTimer = 2f;
-        Debug.Log("[EnemySpawnManager] Dawn grace period started (2s).");
+        bossSpawnedThisDay = false;
+        int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
+        float halfSpread = 5f + 10f * (dayNumber - 1);
+        Debug.Log($"[EnemySpawnManager] Dawn grace period started (2s). Day {dayNumber}, spawn arc halfSpread={halfSpread:F0}deg.");
+
+        // Spawn boss from due west when arc reaches half-circle (day 10+)
+        if (halfSpread >= 90f && !bossSpawnedThisDay && orcWarBossData != null)
+        {
+            SpawnBoss();
+        }
+    }
+
+    private void SpawnBoss()
+    {
+        if (enemyPrefab == null || orcWarBossData == null) return;
+
+        // Spawn from due west (180 degrees = -X)
+        Vector3 spawnPos = new Vector3(-mapRadius, 0, 0);
+        GameObject go = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        Enemy enemy = go.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.Initialize(orcWarBossData);
+            activeEnemies.Add(enemy);
+            bossSpawnedThisDay = true;
+            Debug.Log($"[EnemySpawnManager] WAR BOSS spawned at {spawnPos}! HP={orcWarBossData.maxHP}, Damage={orcWarBossData.damage}");
+        }
     }
 
     private bool dncSubscribed;
@@ -148,16 +176,18 @@ public class EnemySpawnManager : MonoBehaviour
 
     private Vector3 GetRandomEdgePosition()
     {
-        int side = Random.Range(0, 4);
-        float offset = Random.Range(-mapRadius, mapRadius);
-        switch (side)
-        {
-            case 0: return new Vector3(-mapRadius, 0, offset);
-            case 1: return new Vector3(mapRadius, 0, offset);
-            case 2: return new Vector3(offset, 0, -mapRadius);
-            case 3: return new Vector3(offset, 0, mapRadius);
-            default: return new Vector3(-mapRadius, 0, offset);
-        }
+        int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
+
+        // West = 180 degrees in standard math coords (0deg = +X)
+        float centerAngle = 180f;
+        // Arc starts narrow (+/-5deg) and widens by 10deg per day, capped at full circle
+        float halfSpread = Mathf.Min(5f + 10f * (dayNumber - 1), 180f);
+
+        float angleDeg = Random.Range(centerAngle - halfSpread, centerAngle + halfSpread);
+        float angleRad = angleDeg * Mathf.Deg2Rad;
+
+        Vector3 pos = new Vector3(Mathf.Cos(angleRad) * mapRadius, 0, Mathf.Sin(angleRad) * mapRadius);
+        return pos;
     }
 
     private void HandleEnemyDied(Enemy enemy)

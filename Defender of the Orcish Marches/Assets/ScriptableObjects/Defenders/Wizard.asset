@@ -17,7 +17,7 @@ MonoBehaviour:
   menialCost: 3
   treasureCost: 100
   damage: 25
-  range: 3
+  range: 12
   attackRate: 0.5
-  maxHP: 25
+  maxHP: 40
   bodyColor: {r: 0.53, g: 0.27, b: 0.8, a: 1}

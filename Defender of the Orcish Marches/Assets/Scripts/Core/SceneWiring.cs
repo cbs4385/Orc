@@ -16,6 +16,18 @@ public class SceneWiring : MonoBehaviour
         CreateEnemyData("Troll", "Troll", EnemyType.WallBreaker, 150, 1.5f, 30, 2f, 0.5f, 40, new Color(0.13f, 0.4f, 0.13f), new Vector3(1.5f, 1.5f, 1.5f));
         CreateEnemyData("SuicideGoblin", "Suicide Goblin", EnemyType.Suicide, 15, 5f, 80, 1f, 1f, 5, new Color(0.53f, 0.67f, 0.13f), new Vector3(0.7f, 0.7f, 0.7f));
         CreateEnemyData("GoblinCannoneer", "Goblin Cannoneer", EnemyType.Artillery, 40, 1f, 50, 15f, 0.3f, 30, new Color(0.2f, 0.4f, 0.2f), Vector3.one);
+        CreateEnemyData("OrcWarBoss", "Orc War Boss", EnemyType.Melee, 500, 1.5f, 50, 2.5f, 0.5f, 100, new Color(0.6f, 0.15f, 0.1f), new Vector3(2.5f, 2.5f, 2.5f));
+
+        // Set boss loot drops (higher than default)
+        var bossAsset = AssetDatabase.LoadAssetAtPath<EnemyData>("Assets/ScriptableObjects/Enemies/OrcWarBoss.asset");
+        if (bossAsset != null)
+        {
+            bossAsset.minLootDrops = 5;
+            bossAsset.maxLootDrops = 8;
+            bossAsset.minLootValue = 10;
+            bossAsset.maxLootValue = 25;
+            EditorUtility.SetDirty(bossAsset);
+        }
 
         // Defender Data
         CreateDefenderData("Engineer", DefenderType.Engineer, 2, 30, 0, 2f, 1f, new Color(0.2f, 0.4f, 0.8f));
@@ -103,6 +115,7 @@ public class SceneWiring : MonoBehaviour
         var troll = AssetDatabase.LoadAssetAtPath<EnemyData>("Assets/ScriptableObjects/Enemies/Troll.asset");
         var suicideGoblin = AssetDatabase.LoadAssetAtPath<EnemyData>("Assets/ScriptableObjects/Enemies/SuicideGoblin.asset");
         var goblinCannoneer = AssetDatabase.LoadAssetAtPath<EnemyData>("Assets/ScriptableObjects/Enemies/GoblinCannoneer.asset");
+        var orcWarBoss = AssetDatabase.LoadAssetAtPath<EnemyData>("Assets/ScriptableObjects/Enemies/OrcWarBoss.asset");
 
         // Load upgrade data
         var upgrades = new UpgradeData[] {
@@ -173,6 +186,7 @@ public class SceneWiring : MonoBehaviour
         spawnerSO.FindProperty("trollData").objectReferenceValue = troll;
         spawnerSO.FindProperty("suicideGoblinData").objectReferenceValue = suicideGoblin;
         spawnerSO.FindProperty("goblinCannoneerData").objectReferenceValue = goblinCannoneer;
+        spawnerSO.FindProperty("orcWarBossData").objectReferenceValue = orcWarBoss;
         spawnerSO.ApplyModifiedProperties();
 
         // --- Wire MenialManager ---

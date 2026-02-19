@@ -191,13 +191,15 @@ public class SceneSetup : MonoBehaviour
         CreateWallSegment(wallManager.transform, "Wall_WN", new Vector3(-wallCenter, 1, ewCenterZ), new Vector3(wallThick, 2, ewLen), wallMat);
         CreateWallSegment(wallManager.transform, "Wall_WS", new Vector3(-wallCenter, 1, -ewCenterZ), new Vector3(wallThick, 2, ewLen), wallMat);
 
-        // 4 gates (centered in each wall gap)
-        CreateGate(wallManager.transform, "Gate_N", new Vector3(0, 0, wallCenter), 0f, gateMat, postMat);
-        CreateGate(wallManager.transform, "Gate_S", new Vector3(0, 0, -wallCenter), 180f, gateMat, postMat);
+        // 1 gate (East only) — enemies spawn from the west
         CreateGate(wallManager.transform, "Gate_E", new Vector3(wallCenter, 0, 0), 90f, gateMat, postMat);
-        CreateGate(wallManager.transform, "Gate_W", new Vector3(-wallCenter, 0, 0), 270f, gateMat, postMat);
 
-        Debug.Log("Walls rebuilt with 4 gates.");
+        // Fill wall segments where the removed gates were (N, S, W)
+        CreateWallSegment(wallManager.transform, "Wall_NC", new Vector3(0, 1, wallCenter), new Vector3(2, 2, wallThick), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_SC", new Vector3(0, 1, -wallCenter), new Vector3(2, 2, wallThick), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_WC", new Vector3(-wallCenter, 1, 0), new Vector3(wallThick, 2, 2), wallMat);
+
+        Debug.Log("Walls rebuilt with 1 gate (East).");
         EditorUtility.SetDirty(wallManager);
 
         // Bake NavMesh so agents can path through gates
