@@ -29,7 +29,22 @@ public class BallistaProjectile : MonoBehaviour
     {
         if (!initialized) return;
 
-        transform.position += direction * speed * Time.deltaTime;
+        float step = speed * Time.deltaTime;
+        Vector3 oldPos = transform.position;
+
+        // Raycast along travel path to catch fast-moving hits
+        if (Physics.Raycast(oldPos, direction, out RaycastHit hit, step))
+        {
+            var enemy = hit.collider.GetComponentInParent<Enemy>();
+            if (enemy != null && !enemy.IsDead)
+            {
+                transform.position = hit.point;
+                HandleHit(enemy);
+                return;
+            }
+        }
+
+        transform.position = oldPos + direction * step;
 
         if (Vector3.Distance(startPosition, transform.position) >= maxRange)
         {
@@ -40,26 +55,31 @@ public class BallistaProjectile : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         var enemy = other.GetComponentInParent<Enemy>();
-        if (enemy != null)
+        if (enemy != null && !enemy.IsDead)
         {
-            enemy.TakeDamage(damage);
+            HandleHit(enemy);
+        }
+    }
 
-            // Burst damage: deal half damage to all enemies in radius
-            if (burstDamage && burstRadius > 0)
+    private void HandleHit(Enemy enemy)
+    {
+        enemy.TakeDamage(damage);
+
+        // Burst damage: deal half damage to all enemies in radius
+        if (burstDamage && burstRadius > 0)
+        {
+            var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+            foreach (var nearby in allEnemies)
             {
-                var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
-                foreach (var nearby in allEnemies)
+                if (nearby == enemy || nearby.IsDead) continue;
+                float dist = Vector3.Distance(transform.position, nearby.transform.position);
+                if (dist <= burstRadius)
                 {
-                    if (nearby == enemy || nearby.IsDead) continue;
-                    float dist = Vector3.Distance(transform.position, nearby.transform.position);
-                    if (dist <= burstRadius)
-                    {
-                        nearby.TakeDamage(damage / 2);
-                    }
+                    nearby.TakeDamage(damage / 2);
                 }
             }
-
-            Destroy(gameObject);
         }
+
+        Destroy(gameObject);
     }
 }

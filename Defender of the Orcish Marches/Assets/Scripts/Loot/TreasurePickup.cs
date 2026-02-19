@@ -4,7 +4,7 @@ public class TreasurePickup : MonoBehaviour
 {
     [SerializeField] private int value = 10;
     private bool collected;
-    private int spawnDay;
+    private float spawnGameTime;
 
     public int Value => value;
     public bool IsCollected => collected;
@@ -16,7 +16,7 @@ public class TreasurePickup : MonoBehaviour
 
     private void Start()
     {
-        spawnDay = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
+        spawnGameTime = GameManager.Instance != null ? GameManager.Instance.GameTime : 0f;
     }
 
     private void Update()
@@ -24,12 +24,16 @@ public class TreasurePickup : MonoBehaviour
         // Rotate the loot for visual effect
         transform.Rotate(Vector3.up, 90f * Time.deltaTime);
 
-        // Despawn after one full day cycle
-        if (!collected && DayNightCycle.Instance != null && DayNightCycle.Instance.DayNumber > spawnDay)
+        // Despawn after 24 game hours (one full day+night cycle)
+        if (!collected && GameManager.Instance != null && DayNightCycle.Instance != null)
         {
-            Debug.Log($"[TreasurePickup] Loot worth {value} despawned at {transform.position} (spawned day {spawnDay}, now day {DayNightCycle.Instance.DayNumber})");
-            collected = true;
-            Destroy(gameObject);
+            float elapsed = GameManager.Instance.GameTime - spawnGameTime;
+            if (elapsed >= DayNightCycle.Instance.FullCycleDuration)
+            {
+                Debug.Log($"[TreasurePickup] Loot worth {value} despawned at {transform.position} after {elapsed:F1}s");
+                collected = true;
+                Destroy(gameObject);
+            }
         }
     }
 

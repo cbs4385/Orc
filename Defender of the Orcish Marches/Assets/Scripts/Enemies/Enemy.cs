@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 public class Enemy : MonoBehaviour
@@ -12,24 +13,39 @@ public class Enemy : MonoBehaviour
     public static event Action<Enemy> OnEnemyDied;
     public static event Action<Enemy> OnEnemySpawned;
 
-    private Renderer bodyRenderer;
+    private Renderer[] bodyRenderers;
+    private Color[] originalColors;
     private float damageFlashTimer;
-    private Color originalColor;
+    private Animator animator;
 
     public void Initialize(EnemyData enemyData)
     {
         data = enemyData;
         CurrentHP = data.maxHP;
 
-        // Apply visual
-        bodyRenderer = GetComponentInChildren<Renderer>();
-        if (bodyRenderer != null)
+        // Cache animator
+        animator = GetComponentInChildren<Animator>();
+
+        // Cache all renderers and their original colors
+        bodyRenderers = GetComponentsInChildren<Renderer>();
+        originalColors = new Color[bodyRenderers.Length];
+        for (int i = 0; i < bodyRenderers.Length; i++)
         {
-            bodyRenderer.material.color = data.bodyColor;
-            originalColor = data.bodyColor;
+            if (animator != null)
+            {
+                // Model has its own materials — store them as-is
+                originalColors[i] = bodyRenderers[i].material.color;
+            }
+            else
+            {
+                // Cube placeholder — apply bodyColor from data
+                bodyRenderers[i].material.color = data.bodyColor;
+                originalColors[i] = data.bodyColor;
+            }
         }
 
         transform.localScale = data.bodyScale;
+        Debug.Log($"[Enemy] Initialized: {data.enemyName}, HP={data.maxHP}, type={data.enemyType}");
         OnEnemySpawned?.Invoke(this);
     }
 
@@ -38,11 +54,38 @@ public class Enemy : MonoBehaviour
         if (damageFlashTimer > 0)
         {
             damageFlashTimer -= Time.deltaTime;
-            if (damageFlashTimer <= 0 && bodyRenderer != null)
+            if (damageFlashTimer <= 0)
             {
-                bodyRenderer.material.color = originalColor;
+                RestoreColors();
             }
         }
+    }
+
+    private void RestoreColors()
+    {
+        if (bodyRenderers == null) return;
+        for (int i = 0; i < bodyRenderers.Length; i++)
+        {
+            if (bodyRenderers[i] != null)
+                bodyRenderers[i].material.color = originalColors[i];
+        }
+    }
+
+    private void FlashWhite()
+    {
+        if (bodyRenderers == null) return;
+        for (int i = 0; i < bodyRenderers.Length; i++)
+        {
+            if (bodyRenderers[i] != null)
+                bodyRenderers[i].material.color = Color.white;
+        }
+        damageFlashTimer = 0.1f;
+    }
+
+    public void TriggerAttackAnimation()
+    {
+        if (animator != null)
+            animator.SetTrigger("Attack");
     }
 
     public void TakeDamage(int damage)
@@ -50,12 +93,7 @@ public class Enemy : MonoBehaviour
         if (IsDead) return;
         CurrentHP -= damage;
 
-        // Flash white on damage
-        if (bodyRenderer != null)
-        {
-            bodyRenderer.material.color = Color.white;
-            damageFlashTimer = 0.1f;
-        }
+        FlashWhite();
 
         if (CurrentHP <= 0)
         {
@@ -87,6 +125,31 @@ public class Enemy : MonoBehaviour
         }
 
         OnEnemyDied?.Invoke(this);
+
+        // Play die animation if available, then destroy after delay
+        if (animator != null)
+        {
+            animator.SetTrigger("Die");
+            // Disable movement and attack while dying
+            var movement = GetComponent<EnemyMovement>();
+            if (movement != null) movement.enabled = false;
+            var attack = GetComponent<EnemyAttack>();
+            if (attack != null) attack.enabled = false;
+            var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (agent != null) agent.enabled = false;
+
+            StartCoroutine(DestroyAfterAnimation());
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private IEnumerator DestroyAfterAnimation()
+    {
+        // Die animation is 30 frames at 24fps ≈ 1.25 seconds
+        yield return new WaitForSeconds(1.5f);
         Destroy(gameObject);
     }
 

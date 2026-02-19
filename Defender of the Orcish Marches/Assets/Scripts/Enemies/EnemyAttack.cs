@@ -27,6 +27,9 @@ public class EnemyAttack : MonoBehaviour
     {
         attackCooldown = 1f / enemy.Data.attackRate;
 
+        // Trigger attack animation
+        enemy.TriggerAttackAnimation();
+
         switch (enemy.Data.enemyType)
         {
             case EnemyType.Melee:

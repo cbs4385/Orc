@@ -17,7 +17,7 @@ MonoBehaviour:
   maxHP: 30
   moveSpeed: 3
   damage: 5
-  attackRange: 1.5
+  attackRange: 0.8
   attackRate: 1
   treasureDrop: 10
   minLootDrops: 1

@@ -26,6 +26,9 @@ public class DayNightCycle : MonoBehaviour
     public bool IsDay => CurrentPhase == Phase.Day;
     public bool IsNight => CurrentPhase == Phase.Night;
 
+    /// <summary>Duration of one full day+night cycle in seconds.</summary>
+    public float FullCycleDuration => dayDuration + nightDuration;
+
     /// <summary>How far through the current phase (0..1).</summary>
     public float PhaseProgress => phaseTimer / CurrentPhaseDuration;
 

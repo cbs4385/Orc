@@ -74,5 +74,8 @@ Thumbs.db
 # Screenshots
 [Ss]creenshots/
 
+# Blender render previews
+Model_Preview/
+
 # Claude Code
 .claude/
