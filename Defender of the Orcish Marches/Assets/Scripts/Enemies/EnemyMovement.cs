@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -19,6 +20,13 @@ public class EnemyMovement : MonoBehaviour
 
     // Track if we're targeting a position (tower) vs a transform
     private bool targetingTowerPosition;
+
+    // Retreat state
+    public bool IsRetreating { get; private set; }
+    private float retreatMapRadius;
+
+    /// <summary>Fired when a retreating enemy reaches the west map edge.</summary>
+    public Action<Enemy> OnReachedRetreatEdge;
 
     private void Awake()
     {
@@ -48,6 +56,18 @@ public class EnemyMovement : MonoBehaviour
     {
         if (enemy.IsDead) { agent.isStopped = true; return; }
 
+        // Retreat mode: walk west, check if reached edge
+        if (IsRetreating)
+        {
+            if (agent.isOnNavMesh && !agent.pathPending &&
+                transform.position.x <= -retreatMapRadius + 2f)
+            {
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} reached retreat edge at {transform.position}");
+                OnReachedRetreatEdge?.Invoke(enemy);
+            }
+            return;
+        }
+
         retargetTimer -= Time.deltaTime;
         if (retargetTimer <= 0)
         {
@@ -67,6 +87,26 @@ public class EnemyMovement : MonoBehaviour
                     GameManager.Instance.TriggerGameOver();
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Command this enemy to retreat west off the map.
+    /// </summary>
+    public void Retreat(float mapRadius)
+    {
+        IsRetreating = true;
+        retreatMapRadius = mapRadius;
+        currentTarget = null;
+
+        if (agent != null && agent.isOnNavMesh)
+        {
+            // Remove area mask restrictions so retreat path isn't blocked by gate exclusion
+            agent.areaMask = NavMesh.AllAreas;
+            agent.stoppingDistance = 0f;
+            Vector3 retreatDest = new Vector3(-mapRadius, 0, transform.position.z);
+            agent.SetDestination(retreatDest);
+            Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} retreating to {retreatDest}");
         }
     }
 

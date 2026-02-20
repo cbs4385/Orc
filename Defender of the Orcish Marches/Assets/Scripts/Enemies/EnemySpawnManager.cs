@@ -36,6 +36,9 @@ public class EnemySpawnManager : MonoBehaviour
     private bool bossSpawnedThisDay;
     private List<Enemy> activeEnemies = new List<Enemy>();
 
+    // Enemies that retreated at nightfall carry over to next day's spawn
+    private List<EnemyData> remnantEnemies = new List<EnemyData>();
+
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -67,7 +70,10 @@ public class EnemySpawnManager : MonoBehaviour
     {
         Enemy.OnEnemyDied -= HandleEnemyDied;
         if (DayNightCycle.Instance != null)
+        {
             DayNightCycle.Instance.OnDayStarted -= HandleDayStarted;
+            DayNightCycle.Instance.OnNightStarted -= HandleNightStarted;
+        }
     }
 
     private void HandleDayStarted()
@@ -76,13 +82,89 @@ public class EnemySpawnManager : MonoBehaviour
         bossSpawnedThisDay = false;
         int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
         float halfSpread = 5f + 10f * (dayNumber - 1);
-        Debug.Log($"[EnemySpawnManager] Dawn grace period started (2s). Day {dayNumber}, spawn arc halfSpread={halfSpread:F0}deg.");
+        Debug.Log($"[EnemySpawnManager] Dawn grace period started (2s). Day {dayNumber}, spawn arc halfSpread={halfSpread:F0}deg. Remnants={remnantEnemies.Count}");
+
+        // Spawn remnants from previous night — all at once, spread along the spawn arc
+        if (remnantEnemies.Count > 0)
+        {
+            SpawnRemnants(dayNumber);
+        }
 
         // Spawn boss from due west when arc reaches half-circle (day 10+)
         if (halfSpread >= 90f && !bossSpawnedThisDay && orcWarBossData != null)
         {
             SpawnBoss();
         }
+    }
+
+    private void SpawnRemnants(int dayNumber)
+    {
+        var positions = GetEvenlySpacedEdgePositions(remnantEnemies.Count, dayNumber);
+        Debug.Log($"[EnemySpawnManager] Spawning {remnantEnemies.Count} remnant enemies from last night.");
+
+        for (int i = 0; i < remnantEnemies.Count; i++)
+        {
+            if (enemyPrefab == null) continue;
+            EnemyData data = remnantEnemies[i];
+            if (data == null) continue;
+
+            GameObject go = Instantiate(enemyPrefab, positions[i], Quaternion.identity);
+            Enemy enemy = go.GetComponent<Enemy>();
+            if (enemy != null)
+            {
+                enemy.Initialize(data);
+                ApplyDayScaling(enemy);
+                activeEnemies.Add(enemy);
+                Debug.Log($"[EnemySpawnManager] Remnant spawned: {data.enemyName} at {positions[i]}");
+            }
+        }
+        remnantEnemies.Clear();
+    }
+
+    private List<Vector3> GetEvenlySpacedEdgePositions(int count, int dayNumber)
+    {
+        var positions = new List<Vector3>();
+        float centerAngle = 180f;
+        float halfSpread = Mathf.Min(5f + 10f * (dayNumber - 1), 180f);
+        float totalArc = 2f * halfSpread;
+
+        for (int i = 0; i < count; i++)
+        {
+            float angleDeg = centerAngle - halfSpread + totalArc * (i + 0.5f) / count;
+            float angleRad = angleDeg * Mathf.Deg2Rad;
+            Vector3 pos = new Vector3(Mathf.Cos(angleRad) * mapRadius, 0, Mathf.Sin(angleRad) * mapRadius);
+            positions.Add(pos);
+        }
+        return positions;
+    }
+
+    private void HandleNightStarted()
+    {
+        int retreatingCount = 0;
+        // Take a snapshot — the list will be modified as enemies reach the edge
+        var snapshot = new List<Enemy>(activeEnemies);
+        foreach (var enemy in snapshot)
+        {
+            if (enemy == null || enemy.IsDead) continue;
+            var movement = enemy.GetComponent<EnemyMovement>();
+            if (movement == null) continue;
+
+            movement.OnReachedRetreatEdge = HandleEnemyRetreated;
+            movement.Retreat(mapRadius);
+            retreatingCount++;
+        }
+        Debug.Log($"[EnemySpawnManager] Night fell — {retreatingCount} enemies retreating west.");
+    }
+
+    private void HandleEnemyRetreated(Enemy enemy)
+    {
+        if (enemy != null && enemy.Data != null)
+        {
+            remnantEnemies.Add(enemy.Data);
+            Debug.Log($"[EnemySpawnManager] {enemy.Data.enemyName} retreated off map. Remnants queued: {remnantEnemies.Count}");
+        }
+        activeEnemies.Remove(enemy);
+        if (enemy != null) Destroy(enemy.gameObject);
     }
 
     private void SpawnBoss()
@@ -114,11 +196,15 @@ public class EnemySpawnManager : MonoBehaviour
         if (!dncSubscribed && DayNightCycle.Instance != null)
         {
             DayNightCycle.Instance.OnDayStarted += HandleDayStarted;
+            DayNightCycle.Instance.OnNightStarted += HandleNightStarted;
             dncSubscribed = true;
         }
 
         // Don't spawn at night
         if (DayNightCycle.Instance != null && DayNightCycle.Instance.IsNight) return;
+
+        // Noon cutoff: all enemies for the day finish spawning by midpoint of day phase
+        if (DayNightCycle.Instance != null && DayNightCycle.Instance.PhaseProgress > 0.5f) return;
 
         // Dawn grace period
         if (dawnGraceTimer > 0f)

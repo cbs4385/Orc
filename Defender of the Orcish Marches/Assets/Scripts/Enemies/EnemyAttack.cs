@@ -15,6 +15,7 @@ public class EnemyAttack : MonoBehaviour
     private void Update()
     {
         if (enemy.IsDead) return;
+        if (movement.IsRetreating) return;
         attackCooldown -= Time.deltaTime;
 
         if (movement.HasReachedTarget && movement.CurrentTarget != null && attackCooldown <= 0)

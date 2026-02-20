@@ -35,6 +35,7 @@ public class SoundManager : MonoBehaviour
     private AudioSource audioSource;
     private AudioSource musicSource;
     private int currentTrackIndex;
+    private int[] shuffledOrder;
 
     private void Awake()
     {
@@ -92,8 +93,13 @@ public class SoundManager : MonoBehaviour
         // Advance to next track when current finishes
         if (musicSource != null && !musicSource.isPlaying && musicTracks != null && musicTracks.Length > 0 && musicSource.clip != null)
         {
-            currentTrackIndex = (currentTrackIndex + 1) % musicTracks.Length;
-            PlayMusicTrack(currentTrackIndex);
+            currentTrackIndex++;
+            if (currentTrackIndex >= musicTracks.Length)
+            {
+                currentTrackIndex = 0;
+                ShuffleOrder();
+            }
+            PlayMusicTrack(shuffledOrder[currentTrackIndex]);
         }
     }
 
@@ -115,8 +121,28 @@ public class SoundManager : MonoBehaviour
         if (musicTracks == null || musicTracks.Length == 0) return;
         if (musicSource != null && musicSource.isPlaying) return;
         currentTrackIndex = 0;
-        PlayMusicTrack(currentTrackIndex);
-        Debug.Log($"[SoundManager] Music started with {musicTracks.Length} tracks.");
+        ShuffleOrder();
+        PlayMusicTrack(shuffledOrder[currentTrackIndex]);
+        Debug.Log($"[SoundManager] Music started with {musicTracks.Length} tracks (shuffled).");
+    }
+
+    private void ShuffleOrder()
+    {
+        if (shuffledOrder == null || shuffledOrder.Length != musicTracks.Length)
+        {
+            shuffledOrder = new int[musicTracks.Length];
+            for (int i = 0; i < shuffledOrder.Length; i++)
+                shuffledOrder[i] = i;
+        }
+        // Fisher-Yates shuffle
+        for (int i = shuffledOrder.Length - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            int tmp = shuffledOrder[i];
+            shuffledOrder[i] = shuffledOrder[j];
+            shuffledOrder[j] = tmp;
+        }
+        Debug.Log($"[SoundManager] Shuffled music order: [{string.Join(", ", shuffledOrder)}]");
     }
 
     private void PlayMusicTrack(int index)
