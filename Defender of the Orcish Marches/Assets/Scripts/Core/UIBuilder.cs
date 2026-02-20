@@ -62,6 +62,8 @@ public class UIBuilder : MonoBehaviour
         enemyText.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Left;
         var killsText = CreateText(topBar.transform, "KillsText", "Kills: 0", 24, new Color(1f, 0.7f, 0.3f), 150);
         killsText.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Left;
+        var defenderText = CreateText(topBar.transform, "DefenderCountText", "Eng:0 Pike:0 Xbow:0 Wiz:0", 20, new Color(0.5f, 0.8f, 1f), 330);
+        defenderText.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Left;
 
         // Spacer pushes wheel + pause to the right
         var spacer = new GameObject("Spacer");
@@ -132,6 +134,7 @@ public class UIBuilder : MonoBehaviour
         hudSO.FindProperty("timerText").objectReferenceValue = timerText.GetComponent<TextMeshProUGUI>();
         hudSO.FindProperty("enemyCountText").objectReferenceValue = enemyText.GetComponent<TextMeshProUGUI>();
         hudSO.FindProperty("killsText").objectReferenceValue = killsText.GetComponent<TextMeshProUGUI>();
+        hudSO.FindProperty("defenderCountText").objectReferenceValue = defenderText.GetComponent<TextMeshProUGUI>();
         hudSO.FindProperty("pauseButton").objectReferenceValue = pauseBtnButton;
         hudSO.FindProperty("pauseButtonIcon").objectReferenceValue = pauseIconImg;
         hudSO.ApplyModifiedProperties();
@@ -174,25 +177,39 @@ public class UIBuilder : MonoBehaviour
         goRect.anchorMax = Vector2.one;
         goRect.sizeDelta = Vector2.zero;
 
-        var goTitle = CreateText(gameOverRoot.transform, "GameOverTitle", "WALLS BREACHED!\nGAME OVER", 48, Color.red, 600);
+        var goTitle = CreateText(gameOverRoot.transform, "GameOverTitle", "WALLS BREACHED!\nGAME OVER", 44, Color.red, 600);
         var goTitleRect = goTitle.GetComponent<RectTransform>();
-        goTitleRect.anchorMin = new Vector2(0.5f, 0.6f);
-        goTitleRect.anchorMax = new Vector2(0.5f, 0.6f);
+        goTitleRect.anchorMin = new Vector2(0.5f, 0.78f);
+        goTitleRect.anchorMax = new Vector2(0.5f, 0.78f);
         goTitleRect.anchoredPosition = Vector2.zero;
         goTitle.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
 
-        var goStats = CreateText(gameOverRoot.transform, "GameOverStats", "Survival Time: 0:00", 28, Color.white, 500);
+        var goStats = CreateText(gameOverRoot.transform, "GameOverStats", "", 22, Color.white, 600);
         var goStatsRect = goStats.GetComponent<RectTransform>();
-        goStatsRect.anchorMin = new Vector2(0.5f, 0.45f);
-        goStatsRect.anchorMax = new Vector2(0.5f, 0.45f);
+        goStatsRect.anchorMin = new Vector2(0.5f, 0.52f);
+        goStatsRect.anchorMax = new Vector2(0.5f, 0.52f);
+        goStatsRect.sizeDelta = new Vector2(600, 200);
         goStatsRect.anchoredPosition = Vector2.zero;
-        goStats.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+        var goStatsTmp = goStats.GetComponent<TextMeshProUGUI>();
+        goStatsTmp.alignment = TextAlignmentOptions.Center;
+        goStatsTmp.richText = true;
+        goStatsTmp.lineSpacing = 5;
+
+        var goScore = CreateText(gameOverRoot.transform, "GameOverScore", "", 28, new Color(0.9f, 0.75f, 0.3f), 600);
+        var goScoreRect = goScore.GetComponent<RectTransform>();
+        goScoreRect.anchorMin = new Vector2(0.5f, 0.28f);
+        goScoreRect.anchorMax = new Vector2(0.5f, 0.28f);
+        goScoreRect.anchoredPosition = Vector2.zero;
+        var goScoreTmp = goScore.GetComponent<TextMeshProUGUI>();
+        goScoreTmp.alignment = TextAlignmentOptions.Center;
+        goScoreTmp.richText = true;
+        goScoreTmp.fontStyle = FontStyles.Bold;
 
         // Restart button
         var restartBtn = CreateUIButton(gameOverRoot.transform, "RestartButton", "RESTART", 200, 50);
         var restartBtnRect = restartBtn.GetComponent<RectTransform>();
-        restartBtnRect.anchorMin = new Vector2(0.5f, 0.3f);
-        restartBtnRect.anchorMax = new Vector2(0.5f, 0.3f);
+        restartBtnRect.anchorMin = new Vector2(0.5f, 0.12f);
+        restartBtnRect.anchorMax = new Vector2(0.5f, 0.12f);
         restartBtnRect.anchoredPosition = Vector2.zero;
 
         gameOverRoot.SetActive(false);
@@ -202,7 +219,8 @@ public class UIBuilder : MonoBehaviour
         var goSO = new SerializedObject(goScreen);
         goSO.FindProperty("panelRoot").objectReferenceValue = gameOverRoot;
         goSO.FindProperty("titleText").objectReferenceValue = goTitle.GetComponent<TextMeshProUGUI>();
-        goSO.FindProperty("statsText").objectReferenceValue = goStats.GetComponent<TextMeshProUGUI>();
+        goSO.FindProperty("statsText").objectReferenceValue = goStatsTmp;
+        goSO.FindProperty("scoreText").objectReferenceValue = goScoreTmp;
         goSO.FindProperty("restartButton").objectReferenceValue = restartBtn.GetComponent<Button>();
         goSO.ApplyModifiedProperties();
 

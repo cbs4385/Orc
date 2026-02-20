@@ -8,6 +8,7 @@ using UnityEngine;
 public class BurstDamageVFX : MonoBehaviour
 {
     private static Material cachedParticleMat;
+    private static Texture2D cachedCircleTex;
 
     public static void Spawn(Vector3 position, float radius)
     {
@@ -27,6 +28,39 @@ public class BurstDamageVFX : MonoBehaviour
         Destroy(gameObject, 2f);
     }
 
+    private static Texture2D GetCircleTexture()
+    {
+        if (cachedCircleTex != null) return cachedCircleTex;
+
+        const int size = 32;
+        cachedCircleTex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        cachedCircleTex.filterMode = FilterMode.Bilinear;
+        cachedCircleTex.wrapMode = TextureWrapMode.Clamp;
+
+        float center = (size - 1) * 0.5f;
+        float maxRadius = center;
+        var pixels = new Color32[size * size];
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = x - center;
+                float dy = y - center;
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                // Soft circular falloff
+                float alpha = Mathf.Clamp01(1f - dist / maxRadius);
+                alpha *= alpha; // quadratic falloff for soft edges
+                byte a = (byte)(alpha * 255);
+                pixels[y * size + x] = new Color32(255, 255, 255, a);
+            }
+        }
+
+        cachedCircleTex.SetPixels32(pixels);
+        cachedCircleTex.Apply();
+        return cachedCircleTex;
+    }
+
     private Material GetParticleMaterial()
     {
         if (cachedParticleMat != null) return cachedParticleMat;
@@ -41,6 +75,7 @@ public class BurstDamageVFX : MonoBehaviour
         cachedParticleMat = new Material(shader);
         cachedParticleMat.SetFloat("_Surface", 1); // Transparent
         cachedParticleMat.SetFloat("_Blend", 0);   // Alpha blend
+        cachedParticleMat.mainTexture = GetCircleTexture();
         cachedParticleMat.renderQueue = 3000;
         return cachedParticleMat;
     }

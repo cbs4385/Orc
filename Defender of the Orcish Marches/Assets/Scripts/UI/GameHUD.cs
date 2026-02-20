@@ -11,6 +11,7 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI enemyCountText;
     [SerializeField] private TextMeshProUGUI killsText;
+    [SerializeField] private TextMeshProUGUI defenderCountText;
 
     [Header("Pause")]
     [SerializeField] private Button pauseButton;
@@ -92,6 +93,31 @@ public class GameHUD : MonoBehaviour
             enemyCountText.text = "Enemies: " + EnemySpawnManager.Instance.GetActiveEnemyCount();
         }
 
+        // Update defender counts by type
+        if (defenderCountText != null)
+        {
+            UpdateDefenderCounts();
+        }
+    }
+
+    private int engCount, pikeCount, xbowCount, wizCount;
+
+    private void UpdateDefenderCounts()
+    {
+        engCount = 0; pikeCount = 0; xbowCount = 0; wizCount = 0;
+        var defenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
+        for (int i = 0; i < defenders.Length; i++)
+        {
+            if (defenders[i].IsDead || defenders[i].Data == null) continue;
+            switch (defenders[i].Data.defenderType)
+            {
+                case DefenderType.Engineer: engCount++; break;
+                case DefenderType.Pikeman: pikeCount++; break;
+                case DefenderType.Crossbowman: xbowCount++; break;
+                case DefenderType.Wizard: wizCount++; break;
+            }
+        }
+        defenderCountText.text = string.Format("Eng:{0} Pike:{1} Xbow:{2} Wiz:{3}", engCount, pikeCount, xbowCount, wizCount);
     }
 
     private void UpdateTreasure(int amount)

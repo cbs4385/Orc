@@ -55,12 +55,13 @@ public class EnemyMovement : MonoBehaviour
             FindTarget();
         }
 
-        // If enemy reached the tower, game over
-        if (targetingTowerPosition && agent.isOnNavMesh && !agent.pathPending)
+        // If any enemy reaches the tower area after a breach, game over
+        if (agent.isOnNavMesh && WallManager.Instance != null && WallManager.Instance.HasBreach())
         {
             float distToTower = Vector3.Distance(transform.position, TowerPosition);
             if (distToTower < 3f)
             {
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} reached the tower at dist={distToTower:F1}! Triggering game over.");
                 if (GameManager.Instance != null)
                 {
                     GameManager.Instance.TriggerGameOver();
@@ -69,140 +70,192 @@ public class EnemyMovement : MonoBehaviour
         }
     }
 
-    // How close an enemy must be to attack something in its path while rushing the tower
-    private const float BREACH_AGGRO_RANGE = 3f;
+
+    // Range within which enemies will opportunistically attack hirelings/menials
+    private const float OPPORTUNISTIC_RANGE = 4f;
 
     private void FindTarget()
     {
-        Transform bestTarget = null;
-        float bestDist = float.MaxValue;
         targetingTowerPosition = false;
+        if (!agent.isOnNavMesh) return;
 
-        // PRIORITY 1: Menials outside walls — always highest priority (deny resources)
-        //   Ranged enemies engage within attack range; melee chase without limit.
-        var menials = FindObjectsByType<Menial>(FindObjectsSortMode.None);
-        foreach (var menial in menials)
+        // === GOAL: Always reach the tower. Walls are just obstacles. ===
+
+        bool hasBreach = WallManager.Instance != null && WallManager.Instance.HasBreach();
+
+        // Step 1: If walls are breached, melee enemies rush through the gap
+        if (hasBreach && IsMeleeType())
         {
-            if (menial.IsOutsideWalls && !menial.IsDead)
+            // Opportunistically attack nearby targets while rushing
+            Transform nearby = FindNearbyOpportunisticTarget();
+            if (nearby != null)
             {
-                float dist = Vector3.Distance(transform.position, menial.transform.position);
-                if (dist < bestDist)
-                {
-                    bestDist = dist;
-                    bestTarget = menial.transform;
-                }
+                currentTarget = nearby;
+                agent.SetDestination(nearby.position);
+                return;
             }
-        }
 
-        if (bestTarget != null)
-        {
-            currentTarget = bestTarget;
-            if (agent.isOnNavMesh)
-                agent.SetDestination(currentTarget.position);
-            Debug.Log($"[EnemyMovement] {enemy.Data.enemyName} targeting menial at dist={bestDist:F1}");
+            // If already inside the walls, head straight for the tower
+            float distFromCenter = new Vector2(transform.position.x, transform.position.z).magnitude;
+            if (distFromCenter < 4.5f)
+            {
+                agent.SetDestination(TowerPosition);
+            }
+            else
+            {
+                // Path toward the nearest breach to get inside
+                Vector3 breachPos = FindNearestBreachPosition();
+                agent.SetDestination(breachPos);
+            }
+            targetingTowerPosition = true;
+            currentTarget = null;
             return;
         }
 
-        // PRIORITY 2: Breach rush — if a wall is breached, rush the tower
-        if (WallManager.Instance != null && WallManager.Instance.HasBreach())
+        // Step 2: No breach — attack the wall blocking our path to the tower
+        // Opportunistically attack nearby hirelings/menials first
+        Transform nearbyTarget = FindNearbyOpportunisticTarget();
+        if (nearbyTarget != null)
         {
-            NavMeshPath path = new NavMeshPath();
-            if (agent.isOnNavMesh && NavMesh.CalculatePath(transform.position, TowerPosition, enemyAreaMask, path))
-            {
-                if (path.status != NavMeshPathStatus.PathInvalid && path.corners.Length > 1)
-                {
-                    Vector3 finalPoint = path.corners[path.corners.Length - 1];
-                    float distToCenter = Vector3.Distance(finalPoint, TowerPosition);
-                    if (distToCenter < 3.5f)
-                    {
-                        // Before rushing tower, check for menials/defenders in our path
-                        Transform blockingTarget = FindNearestBlockingTarget();
-                        if (blockingTarget != null)
-                        {
-                            currentTarget = blockingTarget;
-                            if (agent.isOnNavMesh)
-                                agent.SetDestination(blockingTarget.position);
-                            return;
-                        }
-
-                        // No one in the way — rush the tower
-                        agent.SetDestination(TowerPosition);
-                        targetingTowerPosition = true;
-                        currentTarget = null;
-                        return;
-                    }
-                }
-            }
-        }
-
-        // PRIORITY 3: Check for refugees — only chase if close (within 8 units)
-        const float REFUGEE_CHASE_RANGE = 8f;
-        var refugees = FindObjectsByType<Refugee>(FindObjectsSortMode.None);
-        foreach (var refugee in refugees)
-        {
-            float dist = Vector3.Distance(transform.position, refugee.transform.position);
-            if (dist < REFUGEE_CHASE_RANGE && dist < bestDist)
-            {
-                bestDist = dist;
-                bestTarget = refugee.transform;
-            }
-        }
-
-        if (bestTarget != null)
-        {
-            currentTarget = bestTarget;
-            if (agent.isOnNavMesh)
-                agent.SetDestination(currentTarget.position);
+            currentTarget = nearbyTarget;
+            agent.SetDestination(nearbyTarget.position);
             return;
         }
 
-        // PRIORITY 4: Default — target nearest wall
+        // Stick with current wall target if it's still alive
+        if (currentTarget != null)
+        {
+            var curWall = currentTarget.GetComponent<Wall>();
+            if (curWall != null && !curWall.IsDestroyed)
+                return; // keep attacking the same wall
+        }
+
+        // Pick the best wall target (only runs when we have no wall or it was destroyed)
         if (WallManager.Instance != null)
         {
-            Wall wall = WallManager.Instance.GetNearestWall(transform.position);
-            if (wall != null)
-                bestTarget = wall.transform;
+            Wall approachWall = FindBestWallTarget();
+            if (approachWall != null)
+            {
+                currentTarget = approachWall.transform;
+                // Target exterior face so NavMesh doesn't route around the wall
+                Vector3 wallPos = approachWall.transform.position;
+                Vector3 outward = wallPos.normalized;
+                Vector3 exteriorPoint = wallPos + outward * 1f;
+                exteriorPoint.y = 0;
+                agent.SetDestination(exteriorPoint);
+                return;
+            }
         }
 
-        currentTarget = bestTarget;
-        if (currentTarget != null && agent.isOnNavMesh)
-            agent.SetDestination(currentTarget.position);
+        // Fallback: walk toward the tower
+        agent.SetDestination(TowerPosition);
     }
 
     /// <summary>
-    /// Find the nearest menial or defender between this enemy and the tower (within aggro range).
+    /// Find nearby hirelings, menials, or refugees within opportunistic attack range.
     /// </summary>
-    private Transform FindNearestBlockingTarget()
+    private Transform FindNearbyOpportunisticTarget()
     {
         Transform best = null;
-        float bestDist = BREACH_AGGRO_RANGE;
+        float bestDist = OPPORTUNISTIC_RANGE;
 
-        // Check all menials (not just outside walls — they may be inside the courtyard)
-        var menials = FindObjectsByType<Menial>(FindObjectsSortMode.None);
-        foreach (var menial in menials)
-        {
-            if (menial.IsDead) continue;
-            float dist = Vector3.Distance(transform.position, menial.transform.position);
-            if (dist < bestDist)
-            {
-                bestDist = dist;
-                best = menial.transform;
-            }
-        }
-
-        // Check all defenders
         var defenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
-        foreach (var defender in defenders)
+        foreach (var d in defenders)
         {
-            if (defender.IsDead) continue;
-            float dist = Vector3.Distance(transform.position, defender.transform.position);
-            if (dist < bestDist)
+            if (d.IsDead) continue;
+            float dist = Vector3.Distance(transform.position, d.transform.position);
+            if (dist < bestDist) { bestDist = dist; best = d.transform; }
+        }
+
+        var menials = FindObjectsByType<Menial>(FindObjectsSortMode.None);
+        foreach (var m in menials)
+        {
+            if (m.IsDead) continue;
+            float dist = Vector3.Distance(transform.position, m.transform.position);
+            if (dist < bestDist) { bestDist = dist; best = m.transform; }
+        }
+
+        var refugees = FindObjectsByType<Refugee>(FindObjectsSortMode.None);
+        foreach (var r in refugees)
+        {
+            float dist = Vector3.Distance(transform.position, r.transform.position);
+            if (dist < bestDist) { bestDist = dist; best = r.transform; }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// Find the best wall to attack: prefers damaged walls in our approach direction.
+    /// Enemies converge on the weakest wall to breach it faster.
+    /// </summary>
+    private Wall FindBestWallTarget()
+    {
+        Vector3 pos = transform.position;
+        Vector3 toTower = (TowerPosition - pos);
+        toTower.y = 0;
+        float distToTower = toTower.magnitude;
+        if (distToTower < 0.1f) return WallManager.Instance.GetNearestWall(pos);
+        toTower /= distToTower;
+
+        Wall bestWall = null;
+        float bestScore = float.MaxValue;
+
+        foreach (var wall in WallManager.Instance.AllWalls)
+        {
+            if (wall.IsDestroyed) continue;
+            Vector3 toWall = wall.transform.position - pos;
+            toWall.y = 0;
+            float dist = toWall.magnitude;
+            if (dist < 0.1f) continue;
+            toWall /= dist;
+
+            float alignment = Vector3.Dot(toWall, toTower);
+            // Only consider walls roughly in our approach direction
+            if (alignment < 0.2f) continue;
+
+            // HP ratio: 0 = nearly dead, 1 = full health
+            float hpRatio = (float)wall.CurrentHP / wall.MaxHP;
+
+            // Score: lower is better.
+            // Heavily favor damaged walls (hpRatio) and alignment with approach.
+            // A wall at 10% HP in our direction scores much lower than a full wall.
+            float score = dist * (2f - alignment) * (0.2f + hpRatio);
+            if (score < bestScore)
             {
-                bestDist = dist;
-                best = defender.transform;
+                bestScore = score;
+                bestWall = wall;
             }
         }
 
+        return bestWall != null ? bestWall : WallManager.Instance.GetNearestWall(pos);
+    }
+
+    private bool IsMeleeType()
+    {
+        if (enemy.Data == null) return true;
+        var t = enemy.Data.enemyType;
+        return t == EnemyType.Melee || t == EnemyType.WallBreaker || t == EnemyType.Suicide;
+    }
+
+    /// <summary>
+    /// Returns the position of the nearest destroyed wall (breach point).
+    /// </summary>
+    private Vector3 FindNearestBreachPosition()
+    {
+        Vector3 best = TowerPosition;
+        float bestDist = float.MaxValue;
+
+        foreach (var wall in WallManager.Instance.AllWalls)
+        {
+            if (!wall.IsDestroyed) continue;
+            float dist = Vector3.Distance(transform.position, wall.transform.position);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = wall.transform.position;
+            }
+        }
         return best;
     }
 

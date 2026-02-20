@@ -171,6 +171,18 @@ public class SceneWiring : MonoBehaviour
             gmObj.AddComponent<GameManager>();
         }
 
+        // --- Wire RunStatsTracker ---
+        var statsObj = GameObject.Find("RunStatsTracker");
+        if (statsObj == null)
+        {
+            statsObj = new GameObject("RunStatsTracker");
+            statsObj.AddComponent<RunStatsTracker>();
+        }
+        else if (statsObj.GetComponent<RunStatsTracker>() == null)
+        {
+            statsObj.AddComponent<RunStatsTracker>();
+        }
+
         // --- Wire EnemySpawnManager ---
         var spawnObj = GameObject.Find("EnemySpawnManager");
         if (spawnObj == null)

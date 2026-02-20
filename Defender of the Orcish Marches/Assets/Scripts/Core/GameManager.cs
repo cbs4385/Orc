@@ -24,6 +24,7 @@ public class GameManager : MonoBehaviour
     public event Action<int> OnKillsChanged;
     public event Action OnGameOver;
     public event Action<bool> OnPauseChanged;
+    public event Action<int> OnTreasureGained;
 
     private void Awake()
     {
@@ -92,6 +93,7 @@ public class GameManager : MonoBehaviour
         if (CurrentState != GameState.Playing) return;
         Treasure += amount;
         OnTreasureChanged?.Invoke(Treasure);
+        OnTreasureGained?.Invoke(amount);
     }
 
     public bool SpendTreasure(int amount)

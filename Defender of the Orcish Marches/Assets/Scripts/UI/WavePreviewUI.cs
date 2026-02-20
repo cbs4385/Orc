@@ -118,13 +118,6 @@ public class WavePreviewUI : MonoBehaviour
                 sb.AppendLine("</color>");
             }
 
-            // Stat scaling (only show if meaningful)
-            if (data.hpMultiplier > 1.05f)
-            {
-                sb.AppendLine();
-                sb.AppendFormat("Enemy strength: HP x{0:F1}  DMG x{1:F1}", data.hpMultiplier, data.damageMultiplier);
-            }
-
             // Boss warning
             if (data.hasBoss && !string.IsNullOrEmpty(data.bossName))
             {

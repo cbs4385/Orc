@@ -45,6 +45,8 @@ public class Menial : MonoBehaviour
     private float scanTimer;
     private const float SCAN_INTERVAL = 0.15f;
 
+    public static event System.Action OnMenialDied;
+
     public MenialState CurrentState { get; private set; } = MenialState.Idle;
     public bool IsOutsideWalls { get; private set; }
     public bool IsDead { get; private set; }
@@ -503,6 +505,9 @@ public class Menial : MonoBehaviour
 
         if (GameManager.Instance != null)
             GameManager.Instance.RemoveMenial();
+
+        OnMenialDied?.Invoke();
+        Debug.Log($"[Menial] Menial died at {transform.position}. OnMenialDied fired.");
 
         if (animator != null)
         {
