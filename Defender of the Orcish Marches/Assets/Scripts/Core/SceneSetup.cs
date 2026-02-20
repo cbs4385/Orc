@@ -100,10 +100,65 @@ public class SceneSetup : MonoBehaviour
         EditorUtility.SetDirty(wallManager);
     }
 
-    static void CreateWallSegment(Transform parent, string name, Vector3 position, Vector3 scale, Material mat)
+    /// <summary>Rotate mesh vertices/normals in-place. Used to bake FBX Z-up to Unity Y-up.</summary>
+    static Mesh RotateMeshZToY(Mesh source)
     {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        go.name = name;
+        var mesh = Instantiate(source);
+        mesh.name = source.name + "_YUp";
+        var rot = Quaternion.Euler(-90f, 0f, 0f);
+
+        var verts = mesh.vertices;
+        for (int i = 0; i < verts.Length; i++)
+            verts[i] = rot * verts[i];
+        mesh.vertices = verts;
+
+        var norms = mesh.normals;
+        for (int i = 0; i < norms.Length; i++)
+            norms[i] = rot * norms[i];
+        mesh.normals = norms;
+
+        if (mesh.tangents != null && mesh.tangents.Length > 0)
+        {
+            var tans = mesh.tangents;
+            for (int i = 0; i < tans.Length; i++)
+            {
+                var t = rot * new Vector3(tans[i].x, tans[i].y, tans[i].z);
+                tans[i] = new Vector4(t.x, t.y, t.z, tans[i].w);
+            }
+            mesh.tangents = tans;
+        }
+
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    static void CreateWallSegment(Transform parent, string name, Vector3 position, Vector3 scale, Material fallbackMat)
+    {
+        // Try to use WallSegment.fbx mesh (unit cube with stone detail)
+        var wallFbx = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/WallSegment.fbx");
+        GameObject go;
+
+        if (wallFbx != null)
+        {
+            var srcMf = wallFbx.GetComponentInChildren<MeshFilter>();
+            var srcMr = wallFbx.GetComponentInChildren<MeshRenderer>();
+            go = new GameObject(name);
+            // FBX mesh data is Z-up; bake -90° X rotation into vertices
+            // so non-uniform parent scale doesn't cause shearing.
+            go.AddComponent<MeshFilter>().sharedMesh = RotateMeshZToY(srcMf.sharedMesh);
+            var rend = go.AddComponent<MeshRenderer>();
+            if (srcMr != null)
+                rend.sharedMaterials = srcMr.sharedMaterials;
+            go.AddComponent<BoxCollider>();
+        }
+        else
+        {
+            go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            if (fallbackMat != null)
+                go.GetComponent<Renderer>().sharedMaterial = fallbackMat;
+        }
+
         go.transform.SetParent(parent);
         go.transform.position = position;
         go.transform.localScale = scale;
@@ -111,21 +166,48 @@ public class SceneSetup : MonoBehaviour
         go.AddComponent<Wall>();
         go.AddComponent<WallCorners>();
 
-        // Exclude wall from NavMesh baking so only the NavMeshObstacle carves at runtime.
-        // This ensures gate gaps remain passable on the baked NavMesh.
         var modifier = go.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
         modifier.ignoreFromBuild = true;
 
-        // NavMeshObstacle with Box shape matching the wall's actual dimensions.
-        // Size is in local space (scale=1), so we use the wall's scale directly.
         var obstacle = go.AddComponent<NavMeshObstacle>();
         obstacle.carving = true;
         obstacle.shape = NavMeshObstacleShape.Box;
-        obstacle.size = Vector3.one; // unit cube scaled by transform
+        obstacle.size = Vector3.one;
         obstacle.center = Vector3.zero;
+    }
 
-        if (mat != null)
-            go.GetComponent<Renderer>().sharedMaterial = mat;
+    /// <summary>Update the WallSegment prefab with the FBX mesh and materials.</summary>
+    static void UpdateWallPrefab()
+    {
+        var wallFbx = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/WallSegment.fbx");
+        if (wallFbx == null) return;
+
+        var srcMf = wallFbx.GetComponentInChildren<MeshFilter>();
+        var srcMr = wallFbx.GetComponentInChildren<MeshRenderer>();
+        if (srcMf == null) return;
+
+        string path = "Assets/Prefabs/Fortress/WallSegment.prefab";
+        var contents = PrefabUtility.LoadPrefabContents(path);
+
+        // Remove any child Mesh objects from previous approach
+        Transform oldChild = contents.transform.Find("Mesh");
+        if (oldChild != null) DestroyImmediate(oldChild.gameObject);
+
+        // Bake rotation into mesh vertices (FBX Z-up → Unity Y-up)
+        var rotatedMesh = RotateMeshZToY(srcMf.sharedMesh);
+
+        var mf = contents.GetComponent<MeshFilter>();
+        if (mf == null) mf = contents.AddComponent<MeshFilter>();
+        mf.sharedMesh = rotatedMesh;
+
+        var mr = contents.GetComponent<MeshRenderer>();
+        if (mr == null) mr = contents.AddComponent<MeshRenderer>();
+        if (srcMr != null) mr.sharedMaterials = srcMr.sharedMaterials;
+
+        PrefabUtility.SaveAsPrefabAsset(contents, path);
+        PrefabUtility.UnloadPrefabContents(contents);
+
+        Debug.Log("[SceneSetup] Updated WallSegment prefab with FBX mesh.");
     }
 
     [MenuItem("Game/Rebuild Walls With Gates")]
@@ -199,6 +281,9 @@ public class SceneSetup : MonoBehaviour
         CreateWallSegment(wallManager.transform, "Wall_SC", new Vector3(0, 1, -wallCenter), new Vector3(2, 2, wallThick), wallMat);
         CreateWallSegment(wallManager.transform, "Wall_WC", new Vector3(-wallCenter, 1, 0), new Vector3(wallThick, 2, 2), wallMat);
 
+        // Update the WallSegment prefab so newly placed walls also use the FBX mesh
+        UpdateWallPrefab();
+
         Debug.Log("Walls rebuilt with 1 gate (East).");
         EditorUtility.SetDirty(wallManager);
 
@@ -214,22 +299,52 @@ public class SceneSetup : MonoBehaviour
         root.transform.rotation = Quaternion.Euler(0, yRotation, 0);
         var gate = root.AddComponent<Gate>();
 
-        // NavMeshLink bridges the inside and outside NavMesh through the gate gap.
-        // This ensures agents can path through gates despite wall carving erosion.
         var link = root.AddComponent<Unity.AI.Navigation.NavMeshLink>();
-        link.startPoint = new Vector3(0, 0, -1.5f);  // inside courtyard
-        link.endPoint = new Vector3(0, 0, 1.5f);      // outside courtyard
+        link.startPoint = new Vector3(0, 0, -1.5f);
+        link.endPoint = new Vector3(0, 0, 1.5f);
         link.width = 2f;
         link.bidirectional = true;
-        link.area = 3; // Custom "Gate" area - excluded from enemy pathfinding
+        link.area = 3;
 
-        // Left door pivot at local (-1, 0, 0) — hinge point
-        // Use SetParent(parent, false) so children inherit parent rotation
+        // Try to use Gate.fbx model (armature with door pivots)
+        var gateFbx = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Gate.fbx");
+        if (gateFbx != null)
+        {
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(gateFbx);
+            model.name = "GateModel";
+            model.transform.SetParent(root.transform, false);
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.identity;
+
+            // Find door pivot bones in the FBX hierarchy
+            Transform leftPivot = null, rightPivot = null;
+            foreach (var t in model.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name == "LeftDoorPivot") leftPivot = t;
+                else if (t.name == "RightDoorPivot") rightPivot = t;
+            }
+
+            var so = new SerializedObject(gate);
+            so.FindProperty("leftDoorPivot").objectReferenceValue = leftPivot;
+            so.FindProperty("rightDoorPivot").objectReferenceValue = rightPivot;
+            so.ApplyModifiedProperties();
+
+            Debug.Log($"[SceneSetup] Gate FBX wired: LeftPivot={leftPivot != null}, RightPivot={rightPivot != null}");
+        }
+        else
+        {
+            // Fallback: build gate from primitive cubes
+            Debug.LogWarning("[SceneSetup] Gate.fbx not found, using primitive cubes.");
+            BuildGatePrimitives(root, gate, doorMat, postMat);
+        }
+    }
+
+    static void BuildGatePrimitives(GameObject root, Gate gate, Material doorMat, Material postMat)
+    {
         var leftPivot = new GameObject("LeftDoorPivot");
         leftPivot.transform.SetParent(root.transform, false);
         leftPivot.transform.localPosition = new Vector3(-1, 0, 0);
 
-        // Left door visual (extends from hinge toward center of gap)
         var leftDoor = GameObject.CreatePrimitive(PrimitiveType.Cube);
         leftDoor.name = "LeftDoor";
         DestroyImmediate(leftDoor.GetComponent<BoxCollider>());
@@ -238,12 +353,10 @@ public class SceneSetup : MonoBehaviour
         leftDoor.transform.localScale = new Vector3(1, 2, 0.15f);
         if (doorMat != null) leftDoor.GetComponent<Renderer>().sharedMaterial = doorMat;
 
-        // Right door pivot at local (1, 0, 0) — hinge point
         var rightPivot = new GameObject("RightDoorPivot");
         rightPivot.transform.SetParent(root.transform, false);
         rightPivot.transform.localPosition = new Vector3(1, 0, 0);
 
-        // Right door visual
         var rightDoor = GameObject.CreatePrimitive(PrimitiveType.Cube);
         rightDoor.name = "RightDoor";
         DestroyImmediate(rightDoor.GetComponent<BoxCollider>());
@@ -252,7 +365,6 @@ public class SceneSetup : MonoBehaviour
         rightDoor.transform.localScale = new Vector3(1, 2, 0.15f);
         if (doorMat != null) rightDoor.GetComponent<Renderer>().sharedMaterial = doorMat;
 
-        // Decorative gate posts at hinge points
         var leftPost = GameObject.CreatePrimitive(PrimitiveType.Cube);
         leftPost.name = "LeftPost";
         DestroyImmediate(leftPost.GetComponent<BoxCollider>());
@@ -269,7 +381,6 @@ public class SceneSetup : MonoBehaviour
         rightPost.transform.localScale = new Vector3(0.2f, 2.5f, 0.3f);
         if (postMat != null) rightPost.GetComponent<Renderer>().sharedMaterial = postMat;
 
-        // Lintel (horizontal beam across the top)
         var lintel = GameObject.CreatePrimitive(PrimitiveType.Cube);
         lintel.name = "Lintel";
         DestroyImmediate(lintel.GetComponent<BoxCollider>());
@@ -278,7 +389,6 @@ public class SceneSetup : MonoBehaviour
         lintel.transform.localScale = new Vector3(2.4f, 0.2f, 0.3f);
         if (postMat != null) lintel.GetComponent<Renderer>().sharedMaterial = postMat;
 
-        // Assign pivot references to Gate component
         var so = new SerializedObject(gate);
         so.FindProperty("leftDoorPivot").objectReferenceValue = leftPivot.transform;
         so.FindProperty("rightDoorPivot").objectReferenceValue = rightPivot.transform;

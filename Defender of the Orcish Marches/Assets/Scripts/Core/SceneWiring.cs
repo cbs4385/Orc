@@ -213,33 +213,70 @@ public class SceneWiring : MonoBehaviour
         refSpawnSO.FindProperty("refugeePrefab").objectReferenceValue = refugeePrefab;
         refSpawnSO.ApplyModifiedProperties();
 
+        // --- Create Tower visual ---
+        var towerObj = GameObject.Find("Tower");
+        if (towerObj == null)
+        {
+            var towerFbx = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Tower.fbx");
+            if (towerFbx != null)
+            {
+                towerObj = (GameObject)PrefabUtility.InstantiatePrefab(towerFbx);
+                towerObj.name = "Tower";
+                towerObj.transform.position = Vector3.zero;
+                // Make tower static for batching
+                towerObj.isStatic = true;
+                foreach (Transform child in towerObj.GetComponentsInChildren<Transform>())
+                    child.gameObject.isStatic = true;
+                Debug.Log("[SceneWiring] Created Tower from FBX model at origin.");
+            }
+            else
+            {
+                Debug.LogWarning("[SceneWiring] Tower.fbx not found, no tower visual created.");
+            }
+        }
+
         // --- Wire Ballista ---
         var ballistaObj = GameObject.Find("BallistaBase");
         if (ballistaObj == null) ballistaObj = GameObject.Find("ScorpioBase");
+        if (ballistaObj == null) ballistaObj = GameObject.Find("Ballista");
         if (ballistaObj == null)
         {
-            // Create ScorpioBase on top of tower
-            ballistaObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ballistaObj.name = "ScorpioBase";
+            // Try to use Ballista.fbx model
+            var ballistaFbx = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Ballista.fbx");
+            if (ballistaFbx != null)
+            {
+                // Wrap FBX in a parent so Ballista.cs LookRotation doesn't
+                // overwrite the FBX import rotation (-90° X) on the model.
+                ballistaObj = new GameObject("Ballista");
+                var model = (GameObject)PrefabUtility.InstantiatePrefab(ballistaFbx);
+                model.name = "BallistaModel";
+                model.transform.SetParent(ballistaObj.transform, false);
+                Debug.Log("[SceneWiring] Created Ballista from FBX model on tower.");
+            }
+            else
+            {
+                // Fallback to primitive cube
+                ballistaObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                ballistaObj.name = "ScorpioBase";
+                ballistaObj.transform.localScale = new Vector3(0.5f, 0.3f, 1.5f);
+                var scorpioMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ScorpioBase.mat");
+                if (scorpioMat != null) ballistaObj.GetComponent<Renderer>().sharedMaterial = scorpioMat;
+                Debug.Log("[SceneWiring] Created ScorpioBase (primitive) on tower.");
+            }
+
             ballistaObj.transform.position = new Vector3(0, 3.2f, 0);
-            ballistaObj.transform.localScale = new Vector3(0.5f, 0.3f, 1.5f);
             ballistaObj.AddComponent<Ballista>();
 
-            var scorpioMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ScorpioBase.mat");
-            if (scorpioMat != null) ballistaObj.GetComponent<Renderer>().sharedMaterial = scorpioMat;
-
-            // Create firePoint
+            // Create firePoint — forward of center along the firing axis
             var firePoint = new GameObject("FirePoint");
             firePoint.transform.SetParent(ballistaObj.transform, false);
-            firePoint.transform.localPosition = new Vector3(0, 0, 0.5f);
+            firePoint.transform.localPosition = new Vector3(0, 0, 0.75f);
 
             var ballistaComp = ballistaObj.GetComponent<Ballista>();
             var fpSO = new SerializedObject(ballistaComp);
             fpSO.FindProperty("firePoint").objectReferenceValue = firePoint.transform;
             fpSO.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
             fpSO.ApplyModifiedProperties();
-
-            Debug.Log("[SceneWiring] Created ScorpioBase with Ballista on tower.");
         }
         else
         {
