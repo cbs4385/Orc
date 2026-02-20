@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -16,8 +17,12 @@ public class Menial : MonoBehaviour
 {
     [SerializeField] private int maxHP = 15;
     [SerializeField] private float moveSpeed = 4f;
+    [Header("Model Override")]
+    [SerializeField] private GameObject modelPrefab;
+    [SerializeField] private RuntimeAnimatorController animatorController;
 
     private NavMeshAgent agent;
+    private Animator animator;
     private int currentHP;
     private TreasurePickup targetLoot;
     private int carriedTreasure;
@@ -50,6 +55,30 @@ public class Menial : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         agent.speed = moveSpeed;
         currentHP = maxHP;
+
+        // Swap model if a custom model is assigned
+        if (modelPrefab != null)
+        {
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                Destroy(transform.GetChild(i).gameObject);
+            }
+
+            var newModel = Instantiate(modelPrefab, transform);
+            newModel.name = "Model";
+            newModel.transform.localPosition = Vector3.zero;
+            newModel.transform.localRotation = Quaternion.identity;
+            newModel.transform.localScale = Vector3.one;
+
+            animator = newModel.GetComponentInChildren<Animator>();
+            if (animator == null)
+                animator = newModel.AddComponent<Animator>();
+            if (animatorController != null)
+                animator.runtimeAnimatorController = animatorController;
+            animator.applyRootMotion = false;
+
+            Debug.Log("[Menial] Custom model loaded");
+        }
     }
 
     private void Start()
@@ -474,6 +503,21 @@ public class Menial : MonoBehaviour
         if (GameManager.Instance != null)
             GameManager.Instance.RemoveMenial();
 
+        if (animator != null)
+        {
+            animator.SetTrigger("Die");
+            if (agent != null) agent.enabled = false;
+            StartCoroutine(DestroyAfterAnimation());
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private IEnumerator DestroyAfterAnimation()
+    {
+        yield return new WaitForSeconds(1.5f);
         Destroy(gameObject);
     }
 }

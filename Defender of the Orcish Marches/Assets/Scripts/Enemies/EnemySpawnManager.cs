@@ -149,9 +149,6 @@ public class EnemySpawnManager : MonoBehaviour
 
     private EnemyData ChooseEnemyType()
     {
-        // DEBUG: force orc war boss spawns for testing
-        if (orcWarBossData != null) return orcWarBossData;
-
         int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
 
         // Progressive enemy type unlocks based on day number

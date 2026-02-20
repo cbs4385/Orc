@@ -20,4 +20,7 @@ public class DefenderData : ScriptableObject
     public float attackRate = 1f;
     public int maxHP = 40;
     public Color bodyColor = new Color(0.2f, 0.4f, 0.8f);
+    [Header("Model Override")]
+    public GameObject modelPrefab;
+    public RuntimeAnimatorController animatorController;
 }

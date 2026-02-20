@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -9,6 +10,7 @@ public class Defender : MonoBehaviour
     protected Enemy currentTarget;
     protected NavMeshAgent agent;
     private int currentHP;
+    private Animator animator;
 
     public DefenderData Data => data;
     public bool IsDead { get; private set; }
@@ -28,10 +30,37 @@ public class Defender : MonoBehaviour
         data = defenderData;
         currentHP = data.maxHP;
 
-        var rend = GetComponentInChildren<Renderer>();
-        if (rend != null)
+        // Swap model if the DefenderData specifies a custom model
+        if (data.modelPrefab != null)
         {
-            rend.material.color = data.bodyColor;
+            // Destroy all existing visual children (primitive placeholders)
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                Destroy(transform.GetChild(i).gameObject);
+            }
+
+            var newModel = Instantiate(data.modelPrefab, transform);
+            newModel.name = "Model";
+            newModel.transform.localPosition = Vector3.zero;
+            newModel.transform.localRotation = Quaternion.identity;
+            newModel.transform.localScale = Vector3.one;
+
+            animator = newModel.GetComponentInChildren<Animator>();
+            if (animator == null)
+                animator = newModel.AddComponent<Animator>();
+            if (data.animatorController != null)
+                animator.runtimeAnimatorController = data.animatorController;
+            animator.applyRootMotion = false;
+
+            Debug.Log($"[Defender] Custom model loaded for {data.defenderName}");
+        }
+        else
+        {
+            var rend = GetComponentInChildren<Renderer>();
+            if (rend != null)
+            {
+                rend.material.color = data.bodyColor;
+            }
         }
 
         if (agent != null)
@@ -61,6 +90,8 @@ public class Defender : MonoBehaviour
                 if (dist <= range)
                 {
                     Attack();
+                    if (animator != null)
+                        animator.SetTrigger("Attack");
                 }
             }
         }
@@ -143,6 +174,22 @@ public class Defender : MonoBehaviour
     {
         IsDead = true;
         Debug.Log($"[Defender] {(data != null ? data.defenderName : name)} died at {transform.position}");
+
+        if (animator != null)
+        {
+            animator.SetTrigger("Die");
+            if (agent != null) agent.enabled = false;
+            StartCoroutine(DestroyAfterAnimation());
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private IEnumerator DestroyAfterAnimation()
+    {
+        yield return new WaitForSeconds(1.5f);
         Destroy(gameObject);
     }
 }

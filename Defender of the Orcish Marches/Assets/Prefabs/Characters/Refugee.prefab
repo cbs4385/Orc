@@ -71,6 +71,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Refugee
   maxHP: 10
   moveSpeed: 3.5
+  modelPrefab: {fileID: 919132149155446097, guid: 56e2db308a1dc8c499901e298dc0770c, type: 3}
+  animatorController: {fileID: 9100000, guid: 8afce0fe64bbe33438a469bcbbe48710, type: 2}
 --- !u!1 &2406939669324071872
 GameObject:
   m_ObjectHideFlags: 0

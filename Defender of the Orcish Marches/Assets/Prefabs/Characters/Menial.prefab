@@ -183,6 +183,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Menial
   maxHP: 15
   moveSpeed: 4
+  modelPrefab: {fileID: 919132149155446097, guid: 97568213b4a65a544a36d1c2d24a57fb, type: 3}
+  animatorController: {fileID: 9100000, guid: 2c1c2ffed9babf34cb88e92b99a179e0, type: 2}
 --- !u!1 &2758838543322055372
 GameObject:
   m_ObjectHideFlags: 0

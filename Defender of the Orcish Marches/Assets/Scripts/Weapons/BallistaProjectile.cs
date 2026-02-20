@@ -68,6 +68,8 @@ public class BallistaProjectile : MonoBehaviour
         // Burst damage: deal half damage to all enemies in radius
         if (burstDamage && burstRadius > 0)
         {
+            BurstDamageVFX.Spawn(transform.position, burstRadius);
+
             var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
             foreach (var nearby in allEnemies)
             {
@@ -78,6 +80,7 @@ public class BallistaProjectile : MonoBehaviour
                     nearby.TakeDamage(damage / 2);
                 }
             }
+            Debug.Log($"[BallistaProjectile] Burst damage at {transform.position}, radius={burstRadius}");
         }
 
         Destroy(gameObject);

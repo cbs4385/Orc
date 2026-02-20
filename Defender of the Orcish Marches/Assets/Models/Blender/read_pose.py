@@ -1,28 +1,43 @@
 """
-Blender 4.x script — Print all pose bone transforms for the active armature.
-Run this at the frame you want to capture (e.g. frame 30 of Die animation).
-Copy the output and paste it back so the values can be used in generate_troll.py.
+Blender 4.x script — Read current pose bone transforms.
+Prints all non-default bone rotations and locations, plus
+copy-paste code for generate_pikeman.py animation keyframes.
+
+Usage:
+  1. Pose the armature in Pose Mode
+  2. Run this script from Blender's Text Editor
+  3. Check output in System Console (Window > Toggle System Console)
+  4. Paste the set_bone_rot / set_bone_loc lines into generate_pikeman.py
 """
 
 import bpy
 import math
 
-arm_obj = bpy.context.active_object
-if arm_obj is None or arm_obj.type != 'ARMATURE':
-    # Try to find the armature
-    for obj in bpy.data.objects:
-        if obj.type == 'ARMATURE':
-            arm_obj = obj
-            break
+ROT_THRESHOLD = 0.5   # degrees
+LOC_THRESHOLD = 0.001  # units
 
-if arm_obj is None or arm_obj.type != 'ARMATURE':
-    print("ERROR: No armature found!")
-else:
+
+def read_current_pose():
+    arm_obj = bpy.context.active_object
+    if arm_obj is None or arm_obj.type != 'ARMATURE':
+        for obj in bpy.data.objects:
+            if obj.type == 'ARMATURE':
+                arm_obj = obj
+                break
+
+    if arm_obj is None or arm_obj.type != 'ARMATURE':
+        print("ERROR: No armature found!")
+        return
+
     frame = bpy.context.scene.frame_current
-    print(f"\n{'='*60}")
+
+    print("=" * 60)
     print(f"  Pose bone transforms at frame {frame}")
     print(f"  Armature: {arm_obj.name}")
-    print(f"{'='*60}")
+    print("=" * 60)
+
+    code_lines = []
+    code_lines.append(f"    # Frame {frame}:")
 
     for pb in arm_obj.pose.bones:
         rx = math.degrees(pb.rotation_euler.x)
@@ -30,14 +45,35 @@ else:
         rz = math.degrees(pb.rotation_euler.z)
         lx, ly, lz = pb.location.x, pb.location.y, pb.location.z
 
-        has_rot = abs(rx) > 0.01 or abs(ry) > 0.01 or abs(rz) > 0.01
-        has_loc = abs(lx) > 0.001 or abs(ly) > 0.001 or abs(lz) > 0.001
+        has_rot = (abs(rx) > ROT_THRESHOLD or
+                   abs(ry) > ROT_THRESHOLD or
+                   abs(rz) > ROT_THRESHOLD)
+        has_loc = (abs(lx) > LOC_THRESHOLD or
+                   abs(ly) > LOC_THRESHOLD or
+                   abs(lz) > LOC_THRESHOLD)
 
         if has_rot or has_loc:
             print(f"  {pb.name}:")
-            if has_rot:
-                print(f"    rot=({rx:.1f}, {ry:.1f}, {rz:.1f})")
-            if has_loc:
-                print(f"    loc=({lx:.4f}, {ly:.4f}, {lz:.4f})")
+        if has_rot:
+            print(f"    rot=({rx:.1f}, {ry:.1f}, {rz:.1f})")
+            code_lines.append(
+                f'    set_bone_rot(pb["{pb.name}"], {rx:.1f}, {ry:.1f}, {rz:.1f})'
+            )
+        if has_loc:
+            print(f"    loc=({lx:.4f}, {ly:.4f}, {lz:.4f})")
+            code_lines.append(
+                f'    set_bone_loc(pb["{pb.name}"], {lx:.4f}, {ly:.4f}, {lz:.4f})'
+            )
 
-    print(f"{'='*60}")
+    print("=" * 60)
+    print("")
+    print("  Copy-paste code for generate_pikeman.py:")
+    print("  " + "-" * 40)
+    for line in code_lines:
+        print(line)
+    print("  " + "-" * 40)
+    print("")
+
+
+if __name__ == "__main__":
+    read_current_pose()
