@@ -141,6 +141,15 @@ public class TutorialSceneBuilder : MonoBehaviour
         playRect.anchoredPosition = Vector2.zero;
         playBtn.gameObject.SetActive(false);
 
+        // Exit button (top-right corner)
+        var exitBtn = CreateTutorialButton("ExitButton", "EXIT", canvasObj.transform);
+        var exitRect = exitBtn.GetComponent<RectTransform>();
+        exitRect.anchorMin = new Vector2(0.95f, 0.9f);
+        exitRect.anchorMax = new Vector2(0.95f, 0.9f);
+        exitRect.sizeDelta = new Vector2(150, 45);
+        exitRect.pivot = new Vector2(1f, 0f);
+        exitRect.anchoredPosition = Vector2.zero;
+
         // Manager object
         var mgrObj = new GameObject("TutorialManager");
         var tutMgr = mgrObj.AddComponent<TutorialManager>();
@@ -151,6 +160,7 @@ public class TutorialSceneBuilder : MonoBehaviour
         tutSO.FindProperty("nextButton").objectReferenceValue = nextBtn;
         tutSO.FindProperty("backButton").objectReferenceValue = backBtn;
         tutSO.FindProperty("playButton").objectReferenceValue = playBtn;
+        tutSO.FindProperty("exitButton").objectReferenceValue = exitBtn;
         tutSO.FindProperty("titleText").objectReferenceValue = titleTmp;
         tutSO.FindProperty("bodyText").objectReferenceValue = bodyTmp;
         tutSO.FindProperty("pageIndicator").objectReferenceValue = pageTmp;

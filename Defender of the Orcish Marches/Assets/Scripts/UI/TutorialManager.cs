@@ -7,6 +7,7 @@ public class TutorialManager : MonoBehaviour
     [SerializeField] private Button nextButton;
     [SerializeField] private Button backButton;
     [SerializeField] private Button playButton;
+    [SerializeField] private Button exitButton;
     [SerializeField] private TextMeshProUGUI titleText;
     [SerializeField] private TextMeshProUGUI bodyText;
     [SerializeField] private TextMeshProUGUI pageIndicator;
@@ -39,6 +40,7 @@ public class TutorialManager : MonoBehaviour
         if (nextButton != null) nextButton.onClick.AddListener(OnNext);
         if (backButton != null) backButton.onClick.AddListener(OnBack);
         if (playButton != null) playButton.onClick.AddListener(OnPlay);
+        if (exitButton != null) exitButton.onClick.AddListener(OnExit);
     }
 
     private void OnDisable()
@@ -46,6 +48,7 @@ public class TutorialManager : MonoBehaviour
         if (nextButton != null) nextButton.onClick.RemoveListener(OnNext);
         if (backButton != null) backButton.onClick.RemoveListener(OnBack);
         if (playButton != null) playButton.onClick.RemoveListener(OnPlay);
+        if (exitButton != null) exitButton.onClick.RemoveListener(OnExit);
     }
 
     private void Start()
@@ -111,6 +114,12 @@ public class TutorialManager : MonoBehaviour
     {
         Debug.Log("[TutorialManager] Play clicked — loading GameScene.");
         sceneLoader.LoadGameScene();
+    }
+
+    private void OnExit()
+    {
+        Debug.Log("[TutorialManager] Exit clicked — returning to MainMenu.");
+        sceneLoader.LoadMainMenu();
     }
 
     private void BuildPages()

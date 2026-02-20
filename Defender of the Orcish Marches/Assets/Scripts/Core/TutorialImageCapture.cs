@@ -78,10 +78,8 @@ public class TutorialImageCapture : MonoBehaviour
             "Assets/Prefabs/Characters/Menial.prefab",
             studioCenter, new Vector3(15f, 2f, 12.5f), new Vector3(15f, 0.7f, 15f));
 
-        // Enemy
-        CapturePrefab(cam, rt, fullDir, "tut_enemy",
-            "Assets/Prefabs/Enemies/Enemy.prefab",
-            studioCenter, new Vector3(15f, 2f, 12.5f), new Vector3(15f, 0.7f, 15f));
+        // Enemy (Orc Grunt — use EnemyData to apply bodyColor)
+        CaptureEnemy(cam, rt, fullDir, studioCenter);
 
         // Refugee
         CapturePrefab(cam, rt, fullDir, "tut_refugee",
@@ -139,6 +137,11 @@ public class TutorialImageCapture : MonoBehaviour
         Debug.Log($"[TutorialImageCapture] Captured {filename}");
     }
 
+    /// <summary>
+    /// Instantiate a prefab and swap its model for capture in edit mode.
+    /// In edit mode, Awake() uses Destroy() which is deferred — we must do the
+    /// model swap manually with DestroyImmediate.
+    /// </summary>
     static void CapturePrefab(Camera cam, RenderTexture rt, string dir, string filename,
         string prefabPath, Vector3 spawnPos, Vector3 camPos, Vector3 camLookAt)
     {
@@ -151,19 +154,82 @@ public class TutorialImageCapture : MonoBehaviour
 
         var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
         instance.transform.position = spawnPos;
+        // Rotate to face camera (models default face +Z, camera is at -Z)
+        instance.transform.rotation = Quaternion.Euler(0, 180f, 0);
 
-        // Disable components that might cause issues outside play mode
-        foreach (var agent in instance.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>(true))
-            agent.enabled = false;
+        // Disable components that cause issues outside play mode
+        DisableRuntimeComponents(instance);
+
+        // Swap model in edit mode — read the modelPrefab field from the MonoBehaviour
+        SwapModelEditMode(instance);
 
         Capture(cam, rt, dir, filename, camPos, camLookAt);
 
         Object.DestroyImmediate(instance);
     }
 
+    /// <summary>
+    /// Capture all enemy types side by side using their EnemyData models.
+    /// Models are wrapped in parent GameObjects so SampleAnimation doesn't affect positioning.
+    /// </summary>
+    static void CaptureEnemy(Camera cam, RenderTexture rt, string dir, Vector3 center)
+    {
+        string[] dataPaths = new string[]
+        {
+            "Assets/ScriptableObjects/Enemies/OrcGrunt.asset",
+            "Assets/ScriptableObjects/Enemies/BowOrc.asset",
+            "Assets/ScriptableObjects/Enemies/SuicideGoblin.asset",
+            "Assets/ScriptableObjects/Enemies/GoblinCannoneer.asset",
+            "Assets/ScriptableObjects/Enemies/Troll.asset",
+            "Assets/ScriptableObjects/Enemies/OrcWarBoss.asset"
+        };
+
+        var instances = new GameObject[dataPaths.Length];
+        float spacing = 1.0f;
+        float startX = center.x - (dataPaths.Length - 1) * spacing * 0.5f;
+
+        for (int i = 0; i < dataPaths.Length; i++)
+        {
+            var data = AssetDatabase.LoadAssetAtPath<EnemyData>(dataPaths[i]);
+            if (data == null || data.modelPrefab == null)
+            {
+                Debug.LogWarning($"[TutorialImageCapture] Enemy data or model not found: {dataPaths[i]}");
+                continue;
+            }
+
+            // Wrap model in parent so SampleAnimation only affects child bone transforms
+            var parent = new GameObject($"Enemy_{data.enemyName}");
+            parent.transform.position = new Vector3(startX + i * spacing, center.y, center.z);
+            parent.transform.rotation = Quaternion.Euler(0, 180f, 0);
+
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(data.modelPrefab, parent.transform);
+            model.name = "Model";
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.identity;
+            model.transform.localScale = Vector3.one;
+
+            if (data.animatorController != null)
+                PoseAtWalk(model, data.animatorController);
+
+            instances[i] = parent;
+            Debug.Log($"[TutorialImageCapture] Placed enemy: {data.enemyName}");
+        }
+
+        // Camera framing all 6 enemies
+        Vector3 camPos = new Vector3(center.x, 3f, center.z - 6f);
+        Vector3 lookAt = new Vector3(center.x, 0.5f, center.z);
+        Capture(cam, rt, dir, "tut_enemy", camPos, lookAt);
+
+        for (int i = 0; i < instances.Length; i++)
+        {
+            if (instances[i] != null)
+                Object.DestroyImmediate(instances[i]);
+        }
+    }
+
     static void CaptureDefenders(Camera cam, RenderTexture rt, string dir, Vector3 center)
     {
-        string[] paths = new string[]
+        string[] prefabPaths = new string[]
         {
             "Assets/Prefabs/Defenders/Engineer.prefab",
             "Assets/Prefabs/Defenders/Pikeman.prefab",
@@ -171,23 +237,57 @@ public class TutorialImageCapture : MonoBehaviour
             "Assets/Prefabs/Defenders/Wizard.prefab"
         };
 
-        var instances = new GameObject[paths.Length];
-        float spacing = 1.5f;
-        float startX = center.x - (paths.Length - 1) * spacing * 0.5f;
-
-        for (int i = 0; i < paths.Length; i++)
+        string[] dataPaths = new string[]
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(paths[i]);
+            "Assets/ScriptableObjects/Defenders/Engineer.asset",
+            "Assets/ScriptableObjects/Defenders/Pikeman.asset",
+            "Assets/ScriptableObjects/Defenders/Crossbowman.asset",
+            "Assets/ScriptableObjects/Defenders/Wizard.asset"
+        };
+
+        var instances = new GameObject[prefabPaths.Length];
+        float spacing = 1.5f;
+        float startX = center.x - (prefabPaths.Length - 1) * spacing * 0.5f;
+
+        for (int i = 0; i < prefabPaths.Length; i++)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPaths[i]);
             if (prefab == null)
             {
-                Debug.LogWarning($"[TutorialImageCapture] Defender prefab not found: {paths[i]}");
+                Debug.LogWarning($"[TutorialImageCapture] Defender prefab not found: {prefabPaths[i]}");
                 continue;
             }
             instances[i] = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
             instances[i].transform.position = new Vector3(startX + i * spacing, center.y, center.z);
+            // Rotate to face camera
+            instances[i].transform.rotation = Quaternion.Euler(0, 180f, 0);
 
-            foreach (var agent in instances[i].GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>(true))
-                agent.enabled = false;
+            DisableRuntimeComponents(instances[i]);
+
+            // Apply DefenderData model swap
+            var data = AssetDatabase.LoadAssetAtPath<DefenderData>(dataPaths[i]);
+            if (data != null && data.modelPrefab != null)
+            {
+                // Destroy existing visual children (primitive placeholders)
+                for (int c = instances[i].transform.childCount - 1; c >= 0; c--)
+                    Object.DestroyImmediate(instances[i].transform.GetChild(c).gameObject);
+
+                var newModel = (GameObject)PrefabUtility.InstantiatePrefab(data.modelPrefab, instances[i].transform);
+                newModel.name = "Model";
+                newModel.transform.localPosition = Vector3.zero;
+                newModel.transform.localRotation = Quaternion.identity;
+                newModel.transform.localScale = Vector3.one;
+
+                // Pose at Walk animation frame 1
+                if (data.animatorController != null)
+                    PoseAtWalk(newModel, data.animatorController);
+            }
+            else if (data != null)
+            {
+                // No custom model — apply bodyColor
+                foreach (var rend in instances[i].GetComponentsInChildren<Renderer>())
+                    rend.sharedMaterial = new Material(rend.sharedMaterial) { color = data.bodyColor };
+            }
         }
 
         // Camera pulled back further to frame all four without edge clipping
@@ -200,6 +300,137 @@ public class TutorialImageCapture : MonoBehaviour
             if (instances[i] != null)
                 Object.DestroyImmediate(instances[i]);
         }
+    }
+
+    /// <summary>
+    /// Reads the serialized modelPrefab field from supported MonoBehaviours
+    /// (TreasurePickup, Menial, Refugee) and performs the model swap in edit mode
+    /// using DestroyImmediate instead of Destroy.
+    /// </summary>
+    static void SwapModelEditMode(GameObject instance)
+    {
+        // Check each known type that has a modelPrefab serialized field
+        SerializedObject so = null;
+        SerializedProperty modelProp = null;
+
+        // Try TreasurePickup
+        var treasure = instance.GetComponent<TreasurePickup>();
+        if (treasure != null)
+        {
+            so = new SerializedObject(treasure);
+            modelProp = so.FindProperty("modelPrefab");
+            if (modelProp != null && modelProp.objectReferenceValue != null)
+            {
+                var modelPrefab = (GameObject)modelProp.objectReferenceValue;
+
+                // DestroyImmediate children
+                for (int i = instance.transform.childCount - 1; i >= 0; i--)
+                    Object.DestroyImmediate(instance.transform.GetChild(i).gameObject);
+
+                // DestroyImmediate root mesh components (cube primitive)
+                var rootRenderer = instance.GetComponent<MeshRenderer>();
+                if (rootRenderer != null) Object.DestroyImmediate(rootRenderer);
+                var rootFilter = instance.GetComponent<MeshFilter>();
+                if (rootFilter != null) Object.DestroyImmediate(rootFilter);
+
+                var newModel = (GameObject)PrefabUtility.InstantiatePrefab(modelPrefab, instance.transform);
+                newModel.name = "Model";
+                newModel.transform.localPosition = Vector3.zero;
+                newModel.transform.localRotation = Quaternion.identity;
+                newModel.transform.localScale = Vector3.one;
+
+                Debug.Log("[TutorialImageCapture] Swapped TreasurePickup model for capture");
+            }
+            return;
+        }
+
+        // Try Menial
+        var menial = instance.GetComponent<Menial>();
+        if (menial != null)
+        {
+            so = new SerializedObject(menial);
+            modelProp = so.FindProperty("modelPrefab");
+            if (modelProp != null && modelProp.objectReferenceValue != null)
+            {
+                var newModel = SwapCharacterModel(instance, (GameObject)modelProp.objectReferenceValue, "Menial");
+                var animProp = so.FindProperty("animatorController");
+                if (animProp != null && animProp.objectReferenceValue != null)
+                    PoseAtWalk(newModel, (RuntimeAnimatorController)animProp.objectReferenceValue);
+            }
+            return;
+        }
+
+        // Try Refugee
+        var refugee = instance.GetComponent<Refugee>();
+        if (refugee != null)
+        {
+            so = new SerializedObject(refugee);
+            modelProp = so.FindProperty("modelPrefab");
+            if (modelProp != null && modelProp.objectReferenceValue != null)
+            {
+                var newModel = SwapCharacterModel(instance, (GameObject)modelProp.objectReferenceValue, "Refugee");
+                var animProp = so.FindProperty("animatorController");
+                if (animProp != null && animProp.objectReferenceValue != null)
+                    PoseAtWalk(newModel, (RuntimeAnimatorController)animProp.objectReferenceValue);
+            }
+            return;
+        }
+    }
+
+    /// <summary>
+    /// Common model swap for character prefabs (Menial, Refugee) — destroy children,
+    /// instantiate new model.
+    /// </summary>
+    static GameObject SwapCharacterModel(GameObject instance, GameObject modelPrefab, string label)
+    {
+        for (int i = instance.transform.childCount - 1; i >= 0; i--)
+            Object.DestroyImmediate(instance.transform.GetChild(i).gameObject);
+
+        var newModel = (GameObject)PrefabUtility.InstantiatePrefab(modelPrefab, instance.transform);
+        newModel.name = "Model";
+        newModel.transform.localPosition = Vector3.zero;
+        newModel.transform.localRotation = Quaternion.identity;
+        newModel.transform.localScale = Vector3.one;
+
+        Debug.Log($"[TutorialImageCapture] Swapped {label} model for capture");
+        return newModel;
+    }
+
+    /// <summary>
+    /// Force a model into Walk pose at frame 0 using AnimationClip.SampleAnimation (works in edit mode).
+    /// </summary>
+    static void PoseAtWalk(GameObject model, RuntimeAnimatorController controller)
+    {
+        if (controller == null || model == null) return;
+
+        AnimationClip walkClip = null;
+        foreach (var clip in controller.animationClips)
+        {
+            if (clip.name.Contains("Walk") || clip.name.Contains("walk"))
+            {
+                walkClip = clip;
+                break;
+            }
+        }
+
+        if (walkClip != null)
+        {
+            walkClip.SampleAnimation(model, 0f);
+            Debug.Log($"[TutorialImageCapture] Posed {model.name} at Walk frame 0");
+        }
+        else
+        {
+            Debug.LogWarning($"[TutorialImageCapture] No Walk clip found in {controller.name}");
+        }
+    }
+
+    /// <summary>
+    /// Disable NavMeshAgent and other runtime-only components on an instantiated prefab.
+    /// </summary>
+    static void DisableRuntimeComponents(GameObject instance)
+    {
+        foreach (var agent in instance.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>(true))
+            agent.enabled = false;
     }
 }
 #endif
