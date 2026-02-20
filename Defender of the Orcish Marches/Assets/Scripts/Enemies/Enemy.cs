@@ -22,7 +22,7 @@ public class Enemy : MonoBehaviour
     public void Initialize(EnemyData enemyData)
     {
         data = enemyData;
-        CurrentHP = data.maxHP;
+        CurrentHP = Mathf.RoundToInt(data.maxHP * GameSettings.GetEnemyHPMultiplier());
         ScaledDamage = data.damage;
 
         // Swap model if the EnemyData specifies a custom model

@@ -12,7 +12,7 @@ public class RefugeeSpawner : MonoBehaviour
 
     private void Start()
     {
-        spawnTimer = Random.Range(minSpawnInterval, maxSpawnInterval);
+        spawnTimer = Random.Range(minSpawnInterval, maxSpawnInterval) * GameSettings.GetRefugeeSpawnMultiplier();
     }
 
     private void Update()
@@ -26,7 +26,7 @@ public class RefugeeSpawner : MonoBehaviour
         if (spawnTimer <= 0)
         {
             SpawnRefugee();
-            spawnTimer = Random.Range(minSpawnInterval, maxSpawnInterval);
+            spawnTimer = Random.Range(minSpawnInterval, maxSpawnInterval) * GameSettings.GetRefugeeSpawnMultiplier();
         }
     }
 

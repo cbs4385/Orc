@@ -10,7 +10,7 @@ public class DayNightCycle : MonoBehaviour
     [Header("Timing")]
     [SerializeField] private float dayDuration = 60f;
     [SerializeField] private float nightDuration = 30f;
-    [SerializeField] private float firstDayDuration = 10f;
+    [SerializeField] private float firstDayDuration = 60f;
 
     [Header("Lighting")]
     [SerializeField] private Light directionalLight;
@@ -47,8 +47,8 @@ public class DayNightCycle : MonoBehaviour
         get
         {
             if (CurrentPhase == Phase.Day)
-                return isFirstDay ? firstDayDuration : dayDuration;
-            return nightDuration;
+                return (isFirstDay ? firstDayDuration : dayDuration) * GameSettings.GetDayDurationMultiplier();
+            return nightDuration * GameSettings.GetNightDurationMultiplier();
         }
     }
 

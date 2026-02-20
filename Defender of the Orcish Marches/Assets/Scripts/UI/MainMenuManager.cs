@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class MainMenuManager : MonoBehaviour
 {
@@ -7,6 +8,10 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private Button optionsButton;
     [SerializeField] private Button tutorialButton;
     [SerializeField] private Button exitButton;
+
+    [Header("Difficulty")]
+    [SerializeField] private Slider difficultySlider;
+    [SerializeField] private TextMeshProUGUI difficultyLabel;
 
     private SceneLoader sceneLoader;
 
@@ -29,6 +34,13 @@ public class MainMenuManager : MonoBehaviour
             tutorialButton.onClick.AddListener(OnTutorialClicked);
         if (exitButton != null)
             exitButton.onClick.AddListener(OnExitClicked);
+
+        if (difficultySlider != null)
+        {
+            difficultySlider.value = (int)GameSettings.CurrentDifficulty;
+            difficultySlider.onValueChanged.AddListener(OnDifficultyChanged);
+            UpdateDifficultyLabel(difficultySlider.value);
+        }
     }
 
     private void OnDestroy()
@@ -41,6 +53,21 @@ public class MainMenuManager : MonoBehaviour
             tutorialButton.onClick.RemoveListener(OnTutorialClicked);
         if (exitButton != null)
             exitButton.onClick.RemoveListener(OnExitClicked);
+        if (difficultySlider != null)
+            difficultySlider.onValueChanged.RemoveListener(OnDifficultyChanged);
+    }
+
+    private void OnDifficultyChanged(float value)
+    {
+        GameSettings.CurrentDifficulty = (Difficulty)Mathf.RoundToInt(value);
+        UpdateDifficultyLabel(value);
+    }
+
+    private void UpdateDifficultyLabel(float value)
+    {
+        if (difficultyLabel == null) return;
+        difficultyLabel.text = GameSettings.GetDifficultyName();
+        Debug.Log($"[MainMenuManager] Difficulty slider changed to {GameSettings.GetDifficultyName()}");
     }
 
     private void OnPlayClicked()

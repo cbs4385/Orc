@@ -8,10 +8,6 @@ public class GameManager : MonoBehaviour
 
     public enum GameState { Playing, Paused, GameOver }
 
-    [Header("Starting Resources")]
-    [SerializeField] private int startingTreasure = 100;
-    [SerializeField] private int startingMenials = 3;
-
     public GameState CurrentState { get; private set; } = GameState.Playing;
     public int Treasure { get; private set; }
     public int MenialCount { get; private set; }
@@ -37,10 +33,11 @@ public class GameManager : MonoBehaviour
         Debug.Log("[GameManager] Instance registered in Awake.");
         Application.runInBackground = true;
 
-        // Initialize resources in Awake so other scripts can read them in Start
-        Treasure = startingTreasure;
-        MenialCount = startingMenials;
-        IdleMenialCount = startingMenials;
+        // Initialize resources from difficulty settings (serialized values are fallbacks)
+        Treasure = GameSettings.GetStartingGold();
+        MenialCount = GameSettings.GetStartingMenials();
+        IdleMenialCount = MenialCount;
+        Debug.Log($"[GameManager] Difficulty={GameSettings.CurrentDifficulty}: gold={Treasure}, menials={MenialCount}");
     }
 
     private void OnEnable()

@@ -219,7 +219,7 @@ public class EnemySpawnManager : MonoBehaviour
             SpawnEnemy();
             int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
             float difficulty = Mathf.Clamp01((dayNumber - 1) / 10f);
-            spawnTimer = Mathf.Lerp(initialSpawnInterval, minSpawnInterval, difficulty);
+            spawnTimer = Mathf.Lerp(initialSpawnInterval, minSpawnInterval, difficulty) * GameSettings.GetSpawnRateMultiplier();
         }
     }
 

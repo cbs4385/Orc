@@ -6,15 +6,13 @@ public class WallPlacement : MonoBehaviour
     [SerializeField] private int wallCost = 20;
     [SerializeField] private GameObject wallGhostPrefab;
 
-    private bool isPlacing;
-    private GameObject ghostWall;
+    // Serialized so they survive domain reload (script recompilation in editor)
+    [SerializeField, HideInInspector] private bool isPlacing;
+    [SerializeField, HideInInspector] private GameObject ghostWall;
+
     private UnityEngine.Camera mainCam;
     private float ghostRotationY;
-    private bool skipNextFrame; // Skip the frame StartPlacement was called to avoid button-click placing wall
-
-    // Wall segment half-extents (used for ghost creation reference)
-    private const float WALL_HALF_WIDTH = 1.25f; // half-length along local X
-    private const float WALL_HALF_DEPTH = 0.25f; // half-depth along local Z
+    private bool skipNextFrame;
 
     public bool IsPlacing => isPlacing;
 
@@ -23,10 +21,20 @@ public class WallPlacement : MonoBehaviour
         mainCam = UnityEngine.Camera.main;
 
         if (wallGhostPrefab == null && WallManager.Instance != null)
-        {
             wallGhostPrefab = WallManager.Instance.WallPrefab;
-            if (wallGhostPrefab != null)
-                Debug.Log("[WallPlacement] Using WallManager.WallPrefab as ghost prefab.");
+
+        if (wallGhostPrefab == null)
+            Debug.LogError("[WallPlacement] wallGhostPrefab is null after Start! Ghost will not appear.");
+    }
+
+    private void OnEnable()
+    {
+        // After domain reload, if we had an orphaned ghost, clean it up
+        if (ghostWall != null && !isPlacing)
+        {
+            Debug.Log("[WallPlacement] OnEnable: cleaning up orphaned ghost from domain reload.");
+            Destroy(ghostWall);
+            ghostWall = null;
         }
     }
 
@@ -84,6 +92,12 @@ public class WallPlacement : MonoBehaviour
             if (ghostCorners != null)
                 ghostCorners.RefreshCorners();
         }
+        else
+        {
+            Debug.LogError("[WallPlacement] ghostWall is null during placement! Ghost was destroyed externally.");
+            isPlacing = false;
+            return;
+        }
 
         // Left-click to place
         if (Mouse.current.leftButton.wasPressedThisFrame)
@@ -94,13 +108,26 @@ public class WallPlacement : MonoBehaviour
 
     public void StartPlacement()
     {
+        // Clean up any existing ghost from a previous placement
+        if (ghostWall != null)
+        {
+            Debug.Log("[WallPlacement] Cleaning up previous ghost before new placement.");
+            Destroy(ghostWall);
+            ghostWall = null;
+        }
+
         isPlacing = true;
         ghostRotationY = 0f;
         skipNextFrame = true;
-        Debug.Log("[WallPlacement] Entering placement mode. A/D to rotate, left-click to place, right-click to cancel.");
+        Debug.Log("[WallPlacement] StartPlacement called.");
         if (wallGhostPrefab != null)
         {
-            ghostWall = Instantiate(wallGhostPrefab);
+            // Spawn ghost just outside the wall ring so it's immediately visible
+            // (mouse is over the UI button at this point, which projects far off-screen)
+            Vector3 initialPos = new Vector3(0f, 0.5f, -6f);
+            ghostWall = Instantiate(wallGhostPrefab, initialPos, Quaternion.identity);
+            // Ensure the ghost has a mesh (prefab's built-in Cube mesh reference can be lost)
+            EnsureWallMesh(ghostWall);
             // Mark WallCorners as ghost so it skips any collider creation
             var ghostCorners = ghostWall.GetComponent<WallCorners>();
             if (ghostCorners != null)
@@ -113,23 +140,19 @@ public class WallPlacement : MonoBehaviour
             // Disable colliders on ghost so it doesn't block raycasts or physics
             foreach (var col in ghostWall.GetComponentsInChildren<Collider>())
                 col.enabled = false;
-            // Make ghost semi-transparent
-            var rend = ghostWall.GetComponentInChildren<Renderer>();
-            if (rend != null)
+            // Tint ghost green so it's clearly visible as a placement preview
+            // URP/Lit shader uses _BaseColor, not _Color (which mat.color maps to)
+            Color ghostColor = new Color(0.3f, 0.9f, 0.3f, 1f);
+            foreach (var rend in ghostWall.GetComponentsInChildren<Renderer>())
             {
                 var mat = rend.material;
-                var color = mat.color;
-                color.a = 0.5f;
-                mat.color = color;
-                // Enable transparency
-                mat.SetFloat("_Surface", 1); // URP Lit: 0=Opaque, 1=Transparent
-                mat.SetOverrideTag("RenderType", "Transparent");
-                mat.renderQueue = 3000;
+                mat.SetColor("_BaseColor", ghostColor);
             }
+            Debug.Log($"[WallPlacement] Ghost ready at {initialPos}.");
         }
         else
         {
-            Debug.LogWarning("[WallPlacement] wallGhostPrefab is null! No ghost preview.");
+            Debug.LogError("[WallPlacement] wallGhostPrefab is null at StartPlacement! No ghost preview.");
         }
     }
 
@@ -186,5 +209,23 @@ public class WallPlacement : MonoBehaviour
             return ray.GetPoint(distance);
         }
         return Vector3.zero;
+    }
+
+    /// <summary>
+    /// Ensures the wall GameObject has a mesh. The WallSegment prefab was created from
+    /// CreatePrimitive(Cube) but the built-in mesh reference doesn't survive prefab serialization,
+    /// so runtime-instantiated walls get a null mesh. This assigns the Cube mesh as a fallback.
+    /// </summary>
+    public static void EnsureWallMesh(GameObject wallGO)
+    {
+        var mf = wallGO.GetComponent<MeshFilter>();
+        if (mf == null) return;
+        if (mf.sharedMesh != null) return;
+
+        // Create a temporary cube to grab the built-in Cube mesh
+        var tempCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        mf.sharedMesh = tempCube.GetComponent<MeshFilter>().sharedMesh;
+        Destroy(tempCube);
+        Debug.Log($"[WallPlacement] Assigned Cube mesh to {wallGO.name} (prefab mesh was null).");
     }
 }

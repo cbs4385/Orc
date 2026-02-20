@@ -179,17 +179,160 @@ public class MenuSceneBuilder : MonoBehaviour
         var optionsBtn = CreateMenuButton("OptionsButton", "OPTIONS", panelObj.transform);
         var exitBtn = CreateMenuButton("ExitButton", "EXIT", panelObj.transform);
 
+        // --- Difficulty selector (vertical, right edge) ---
+        var diffPanel = new GameObject("DifficultyPanel");
+        diffPanel.transform.SetParent(canvasObj.transform, false);
+        var diffPanelRect = diffPanel.AddComponent<RectTransform>();
+        diffPanelRect.anchorMin = new Vector2(1f, 0.08f);
+        diffPanelRect.anchorMax = new Vector2(1f, 0.88f);
+        diffPanelRect.pivot = new Vector2(1f, 0.5f);
+        diffPanelRect.sizeDelta = new Vector2(180, 0);
+        diffPanelRect.anchoredPosition = new Vector2(-10, 0);
+
+        // "DIFFICULTY" header at top
+        var diffHeaderObj = new GameObject("DifficultyHeader");
+        diffHeaderObj.transform.SetParent(diffPanel.transform, false);
+        var diffHeaderTmp = diffHeaderObj.AddComponent<TextMeshProUGUI>();
+        diffHeaderTmp.text = "DIFFICULTY";
+        diffHeaderTmp.fontSize = 26;
+        diffHeaderTmp.fontStyle = FontStyles.Bold;
+        diffHeaderTmp.color = new Color(0.9f, 0.75f, 0.3f);
+        diffHeaderTmp.alignment = TextAlignmentOptions.Center;
+        diffHeaderObj.AddComponent<Shadow>().effectColor = new Color(0, 0, 0, 0.8f);
+        var diffHeaderRect = diffHeaderObj.GetComponent<RectTransform>();
+        diffHeaderRect.anchorMin = new Vector2(0f, 0.92f);
+        diffHeaderRect.anchorMax = new Vector2(1f, 1f);
+        diffHeaderRect.offsetMin = Vector2.zero;
+        diffHeaderRect.offsetMax = Vector2.zero;
+
+        // Build vertical slider manually (CreateSlider makes a horizontal layout)
+        var diffSliderObj = new GameObject("DifficultySlider");
+        diffSliderObj.transform.SetParent(diffPanel.transform, false);
+        var diffSliderRect = diffSliderObj.AddComponent<RectTransform>();
+        // Slider occupies center column, full vertical span between labels
+        diffSliderRect.anchorMin = new Vector2(0.55f, 0.05f);
+        diffSliderRect.anchorMax = new Vector2(0.75f, 0.90f);
+        diffSliderRect.offsetMin = Vector2.zero;
+        diffSliderRect.offsetMax = Vector2.zero;
+
+        // Slider background (thin vertical bar)
+        var slBg = new GameObject("Background");
+        slBg.transform.SetParent(diffSliderObj.transform, false);
+        var slBgImg = slBg.AddComponent<Image>();
+        slBgImg.color = new Color(0.2f, 0.2f, 0.2f);
+        var slBgRect = slBg.GetComponent<RectTransform>();
+        slBgRect.anchorMin = new Vector2(0.3f, 0f);
+        slBgRect.anchorMax = new Vector2(0.7f, 1f);
+        slBgRect.offsetMin = Vector2.zero;
+        slBgRect.offsetMax = Vector2.zero;
+
+        // Fill area (vertical)
+        var slFillArea = new GameObject("Fill Area");
+        slFillArea.transform.SetParent(diffSliderObj.transform, false);
+        var slFillAreaRect = slFillArea.AddComponent<RectTransform>();
+        slFillAreaRect.anchorMin = new Vector2(0.3f, 0f);
+        slFillAreaRect.anchorMax = new Vector2(0.7f, 1f);
+        slFillAreaRect.offsetMin = Vector2.zero;
+        slFillAreaRect.offsetMax = Vector2.zero;
+
+        var slFill = new GameObject("Fill");
+        slFill.transform.SetParent(slFillArea.transform, false);
+        var slFillImg = slFill.AddComponent<Image>();
+        slFillImg.color = new Color(0.7f, 0.55f, 0.2f);
+        var slFillRect = slFill.GetComponent<RectTransform>();
+        slFillRect.anchorMin = Vector2.zero;
+        slFillRect.anchorMax = Vector2.one;
+        slFillRect.offsetMin = Vector2.zero;
+        slFillRect.offsetMax = Vector2.zero;
+
+        // Handle slide area (full rect)
+        var slHandleArea = new GameObject("Handle Slide Area");
+        slHandleArea.transform.SetParent(diffSliderObj.transform, false);
+        var slHandleAreaRect = slHandleArea.AddComponent<RectTransform>();
+        slHandleAreaRect.anchorMin = Vector2.zero;
+        slHandleAreaRect.anchorMax = Vector2.one;
+        slHandleAreaRect.offsetMin = Vector2.zero;
+        slHandleAreaRect.offsetMax = Vector2.zero;
+
+        // Handle (wide horizontal bar for vertical slider)
+        var slHandle = new GameObject("Handle");
+        slHandle.transform.SetParent(slHandleArea.transform, false);
+        var slHandleImg = slHandle.AddComponent<Image>();
+        slHandleImg.color = new Color(0.9f, 0.75f, 0.3f);
+        var slHandleRect = slHandle.GetComponent<RectTransform>();
+        slHandleRect.anchorMin = new Vector2(0f, 0f);
+        slHandleRect.anchorMax = new Vector2(1f, 0f);
+        slHandleRect.sizeDelta = new Vector2(0, 16);
+
+        // Wire Slider component
+        var diffSlider = diffSliderObj.AddComponent<Slider>();
+        diffSlider.direction = Slider.Direction.BottomToTop;
+        diffSlider.fillRect = slFillRect;
+        diffSlider.handleRect = slHandleRect;
+        diffSlider.targetGraphic = slHandleImg;
+        diffSlider.minValue = 0;
+        diffSlider.maxValue = 3;
+        diffSlider.wholeNumbers = true;
+        diffSlider.value = 1; // Normal
+
+        // Difficulty level labels to the left of the slider with drop shadows
+        string[] diffNames = { "Easy", "Normal", "Hard", "Nightmare" };
+        float sliderBottom = 0.05f;
+        float sliderTop = 0.90f;
+        float sliderRange = sliderTop - sliderBottom;
+        for (int i = 0; i < diffNames.Length; i++)
+        {
+            float t = i / 3f; // 0, 0.333, 0.667, 1.0
+            float anchorY = sliderBottom + t * sliderRange;
+
+            var tickObj = new GameObject($"DiffLabel_{diffNames[i]}");
+            tickObj.transform.SetParent(diffPanel.transform, false);
+            var tickTmp = tickObj.AddComponent<TextMeshProUGUI>();
+            tickTmp.text = diffNames[i];
+            tickTmp.fontSize = 24;
+            tickTmp.fontStyle = FontStyles.Bold;
+            tickTmp.color = Color.white;
+            tickTmp.alignment = TextAlignmentOptions.MidlineRight;
+            // Drop shadow for contrast
+            var shadow = tickObj.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0, 0, 0, 0.9f);
+            shadow.effectDistance = new Vector2(2, -2);
+            var tickRect = tickObj.GetComponent<RectTransform>();
+            tickRect.anchorMin = new Vector2(0f, anchorY);
+            tickRect.anchorMax = new Vector2(0.5f, anchorY);
+            tickRect.sizeDelta = new Vector2(0, 30);
+            tickRect.anchoredPosition = Vector2.zero;
+        }
+
+        // Current difficulty value text below everything
+        var diffValObj = new GameObject("DifficultyValueText");
+        diffValObj.transform.SetParent(diffPanel.transform, false);
+        var diffValTmp = diffValObj.AddComponent<TextMeshProUGUI>();
+        diffValTmp.text = "Normal";
+        diffValTmp.fontSize = 24;
+        diffValTmp.fontStyle = FontStyles.Bold;
+        diffValTmp.color = new Color(0.9f, 0.75f, 0.3f);
+        diffValTmp.alignment = TextAlignmentOptions.Center;
+        diffValObj.AddComponent<Shadow>().effectColor = new Color(0, 0, 0, 0.8f);
+        var diffValRect = diffValObj.GetComponent<RectTransform>();
+        diffValRect.anchorMin = new Vector2(0f, 0f);
+        diffValRect.anchorMax = new Vector2(1f, 0.05f);
+        diffValRect.offsetMin = Vector2.zero;
+        diffValRect.offsetMax = Vector2.zero;
+
         // Manager object
         var mgrObj = new GameObject("MenuManager");
         var mainMenu = mgrObj.AddComponent<MainMenuManager>();
         mgrObj.AddComponent<SceneLoader>();
 
-        // Wire buttons
+        // Wire buttons + difficulty
         var mmSO = new SerializedObject(mainMenu);
         mmSO.FindProperty("playButton").objectReferenceValue = playBtn;
         mmSO.FindProperty("optionsButton").objectReferenceValue = optionsBtn;
         mmSO.FindProperty("tutorialButton").objectReferenceValue = tutorialBtn;
         mmSO.FindProperty("exitButton").objectReferenceValue = exitBtn;
+        mmSO.FindProperty("difficultySlider").objectReferenceValue = diffSlider;
+        mmSO.FindProperty("difficultyLabel").objectReferenceValue = diffValTmp;
         mmSO.ApplyModifiedProperties();
 
         // EventSystem
@@ -297,16 +440,56 @@ public class MenuSceneBuilder : MonoBehaviour
         var sfxValLE = sfxValObj.AddComponent<LayoutElement>();
         sfxValLE.preferredWidth = 80;
 
+        // Music Volume row
+        var musicRow = new GameObject("MusicRow");
+        musicRow.transform.SetParent(canvasObj.transform, false);
+        var musicRowRect = musicRow.AddComponent<RectTransform>();
+        musicRowRect.anchorMin = new Vector2(0.5f, 0.52f);
+        musicRowRect.anchorMax = new Vector2(0.5f, 0.52f);
+        musicRowRect.sizeDelta = new Vector2(700, 50);
+        musicRowRect.anchoredPosition = Vector2.zero;
+        var musicHlg = musicRow.AddComponent<HorizontalLayoutGroup>();
+        musicHlg.spacing = 15;
+        musicHlg.childAlignment = TextAnchor.MiddleCenter;
+        musicHlg.childControlWidth = true;
+        musicHlg.childControlHeight = true;
+        musicHlg.childForceExpandHeight = true;
+
+        var musicLabelObj = new GameObject("MusicLabel");
+        musicLabelObj.transform.SetParent(musicRow.transform, false);
+        var musicLabelTmp = musicLabelObj.AddComponent<TextMeshProUGUI>();
+        musicLabelTmp.text = "Music Volume";
+        musicLabelTmp.fontSize = 28;
+        musicLabelTmp.color = Color.white;
+        musicLabelTmp.alignment = TextAlignmentOptions.MidlineRight;
+        var musicLabelLE = musicLabelObj.AddComponent<LayoutElement>();
+        musicLabelLE.preferredWidth = 200;
+
+        var musicSliderObj = CreateSlider("MusicVolumeSlider", musicRow.transform);
+        var musicSliderLE = musicSliderObj.AddComponent<LayoutElement>();
+        musicSliderLE.preferredWidth = 350;
+        musicSliderLE.minHeight = 30;
+
+        var musicValObj = new GameObject("MusicValueText");
+        musicValObj.transform.SetParent(musicRow.transform, false);
+        var musicValTmp = musicValObj.AddComponent<TextMeshProUGUI>();
+        musicValTmp.text = "50%";
+        musicValTmp.fontSize = 28;
+        musicValTmp.color = Color.white;
+        musicValTmp.alignment = TextAlignmentOptions.MidlineLeft;
+        var musicValLE = musicValObj.AddComponent<LayoutElement>();
+        musicValLE.preferredWidth = 80;
+
         // --- Video section ---
         var videoHeader = CreateLabel("VideoHeader", "VIDEO", canvasObj.transform,
-            new Vector2(0.5f, 0.48f), 36, new Color(0.8f, 0.7f, 0.5f));
+            new Vector2(0.5f, 0.38f), 36, new Color(0.8f, 0.7f, 0.5f));
 
         // Fullscreen toggle row
         var fsRow = new GameObject("FullscreenRow");
         fsRow.transform.SetParent(canvasObj.transform, false);
         var fsRowRect = fsRow.AddComponent<RectTransform>();
-        fsRowRect.anchorMin = new Vector2(0.5f, 0.38f);
-        fsRowRect.anchorMax = new Vector2(0.5f, 0.38f);
+        fsRowRect.anchorMin = new Vector2(0.5f, 0.28f);
+        fsRowRect.anchorMax = new Vector2(0.5f, 0.28f);
         fsRowRect.sizeDelta = new Vector2(400, 50);
         fsRowRect.anchoredPosition = Vector2.zero;
         var fsHlg = fsRow.AddComponent<HorizontalLayoutGroup>();
@@ -345,6 +528,8 @@ public class MenuSceneBuilder : MonoBehaviour
         var optSO = new SerializedObject(optMgr);
         optSO.FindProperty("sfxVolumeSlider").objectReferenceValue = sfxSliderObj.GetComponent<Slider>();
         optSO.FindProperty("sfxValueText").objectReferenceValue = sfxValTmp;
+        optSO.FindProperty("musicVolumeSlider").objectReferenceValue = musicSliderObj.GetComponent<Slider>();
+        optSO.FindProperty("musicValueText").objectReferenceValue = musicValTmp;
         optSO.FindProperty("fullscreenToggle").objectReferenceValue = fsToggleObj.GetComponent<Toggle>();
         optSO.FindProperty("backButton").objectReferenceValue = backBtnObj.GetComponent<Button>();
         optSO.ApplyModifiedProperties();

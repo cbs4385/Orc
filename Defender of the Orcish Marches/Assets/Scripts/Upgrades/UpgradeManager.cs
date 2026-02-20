@@ -103,6 +103,7 @@ public class UpgradeManager : MonoBehaviour
                 GameManager.Instance.AddTreasure(scaledTreasure);
                 return false;
             }
+            Debug.Log($"[UpgradeManager] Calling ApplyNonHireUpgrade for {upgrade.upgradeName} (type={upgrade.upgradeType})");
             ApplyNonHireUpgrade(upgrade);
         }
 
@@ -131,6 +132,7 @@ public class UpgradeManager : MonoBehaviour
 
     private void ApplyNonHireUpgrade(UpgradeData upgrade)
     {
+        Debug.Log($"[UpgradeManager] ApplyNonHireUpgrade entered: {upgrade.upgradeName}, type={upgrade.upgradeType} (int={(int)upgrade.upgradeType})");
         switch (upgrade.upgradeType)
         {
             case UpgradeType.NewBallista:
@@ -160,6 +162,10 @@ public class UpgradeManager : MonoBehaviour
                 {
                     Debug.LogError("[UpgradeManager] NewWall: No WallPlacement component found in scene!");
                 }
+                break;
+
+            default:
+                Debug.LogWarning($"[UpgradeManager] ApplyNonHireUpgrade: unhandled upgradeType={upgrade.upgradeType}");
                 break;
         }
     }

@@ -18,9 +18,6 @@ public class EnemyMovement : MonoBehaviour
     public bool HasReachedTarget => agent != null && !agent.pathPending &&
         agent.remainingDistance <= agent.stoppingDistance + 0.1f;
 
-    // Track if we're targeting a position (tower) vs a transform
-    private bool targetingTowerPosition;
-
     // Retreat state
     public bool IsRetreating { get; private set; }
     private float retreatMapRadius;
@@ -116,7 +113,7 @@ public class EnemyMovement : MonoBehaviour
 
     private void FindTarget()
     {
-        targetingTowerPosition = false;
+
         if (!agent.isOnNavMesh) return;
 
         // === GOAL: Always reach the tower. Walls are just obstacles. ===
@@ -147,7 +144,7 @@ public class EnemyMovement : MonoBehaviour
                 Vector3 breachPos = FindNearestBreachPosition();
                 agent.SetDestination(breachPos);
             }
-            targetingTowerPosition = true;
+
             currentTarget = null;
             return;
         }
