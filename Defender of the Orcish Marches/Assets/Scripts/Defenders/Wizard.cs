@@ -9,7 +9,10 @@ public class Wizard : Defender
     protected override void Attack()
     {
         if (data == null || currentTarget == null) return;
-        attackCooldown = 1f / data.attackRate;
+        float dailyAtkSpd = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderAttackSpeedMultiplier : 1f;
+        attackCooldown = (1f / data.attackRate) / dailyAtkSpd;
+        float dailyDmg = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderDamageMultiplier : 1f;
+        int scaledDmg = Mathf.RoundToInt(data.damage * dailyDmg);
 
         if (fireMissilePrefab == null)
         {
@@ -21,7 +24,7 @@ public class Wizard : Defender
                 float dist = Vector3.Distance(center, enemy.transform.position);
                 if (dist <= aoeRadius)
                 {
-                    enemy.TakeDamage(data.damage);
+                    enemy.TakeDamage(scaledDmg);
                 }
             }
             return;
@@ -33,7 +36,7 @@ public class Wizard : Defender
         var proj = go.GetComponent<DefenderProjectile>();
         if (proj != null)
         {
-            proj.Initialize(currentTarget.transform, projectileSpeed, data.damage, data.range + 5f, aoeRadius);
+            proj.Initialize(currentTarget.transform, projectileSpeed, scaledDmg, data.range + 5f, aoeRadius);
         }
         if (SoundManager.Instance != null) SoundManager.Instance.PlayWizardFire(transform.position);
         Debug.Log($"[Wizard] Fired missile at {currentTarget.name}, aoe={aoeRadius}");

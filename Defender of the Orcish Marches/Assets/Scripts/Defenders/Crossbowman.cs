@@ -8,12 +8,15 @@ public class Crossbowman : Defender
     protected override void Attack()
     {
         if (data == null || currentTarget == null) return;
-        attackCooldown = 1f / data.attackRate;
+        float dailyAtkSpd = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderAttackSpeedMultiplier : 1f;
+        attackCooldown = (1f / data.attackRate) / dailyAtkSpd;
+        float dailyDmg = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderDamageMultiplier : 1f;
+        int scaledDmg = Mathf.RoundToInt(data.damage * dailyDmg);
 
         if (boltPrefab == null)
         {
             // Fallback to instant damage if no prefab
-            currentTarget.TakeDamage(data.damage);
+            currentTarget.TakeDamage(scaledDmg);
             return;
         }
 
@@ -23,7 +26,7 @@ public class Crossbowman : Defender
         var proj = go.GetComponent<DefenderProjectile>();
         if (proj != null)
         {
-            proj.Initialize(currentTarget.transform, projectileSpeed, data.damage, data.range + 5f);
+            proj.Initialize(currentTarget.transform, projectileSpeed, scaledDmg, data.range + 5f);
         }
         if (SoundManager.Instance != null) SoundManager.Instance.PlayCrossbowFire(transform.position);
         Debug.Log($"[Crossbowman] Fired bolt at {currentTarget.name}");

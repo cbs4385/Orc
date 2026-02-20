@@ -99,6 +99,29 @@ public class SceneWiring : MonoBehaviour
         AssetDatabase.CreateAsset(data, "Assets/ScriptableObjects/Upgrades/" + fileName + ".asset");
     }
 
+    [MenuItem("Game/Wire Defender Models")]
+    public static void WireDefenderModels()
+    {
+        string[] names = { "Engineer", "Pikeman", "Crossbowman", "Wizard" };
+        foreach (var name in names)
+        {
+            var data = AssetDatabase.LoadAssetAtPath<DefenderData>($"Assets/ScriptableObjects/Defenders/{name}.asset");
+            if (data == null) { Debug.LogError($"[SceneWiring] DefenderData not found: {name}"); continue; }
+
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Models/{name}.fbx");
+            var controller = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>($"Assets/Animations/{name}Animator.controller");
+
+            var so = new SerializedObject(data);
+            so.FindProperty("modelPrefab").objectReferenceValue = model;
+            so.FindProperty("animatorController").objectReferenceValue = controller;
+            so.ApplyModifiedProperties();
+
+            Debug.Log($"[SceneWiring] Wired {name}: model={(model != null ? model.name : "null")}, controller={(controller != null ? controller.name : "null")}");
+        }
+        AssetDatabase.SaveAssets();
+        Debug.Log("[SceneWiring] Defender models wired successfully.");
+    }
+
     [MenuItem("Game/Wire Scene")]
     public static void WireScene()
     {
@@ -169,6 +192,18 @@ public class SceneWiring : MonoBehaviour
         {
             gmObj = new GameObject("GameManager");
             gmObj.AddComponent<GameManager>();
+        }
+
+        // --- Create/find DailyEventManager ---
+        var demObj = GameObject.Find("DailyEventManager");
+        if (demObj == null)
+        {
+            demObj = new GameObject("DailyEventManager");
+            demObj.AddComponent<DailyEventManager>();
+        }
+        else if (demObj.GetComponent<DailyEventManager>() == null)
+        {
+            demObj.AddComponent<DailyEventManager>();
         }
 
         // --- Wire RunStatsTracker ---

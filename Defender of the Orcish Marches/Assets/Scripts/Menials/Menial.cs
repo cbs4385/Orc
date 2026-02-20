@@ -55,7 +55,7 @@ public class Menial : MonoBehaviour
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-        agent.speed = moveSpeed;
+        RefreshSpeed();
         currentHP = maxHP;
 
         // Swap model if a custom model is assigned
@@ -81,6 +81,17 @@ public class Menial : MonoBehaviour
 
             Debug.Log("[Menial] Custom model loaded");
         }
+    }
+
+    /// <summary>
+    /// Reapply move speed with the current daily event multiplier.
+    /// Called by DailyEventManager when the event changes.
+    /// </summary>
+    public void RefreshSpeed()
+    {
+        if (agent == null) return;
+        float dailySpeed = DailyEventManager.Instance != null ? DailyEventManager.Instance.MenialSpeedMultiplier : 1f;
+        agent.speed = moveSpeed * dailySpeed;
     }
 
     private void Start()

@@ -22,8 +22,10 @@ public class Enemy : MonoBehaviour
     public void Initialize(EnemyData enemyData)
     {
         data = enemyData;
-        CurrentHP = Mathf.RoundToInt(data.maxHP * GameSettings.GetEnemyHPMultiplier());
-        ScaledDamage = data.damage;
+        float dailyHP = DailyEventManager.Instance != null ? DailyEventManager.Instance.EnemyHPMultiplier : 1f;
+        float dailyDmg = DailyEventManager.Instance != null ? DailyEventManager.Instance.EnemyDamageMultiplier : 1f;
+        CurrentHP = Mathf.RoundToInt(data.maxHP * GameSettings.GetEnemyHPMultiplier() * dailyHP);
+        ScaledDamage = Mathf.RoundToInt(data.damage * dailyDmg);
 
         // Swap model if the EnemyData specifies a custom model
         if (data.modelPrefab != null)
@@ -81,8 +83,10 @@ public class Enemy : MonoBehaviour
 
     public void ApplyDayScaling(float hpMultiplier, float damageMultiplier)
     {
-        CurrentHP = Mathf.RoundToInt(data.maxHP * hpMultiplier);
-        ScaledDamage = Mathf.RoundToInt(data.damage * damageMultiplier);
+        float dailyHP = DailyEventManager.Instance != null ? DailyEventManager.Instance.EnemyHPMultiplier : 1f;
+        float dailyDmg = DailyEventManager.Instance != null ? DailyEventManager.Instance.EnemyDamageMultiplier : 1f;
+        CurrentHP = Mathf.RoundToInt(data.maxHP * hpMultiplier * dailyHP);
+        ScaledDamage = Mathf.RoundToInt(data.damage * damageMultiplier * dailyDmg);
         Debug.Log($"[Enemy] {data.enemyName} day-scaled: HP={CurrentHP} (base {data.maxHP}), Damage={ScaledDamage} (base {data.damage})");
     }
 

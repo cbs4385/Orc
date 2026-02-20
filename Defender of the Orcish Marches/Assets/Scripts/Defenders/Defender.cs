@@ -155,8 +155,10 @@ public class Defender : MonoBehaviour
     protected virtual void Attack()
     {
         if (data == null || currentTarget == null) return;
-        attackCooldown = 1f / data.attackRate;
-        currentTarget.TakeDamage(data.damage);
+        float dailyAtkSpd = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderAttackSpeedMultiplier : 1f;
+        attackCooldown = (1f / data.attackRate) / dailyAtkSpd;
+        float dailyDmg = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderDamageMultiplier : 1f;
+        currentTarget.TakeDamage(Mathf.RoundToInt(data.damage * dailyDmg));
     }
 
     public void TakeDamage(int damage)

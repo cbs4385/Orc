@@ -21,5 +21,5 @@ MonoBehaviour:
   attackRate: 0.5
   maxHP: 40
   bodyColor: {r: 0.53, g: 0.27, b: 0.8, a: 1}
-  modelPrefab: {fileID: 0}
-  animatorController: {fileID: 0}
+  modelPrefab: {fileID: 919132149155446097, guid: 33e04c4da7ebe62449280ec31a10cbde, type: 3}
+  animatorController: {fileID: 9100000, guid: 7b1fb2c86656cd94b970e85aba54c111, type: 2}

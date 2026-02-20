@@ -32,14 +32,14 @@ public class WavePreviewUI : MonoBehaviour
     private void OnDisable()
     {
         if (DayNightCycle.Instance != null)
-            DayNightCycle.Instance.OnDayStarted -= OnDayStarted;
+            DayNightCycle.Instance.OnNewDay -= OnNewDay;
         subscribed = false;
     }
 
     private void OnDestroy()
     {
         if (DayNightCycle.Instance != null)
-            DayNightCycle.Instance.OnDayStarted -= OnDayStarted;
+            DayNightCycle.Instance.OnNewDay -= OnNewDay;
     }
 
     private void TrySubscribe()
@@ -47,7 +47,9 @@ public class WavePreviewUI : MonoBehaviour
         if (subscribed) return;
         if (DayNightCycle.Instance != null)
         {
-            DayNightCycle.Instance.OnDayStarted += OnDayStarted;
+            // Subscribe to OnNewDay (fires after OnDayStarted) so DailyEventManager
+            // has already picked the event by the time we read it.
+            DayNightCycle.Instance.OnNewDay += OnNewDay;
             subscribed = true;
         }
     }
@@ -73,28 +75,31 @@ public class WavePreviewUI : MonoBehaviour
         }
     }
 
-    private void OnDayStarted()
+    private void OnNewDay(int dayNumber)
     {
-        if (EnemySpawnManager.Instance == null) return;
-        int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
+        bool hasEvent = DailyEventManager.Instance != null && DailyEventManager.Instance.HasActiveEvent;
+        bool hasWavePreview = dayNumber > 1 && EnemySpawnManager.Instance != null;
 
-        // Skip day 1 — nothing to preview yet
-        if (dayNumber <= 1) return;
+        if (!hasEvent && !hasWavePreview) return;
 
-        var preview = EnemySpawnManager.Instance.GetWavePreview(dayNumber);
-        ShowPreview(preview);
+        WavePreviewData? preview = null;
+        if (hasWavePreview)
+            preview = EnemySpawnManager.Instance.GetWavePreview(dayNumber);
+
+        ShowDayBanner(dayNumber, preview);
     }
 
-    private void ShowPreview(WavePreviewData data)
+    private void ShowDayBanner(int dayNumber, WavePreviewData? waveData)
     {
         if (panelRoot == null) return;
 
         // Header
         if (headerText != null)
         {
-            headerText.text = data.hasBoss
-                ? string.Format("DAY {0} - BOSS WAVE", data.dayNumber)
-                : string.Format("DAY {0}", data.dayNumber);
+            if (waveData.HasValue && waveData.Value.hasBoss)
+                headerText.text = string.Format("DAY {0} - BOSS WAVE", dayNumber);
+            else
+                headerText.text = string.Format("DAY {0}", dayNumber);
         }
 
         // Body
@@ -102,27 +107,50 @@ public class WavePreviewUI : MonoBehaviour
         {
             var sb = new System.Text.StringBuilder();
 
-            // Spawn direction
-            sb.AppendLine(data.spawnDirection);
-            sb.AppendLine();
-
-            // Enemy types
-            sb.Append("Enemies: ");
-            sb.AppendLine(string.Join(", ", data.enemyTypes));
-
-            // Highlight new enemy types
-            if (data.newEnemyTypes != null && data.newEnemyTypes.Length > 0)
+            // Daily event announcement
+            var dem = DailyEventManager.Instance;
+            if (dem != null && dem.HasActiveEvent)
             {
-                sb.Append("<color=#FF6644>NEW: ");
-                sb.Append(string.Join(", ", data.newEnemyTypes));
-                sb.AppendLine("</color>");
+                string eventColor;
+                switch (dem.CurrentEventCategory)
+                {
+                    case DailyEventCategory.Beneficial: eventColor = "#66DD66"; break;
+                    case DailyEventCategory.Detrimental: eventColor = "#FF6644"; break;
+                    default: eventColor = "#FFCC44"; break;
+                }
+                sb.AppendFormat("<color={0}>{1}</color>", eventColor, dem.CurrentEventName);
+                sb.AppendLine();
+                sb.AppendFormat("<color={0}><size=80%>{1}</size></color>", eventColor, dem.CurrentEventDescription);
+                sb.AppendLine();
             }
 
-            // Boss warning
-            if (data.hasBoss && !string.IsNullOrEmpty(data.bossName))
+            // Wave preview info (day 2+)
+            if (waveData.HasValue)
             {
+                var data = waveData.Value;
                 sb.AppendLine();
-                sb.AppendFormat("<color=#FF3333>{0} approaches!</color>", data.bossName);
+
+                // Spawn direction
+                sb.AppendLine(data.spawnDirection);
+
+                // Enemy types
+                sb.Append("Enemies: ");
+                sb.AppendLine(string.Join(", ", data.enemyTypes));
+
+                // Highlight new enemy types
+                if (data.newEnemyTypes != null && data.newEnemyTypes.Length > 0)
+                {
+                    sb.Append("<color=#FF6644>NEW: ");
+                    sb.Append(string.Join(", ", data.newEnemyTypes));
+                    sb.AppendLine("</color>");
+                }
+
+                // Boss warning
+                if (data.hasBoss && !string.IsNullOrEmpty(data.bossName))
+                {
+                    sb.AppendLine();
+                    sb.AppendFormat("<color=#FF3333>{0} approaches!</color>", data.bossName);
+                }
             }
 
             bodyText.text = sb.ToString();
@@ -132,6 +160,7 @@ public class WavePreviewUI : MonoBehaviour
         if (canvasGroup != null) canvasGroup.alpha = 1f;
         hideTimer = displayDuration;
 
-        Debug.Log($"[WavePreviewUI] Showing preview for Day {data.dayNumber}: {data.enemyTypes.Length} enemy types, direction={data.spawnDirection}, boss={data.hasBoss}");
+        var eventName = DailyEventManager.Instance != null ? DailyEventManager.Instance.CurrentEventName : "none";
+        Debug.Log($"[WavePreviewUI] Day {dayNumber} banner: event={eventName}, hasWave={waveData.HasValue}");
     }
 }

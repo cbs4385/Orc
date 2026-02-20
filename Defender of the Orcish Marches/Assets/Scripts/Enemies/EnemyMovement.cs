@@ -38,7 +38,8 @@ public class EnemyMovement : MonoBehaviour
     {
         if (enemy.Data != null)
         {
-            agent.speed = enemy.Data.moveSpeed;
+            float dailySpeed = DailyEventManager.Instance != null ? DailyEventManager.Instance.EnemySpeedMultiplier : 1f;
+            agent.speed = enemy.Data.moveSpeed * dailySpeed;
             agent.stoppingDistance = enemy.Data.attackRange * 0.9f;
         }
 
@@ -150,7 +151,31 @@ public class EnemyMovement : MonoBehaviour
         }
 
         // Step 2: No breach — attack the wall blocking our path to the tower
-        // Opportunistically attack nearby hirelings/menials first
+
+        // Stick with current wall target if it's still alive
+        if (currentTarget != null)
+        {
+            var curWall = currentTarget.GetComponent<Wall>();
+            if (curWall != null && !curWall.IsDestroyed)
+            {
+                // Only divert from wall target for very close opportunistic targets
+                Transform nearby = FindNearbyOpportunisticTarget();
+                if (nearby != null)
+                {
+                    float distToNearby = Vector3.Distance(transform.position, nearby.position);
+                    if (distToNearby < 1.5f)
+                    {
+                        currentTarget = nearby;
+                        agent.SetDestination(nearby.position);
+                        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} diverted from wall to {nearby.name} at dist={distToNearby:F1}");
+                        return;
+                    }
+                }
+                return; // keep attacking the same wall
+            }
+        }
+
+        // No wall target yet — check for opportunistic targets before picking a wall
         Transform nearbyTarget = FindNearbyOpportunisticTarget();
         if (nearbyTarget != null)
         {
@@ -159,15 +184,7 @@ public class EnemyMovement : MonoBehaviour
             return;
         }
 
-        // Stick with current wall target if it's still alive
-        if (currentTarget != null)
-        {
-            var curWall = currentTarget.GetComponent<Wall>();
-            if (curWall != null && !curWall.IsDestroyed)
-                return; // keep attacking the same wall
-        }
-
-        // Pick the best wall target (only runs when we have no wall or it was destroyed)
+        // Pick the best wall target
         if (WallManager.Instance != null)
         {
             Wall approachWall = FindBestWallTarget();
@@ -180,11 +197,13 @@ public class EnemyMovement : MonoBehaviour
                 Vector3 exteriorPoint = wallPos + outward * 1f;
                 exteriorPoint.y = 0;
                 agent.SetDestination(exteriorPoint);
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} targeting wall {approachWall.name} at {wallPos}, exterior={exteriorPoint}");
                 return;
             }
         }
 
         // Fallback: walk toward the tower
+        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} no wall found, heading to tower");
         agent.SetDestination(TowerPosition);
     }
 
