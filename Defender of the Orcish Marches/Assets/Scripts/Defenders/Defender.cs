@@ -163,6 +163,7 @@ public class Defender : MonoBehaviour
     {
         if (IsDead) return;
         currentHP -= damage;
+        FloatingDamageNumber.Spawn(transform.position, damage, false);
         Debug.Log($"[Defender] {(data != null ? data.defenderName : name)} took {damage} damage, HP={currentHP}");
         if (currentHP <= 0)
         {

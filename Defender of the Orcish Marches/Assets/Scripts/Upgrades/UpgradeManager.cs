@@ -18,24 +18,11 @@ public class UpgradeManager : MonoBehaviour
 
     public IReadOnlyList<UpgradeData> AvailableUpgrades => availableUpgrades;
 
-    // TODO: Remove after testing
-    [Header("Debug")]
-    [SerializeField] private bool startWithPikeman = false;
-
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         Debug.Log("[UpgradeManager] Instance registered in Awake.");
-    }
-
-    private void Start()
-    {
-        if (startWithPikeman && pikemanPrefab != null)
-        {
-            SpawnDefenderAtTower(pikemanPrefab);
-            Debug.Log("[UpgradeManager] Debug: spawned starting pikeman.");
-        }
     }
 
     private void OnEnable()
@@ -55,14 +42,27 @@ public class UpgradeManager : MonoBehaviour
     public bool CanPurchase(UpgradeData upgrade)
     {
         if (GameManager.Instance == null) return false;
-        if (!upgrade.repeatable && GetPurchaseCount(upgrade.upgradeType) > 0) return false;
-        bool canAfford = GameManager.Instance.CanAfford(upgrade.treasureCost, upgrade.menialCost);
+        int count = GetPurchaseCount(upgrade.upgradeType);
+        if (!upgrade.repeatable && count > 0) return false;
+        int scaledTreasure = upgrade.GetTreasureCost(count);
+        int scaledMenial = upgrade.GetMenialCost(count);
+        bool canAfford = GameManager.Instance.CanAfford(scaledTreasure, scaledMenial);
         return canAfford;
+    }
+
+    /// <summary>
+    /// Returns the current scaled costs for the next purchase of this upgrade.
+    /// </summary>
+    public (int treasure, int menial) GetCurrentCost(UpgradeData upgrade)
+    {
+        int count = GetPurchaseCount(upgrade.upgradeType);
+        return (upgrade.GetTreasureCost(count), upgrade.GetMenialCost(count));
     }
 
     public bool Purchase(UpgradeData upgrade)
     {
-        Debug.Log($"[UpgradeManager] Purchase called: {upgrade.upgradeName} (type={upgrade.upgradeType}, cost={upgrade.treasureCost}g {upgrade.menialCost}m)");
+        var (scaledTreasure, scaledMenial) = GetCurrentCost(upgrade);
+        Debug.Log($"[UpgradeManager] Purchase called: {upgrade.upgradeName} (type={upgrade.upgradeType}, scaledCost={scaledTreasure}g {scaledMenial}m, purchases={GetPurchaseCount(upgrade.upgradeType)})");
 
         if (!CanPurchase(upgrade))
         {
@@ -70,26 +70,26 @@ public class UpgradeManager : MonoBehaviour
             return false;
         }
 
-        if (!GameManager.Instance.SpendTreasure(upgrade.treasureCost))
+        if (!GameManager.Instance.SpendTreasure(scaledTreasure))
         {
-            Debug.Log($"[UpgradeManager] SpendTreasure failed for {upgrade.treasureCost}");
+            Debug.Log($"[UpgradeManager] SpendTreasure failed for {scaledTreasure}");
             return false;
         }
 
-        Debug.Log($"[UpgradeManager] Spent {upgrade.treasureCost}g. IsHire={IsHireUpgrade(upgrade.upgradeType)}, menialCost={upgrade.menialCost}");
+        Debug.Log($"[UpgradeManager] Spent {scaledTreasure}g. IsHire={IsHireUpgrade(upgrade.upgradeType)}, menialCost={scaledMenial}");
 
         // For hire upgrades, consume menials via walk-to-tower instead of instant removal
-        if (upgrade.menialCost > 0 && IsHireUpgrade(upgrade.upgradeType))
+        if (scaledMenial > 0 && IsHireUpgrade(upgrade.upgradeType))
         {
             GameObject prefab = GetDefenderPrefab(upgrade.upgradeType);
-            if (MenialManager.Instance == null || !MenialManager.Instance.ConsumeMenials(upgrade.menialCost, () =>
+            if (MenialManager.Instance == null || !MenialManager.Instance.ConsumeMenials(scaledMenial, () =>
             {
                 // Callback: all menials entered the tower - spawn the hireling
                 SpawnDefenderAtTower(prefab);
             }))
             {
                 // Failed to consume menials - refund
-                GameManager.Instance.AddTreasure(upgrade.treasureCost);
+                GameManager.Instance.AddTreasure(scaledTreasure);
                 return false;
             }
 
@@ -98,9 +98,9 @@ public class UpgradeManager : MonoBehaviour
         else
         {
             // Non-hire upgrades: spend menials instantly if needed
-            if (upgrade.menialCost > 0 && !GameManager.Instance.SpendMenials(upgrade.menialCost))
+            if (scaledMenial > 0 && !GameManager.Instance.SpendMenials(scaledMenial))
             {
-                GameManager.Instance.AddTreasure(upgrade.treasureCost);
+                GameManager.Instance.AddTreasure(scaledTreasure);
                 return false;
             }
             ApplyNonHireUpgrade(upgrade);

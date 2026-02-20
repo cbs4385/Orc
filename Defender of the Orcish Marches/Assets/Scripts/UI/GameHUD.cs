@@ -10,6 +10,7 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private TextMeshProUGUI menialText;
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI enemyCountText;
+    [SerializeField] private TextMeshProUGUI killsText;
 
     [Header("Pause")]
     [SerializeField] private Button pauseButton;
@@ -43,12 +44,14 @@ public class GameHUD : MonoBehaviour
         {
             GameManager.Instance.OnTreasureChanged += UpdateTreasure;
             GameManager.Instance.OnMenialsChanged += UpdateMenials;
+            GameManager.Instance.OnKillsChanged += UpdateKills;
             GameManager.Instance.OnPauseChanged += UpdatePauseButton;
             subscribed = true;
 
             // Force initial display update
             UpdateTreasure(GameManager.Instance.Treasure);
             UpdateMenials(GameManager.Instance.MenialCount);
+            UpdateKills(GameManager.Instance.EnemyKills);
         }
     }
 
@@ -58,6 +61,7 @@ public class GameHUD : MonoBehaviour
         {
             GameManager.Instance.OnTreasureChanged -= UpdateTreasure;
             GameManager.Instance.OnMenialsChanged -= UpdateMenials;
+            GameManager.Instance.OnKillsChanged -= UpdateKills;
             GameManager.Instance.OnPauseChanged -= UpdatePauseButton;
         }
     }
@@ -103,6 +107,12 @@ public class GameHUD : MonoBehaviour
             int idle = GameManager.Instance != null ? GameManager.Instance.IdleMenialCount : 0;
             menialText.text = string.Format("Menials: {0}/{1}", idle, amount);
         }
+    }
+
+    private void UpdateKills(int amount)
+    {
+        if (killsText != null)
+            killsText.text = "Kills: " + amount;
     }
 
     private void OnPauseClicked()

@@ -19,3 +19,4 @@ MonoBehaviour:
   upgradeType: 8
   icon: {fileID: 0}
   repeatable: 1
+  costScaling: 0.25

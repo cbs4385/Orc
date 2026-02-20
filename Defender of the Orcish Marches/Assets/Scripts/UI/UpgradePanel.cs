@@ -144,6 +144,16 @@ public class UpgradePanel : MonoBehaviour
             {
                 entry.button.interactable = UpgradeManager.Instance.CanPurchase(entry.data);
             }
+
+            // Update cost text to reflect scaling
+            if (entry.costText != null)
+            {
+                var (treasure, menial) = UpgradeManager.Instance.GetCurrentCost(entry.data);
+                string cost = "";
+                if (treasure > 0) cost += treasure + "g";
+                if (menial > 0) cost += " " + menial + "m";
+                entry.costText.text = cost.Trim();
+            }
         }
     }
 

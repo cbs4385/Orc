@@ -219,12 +219,12 @@ public class TutorialManager : MonoBehaviour
             {
                 title = "The Upgrade Panel",
                 spriteName = "tut_side",
-                body = "Press <b>B</b> to open the <b>Upgrade Panel</b>.\n\n" +
+                body = "Press <b>U</b> to open the <b>Upgrade Panel</b>.\n\n" +
                        "Here you can spend gold on:\n" +
                        "  <b>Wall Repairs</b> — restore damaged wall segments\n" +
                        "  <b>New Defenders</b> — recruit menials into combat roles\n" +
                        "  <b>Ballista Upgrades</b> — improve your tower weapon\n\n" +
-                       "Press <b>B</b> again or <b>Escape</b> to close the panel."
+                       "Press <b>U</b> again or <b>Escape</b> to close the panel."
             },
             new TutorialPage
             {
@@ -277,7 +277,7 @@ public class TutorialManager : MonoBehaviour
                 body = "<b>Hotkey Summary:</b>\n\n" +
                        "  <b>Scroll Wheel</b> — Zoom in/out\n" +
                        "  <b>Left Click</b> — Aim ballista\n" +
-                       "  <b>B</b> — Open/close upgrade panel\n" +
+                       "  <b>U</b> — Open/close upgrade panel\n" +
                        "  <b>Escape</b> — Pause menu\n" +
                        "  <b>Space</b> — Resume from pause\n\n" +
                        "Good luck, Commander. The Marches depend on you!"

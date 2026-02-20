@@ -8,6 +8,8 @@ public static class GameSettings
     // --- Audio ---
     private const string KEY_SFX_VOLUME = "SfxVolume";
     private const float DEFAULT_SFX_VOLUME = 0.5f;
+    private const string KEY_MUSIC_VOLUME = "MusicVolume";
+    private const float DEFAULT_MUSIC_VOLUME = 0.5f;
 
     public static float SfxVolume
     {
@@ -17,6 +19,17 @@ public static class GameSettings
             PlayerPrefs.SetFloat(KEY_SFX_VOLUME, Mathf.Clamp01(value));
             PlayerPrefs.Save();
             Debug.Log($"[GameSettings] SfxVolume set to {value:F2}");
+        }
+    }
+
+    public static float MusicVolume
+    {
+        get => PlayerPrefs.GetFloat(KEY_MUSIC_VOLUME, DEFAULT_MUSIC_VOLUME);
+        set
+        {
+            PlayerPrefs.SetFloat(KEY_MUSIC_VOLUME, Mathf.Clamp01(value));
+            PlayerPrefs.Save();
+            Debug.Log($"[GameSettings] MusicVolume set to {value:F2}");
         }
     }
 
@@ -44,13 +57,16 @@ public static class GameSettings
         if (SoundManager.Instance != null)
         {
             SoundManager.Instance.SetVolume(SfxVolume);
-            Debug.Log($"[GameSettings] Applied SfxVolume={SfxVolume:F2} to SoundManager.");
+            SoundManager.Instance.SetMusicVolume(MusicVolume);
+            SoundManager.Instance.StartMusic();
+            Debug.Log($"[GameSettings] Applied SfxVolume={SfxVolume:F2}, MusicVolume={MusicVolume:F2} to SoundManager.");
         }
     }
 
     public static void ResetToDefaults()
     {
         SfxVolume = DEFAULT_SFX_VOLUME;
+        MusicVolume = DEFAULT_MUSIC_VOLUME;
         Fullscreen = true;
         Debug.Log("[GameSettings] Reset to defaults.");
     }

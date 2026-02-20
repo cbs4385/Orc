@@ -60,6 +60,8 @@ public class UIBuilder : MonoBehaviour
         timerText.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Left;
         var enemyText = CreateText(topBar.transform, "EnemyCountText", "Enemies: 0", 24, new Color(1f, 0.5f, 0.5f), 200);
         enemyText.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Left;
+        var killsText = CreateText(topBar.transform, "KillsText", "Kills: 0", 24, new Color(1f, 0.7f, 0.3f), 150);
+        killsText.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Left;
 
         // Spacer pushes wheel + pause to the right
         var spacer = new GameObject("Spacer");
@@ -129,6 +131,7 @@ public class UIBuilder : MonoBehaviour
         hudSO.FindProperty("menialText").objectReferenceValue = menialText.GetComponent<TextMeshProUGUI>();
         hudSO.FindProperty("timerText").objectReferenceValue = timerText.GetComponent<TextMeshProUGUI>();
         hudSO.FindProperty("enemyCountText").objectReferenceValue = enemyText.GetComponent<TextMeshProUGUI>();
+        hudSO.FindProperty("killsText").objectReferenceValue = killsText.GetComponent<TextMeshProUGUI>();
         hudSO.FindProperty("pauseButton").objectReferenceValue = pauseBtnButton;
         hudSO.FindProperty("pauseButtonIcon").objectReferenceValue = pauseIconImg;
         hudSO.ApplyModifiedProperties();
@@ -257,8 +260,8 @@ public class UIBuilder : MonoBehaviour
         // Audio section header
         var audioLabel = CreateText(optRoot.transform, "AudioHeader", "AUDIO", 32, new Color(0.8f, 0.7f, 0.5f), 400);
         var audioLabelRect = audioLabel.GetComponent<RectTransform>();
-        audioLabelRect.anchorMin = new Vector2(0.5f, 0.65f);
-        audioLabelRect.anchorMax = new Vector2(0.5f, 0.65f);
+        audioLabelRect.anchorMin = new Vector2(0.5f, 0.68f);
+        audioLabelRect.anchorMax = new Vector2(0.5f, 0.68f);
         audioLabelRect.anchoredPosition = Vector2.zero;
         audioLabel.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
         audioLabel.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
@@ -267,8 +270,8 @@ public class UIBuilder : MonoBehaviour
         var sfxRow = new GameObject("SfxRow");
         sfxRow.transform.SetParent(optRoot.transform, false);
         var sfxRowRect = sfxRow.AddComponent<RectTransform>();
-        sfxRowRect.anchorMin = new Vector2(0.5f, 0.55f);
-        sfxRowRect.anchorMax = new Vector2(0.5f, 0.55f);
+        sfxRowRect.anchorMin = new Vector2(0.5f, 0.58f);
+        sfxRowRect.anchorMax = new Vector2(0.5f, 0.58f);
         sfxRowRect.sizeDelta = new Vector2(600, 40);
         sfxRowRect.anchoredPosition = Vector2.zero;
         var sfxHlg = sfxRow.AddComponent<HorizontalLayoutGroup>();
@@ -293,11 +296,41 @@ public class UIBuilder : MonoBehaviour
         var sfxValLE = sfxVal.AddComponent<LayoutElement>();
         sfxValLE.preferredWidth = 70;
 
+        // Music volume row
+        var musicRow = new GameObject("MusicRow");
+        musicRow.transform.SetParent(optRoot.transform, false);
+        var musicRowRect = musicRow.AddComponent<RectTransform>();
+        musicRowRect.anchorMin = new Vector2(0.5f, 0.48f);
+        musicRowRect.anchorMax = new Vector2(0.5f, 0.48f);
+        musicRowRect.sizeDelta = new Vector2(600, 40);
+        musicRowRect.anchoredPosition = Vector2.zero;
+        var musicHlg = musicRow.AddComponent<HorizontalLayoutGroup>();
+        musicHlg.spacing = 15;
+        musicHlg.childAlignment = TextAnchor.MiddleCenter;
+        musicHlg.childControlWidth = true;
+        musicHlg.childControlHeight = true;
+        musicHlg.childForceExpandHeight = true;
+
+        var musicLabel = CreateText(musicRow.transform, "MusicLabel", "Music Volume", 24, Color.white, 180);
+        musicLabel.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineRight;
+        var musicLabelLE = musicLabel.AddComponent<LayoutElement>();
+        musicLabelLE.preferredWidth = 180;
+
+        var musicSlider = CreateInGameSlider("MusicSlider", musicRow.transform);
+        var musicSliderLE = musicSlider.AddComponent<LayoutElement>();
+        musicSliderLE.preferredWidth = 300;
+        musicSliderLE.minHeight = 30;
+
+        var musicVal = CreateText(musicRow.transform, "MusicValueText", "50%", 24, Color.white, 70);
+        musicVal.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineLeft;
+        var musicValLE = musicVal.AddComponent<LayoutElement>();
+        musicValLE.preferredWidth = 70;
+
         // Video section header
         var videoLabel = CreateText(optRoot.transform, "VideoHeader", "VIDEO", 32, new Color(0.8f, 0.7f, 0.5f), 400);
         var videoLabelRect = videoLabel.GetComponent<RectTransform>();
-        videoLabelRect.anchorMin = new Vector2(0.5f, 0.43f);
-        videoLabelRect.anchorMax = new Vector2(0.5f, 0.43f);
+        videoLabelRect.anchorMin = new Vector2(0.5f, 0.36f);
+        videoLabelRect.anchorMax = new Vector2(0.5f, 0.36f);
         videoLabelRect.anchoredPosition = Vector2.zero;
         videoLabel.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
         videoLabel.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
@@ -306,8 +339,8 @@ public class UIBuilder : MonoBehaviour
         var fsRow = new GameObject("FullscreenRow");
         fsRow.transform.SetParent(optRoot.transform, false);
         var fsRowRect = fsRow.AddComponent<RectTransform>();
-        fsRowRect.anchorMin = new Vector2(0.5f, 0.35f);
-        fsRowRect.anchorMax = new Vector2(0.5f, 0.35f);
+        fsRowRect.anchorMin = new Vector2(0.5f, 0.26f);
+        fsRowRect.anchorMax = new Vector2(0.5f, 0.26f);
         fsRowRect.sizeDelta = new Vector2(350, 40);
         fsRowRect.anchoredPosition = Vector2.zero;
         var fsHlg = fsRow.AddComponent<HorizontalLayoutGroup>();
@@ -344,6 +377,8 @@ public class UIBuilder : MonoBehaviour
         pmSO.FindProperty("mainMenuButton").objectReferenceValue = pmMainMenuBtn.GetComponent<Button>();
         pmSO.FindProperty("sfxVolumeSlider").objectReferenceValue = sfxSlider.GetComponent<Slider>();
         pmSO.FindProperty("sfxValueText").objectReferenceValue = sfxVal.GetComponent<TextMeshProUGUI>();
+        pmSO.FindProperty("musicVolumeSlider").objectReferenceValue = musicSlider.GetComponent<Slider>();
+        pmSO.FindProperty("musicValueText").objectReferenceValue = musicVal.GetComponent<TextMeshProUGUI>();
         pmSO.FindProperty("fullscreenToggle").objectReferenceValue = fsToggle.GetComponent<Toggle>();
         pmSO.FindProperty("optionsBackButton").objectReferenceValue = optBackBtn.GetComponent<Button>();
         pmSO.ApplyModifiedProperties();
@@ -369,6 +404,49 @@ public class UIBuilder : MonoBehaviour
         tipSO.ApplyModifiedProperties();
 
         tooltipPanel.SetActive(false);
+
+        // ===== WAVE PREVIEW PANEL (Center-top, appears at dawn) =====
+        var wavePreviewRoot = CreatePanel(canvasObj.transform, "WavePreviewPanel", new Color(0.05f, 0.02f, 0.0f, 0.85f));
+        var wpRect = wavePreviewRoot.GetComponent<RectTransform>();
+        wpRect.anchorMin = new Vector2(0.5f, 0.75f);
+        wpRect.anchorMax = new Vector2(0.5f, 0.75f);
+        wpRect.pivot = new Vector2(0.5f, 0.5f);
+        wpRect.sizeDelta = new Vector2(400, 180);
+        wpRect.anchoredPosition = Vector2.zero;
+
+        var wpCG = wavePreviewRoot.AddComponent<CanvasGroup>();
+
+        var wpVlg = wavePreviewRoot.AddComponent<VerticalLayoutGroup>();
+        wpVlg.padding = new RectOffset(15, 15, 10, 10);
+        wpVlg.spacing = 5;
+        wpVlg.childAlignment = TextAnchor.UpperCenter;
+        wpVlg.childControlWidth = true;
+        wpVlg.childControlHeight = false;
+        wpVlg.childForceExpandWidth = true;
+
+        var wpHeader = CreateText(wavePreviewRoot.transform, "WavePreviewHeader", "DAY 2", 30, new Color(0.9f, 0.75f, 0.3f), 370);
+        var wpHeaderTmp = wpHeader.GetComponent<TextMeshProUGUI>();
+        wpHeaderTmp.alignment = TextAlignmentOptions.Center;
+        wpHeaderTmp.fontStyle = FontStyles.Bold;
+        var wpHeaderLE = wpHeader.AddComponent<LayoutElement>();
+        wpHeaderLE.preferredHeight = 38;
+
+        var wpBody = CreateText(wavePreviewRoot.transform, "WavePreviewBody", "", 18, new Color(0.85f, 0.85f, 0.8f), 370);
+        var wpBodyTmp = wpBody.GetComponent<TextMeshProUGUI>();
+        wpBodyTmp.alignment = TextAlignmentOptions.Center;
+        wpBodyTmp.richText = true;
+        var wpBodyLE = wpBody.AddComponent<LayoutElement>();
+        wpBodyLE.preferredHeight = 120;
+
+        wavePreviewRoot.SetActive(false);
+
+        // Add WavePreviewUI component
+        var wavePreview = canvasObj.AddComponent<WavePreviewUI>();
+        var wpSO = new SerializedObject(wavePreview);
+        wpSO.FindProperty("panelRoot").objectReferenceValue = wavePreviewRoot;
+        wpSO.FindProperty("headerText").objectReferenceValue = wpHeaderTmp;
+        wpSO.FindProperty("bodyText").objectReferenceValue = wpBodyTmp;
+        wpSO.ApplyModifiedProperties();
 
         Debug.Log("UI built successfully!");
     }
@@ -606,6 +684,174 @@ static GameObject CreateUpgradeButton(Transform parent, string name)
         toggle.isOn = true;
 
         return toggleObj;
+    }
+
+    [MenuItem("Game/Build Options UI")]
+    public static void BuildOptionsUI()
+    {
+        // Delete existing canvas
+        var existingCanvas = GameObject.Find("Canvas");
+        if (existingCanvas != null) Object.DestroyImmediate(existingCanvas);
+
+        // Delete existing OptionsManager GO
+        var existingMgr = GameObject.Find("OptionsManager");
+        if (existingMgr != null) Object.DestroyImmediate(existingMgr);
+
+        // Event System
+        if (GameObject.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+        {
+            var eventSystem = new GameObject("EventSystem");
+            eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            eventSystem.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+        }
+
+        // Create Canvas
+        var canvasObj = new GameObject("Canvas");
+        var canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        var scaler = canvasObj.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        canvasObj.AddComponent<GraphicRaycaster>();
+
+        // Background
+        var bg = CreatePanel(canvasObj.transform, "Background", new Color(0.08f, 0.05f, 0.02f, 1f));
+        var bgRect = bg.GetComponent<RectTransform>();
+        bgRect.anchorMin = Vector2.zero;
+        bgRect.anchorMax = Vector2.one;
+        bgRect.sizeDelta = Vector2.zero;
+
+        // Title
+        var title = CreateText(canvasObj.transform, "TitleText", "OPTIONS", 56, new Color(0.9f, 0.75f, 0.3f), 400);
+        var titleRect = title.GetComponent<RectTransform>();
+        titleRect.anchorMin = new Vector2(0.5f, 0.87f);
+        titleRect.anchorMax = new Vector2(0.5f, 0.87f);
+        titleRect.anchoredPosition = Vector2.zero;
+        title.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+        title.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+
+        // Audio header
+        var audioHeader = CreateText(canvasObj.transform, "AudioHeader", "AUDIO", 32, new Color(0.8f, 0.7f, 0.5f), 400);
+        var audioHdrRect = audioHeader.GetComponent<RectTransform>();
+        audioHdrRect.anchorMin = new Vector2(0.5f, 0.73f);
+        audioHdrRect.anchorMax = new Vector2(0.5f, 0.73f);
+        audioHdrRect.anchoredPosition = Vector2.zero;
+        audioHeader.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+        audioHeader.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+
+        // SFX volume row
+        var sfxRow = new GameObject("SfxRow");
+        sfxRow.transform.SetParent(canvasObj.transform, false);
+        var sfxRowRect = sfxRow.AddComponent<RectTransform>();
+        sfxRowRect.anchorMin = new Vector2(0.5f, 0.63f);
+        sfxRowRect.anchorMax = new Vector2(0.5f, 0.63f);
+        sfxRowRect.sizeDelta = new Vector2(700, 50);
+        sfxRowRect.anchoredPosition = Vector2.zero;
+        var sfxHlg = sfxRow.AddComponent<HorizontalLayoutGroup>();
+        sfxHlg.spacing = 15;
+        sfxHlg.childAlignment = TextAnchor.MiddleCenter;
+        sfxHlg.childControlWidth = true;
+        sfxHlg.childControlHeight = true;
+        sfxHlg.childForceExpandHeight = true;
+
+        var sfxLabel = CreateText(sfxRow.transform, "SfxLabel", "SFX Volume", 26, Color.white, 200);
+        sfxLabel.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineRight;
+        var sfxLabelLE = sfxLabel.AddComponent<LayoutElement>();
+        sfxLabelLE.preferredWidth = 200;
+
+        var sfxSlider = CreateInGameSlider("SfxSlider", sfxRow.transform);
+        var sfxSliderLE = sfxSlider.AddComponent<LayoutElement>();
+        sfxSliderLE.preferredWidth = 350;
+        sfxSliderLE.minHeight = 30;
+
+        var sfxVal = CreateText(sfxRow.transform, "SfxValueText", "50%", 26, Color.white, 80);
+        sfxVal.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineLeft;
+        var sfxValLE = sfxVal.AddComponent<LayoutElement>();
+        sfxValLE.preferredWidth = 80;
+
+        // Music volume row
+        var musicRow = new GameObject("MusicRow");
+        musicRow.transform.SetParent(canvasObj.transform, false);
+        var musicRowRect = musicRow.AddComponent<RectTransform>();
+        musicRowRect.anchorMin = new Vector2(0.5f, 0.53f);
+        musicRowRect.anchorMax = new Vector2(0.5f, 0.53f);
+        musicRowRect.sizeDelta = new Vector2(700, 50);
+        musicRowRect.anchoredPosition = Vector2.zero;
+        var musicHlg = musicRow.AddComponent<HorizontalLayoutGroup>();
+        musicHlg.spacing = 15;
+        musicHlg.childAlignment = TextAnchor.MiddleCenter;
+        musicHlg.childControlWidth = true;
+        musicHlg.childControlHeight = true;
+        musicHlg.childForceExpandHeight = true;
+
+        var musicLabel = CreateText(musicRow.transform, "MusicLabel", "Music Volume", 26, Color.white, 200);
+        musicLabel.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineRight;
+        var musicLabelLE = musicLabel.AddComponent<LayoutElement>();
+        musicLabelLE.preferredWidth = 200;
+
+        var musicSlider = CreateInGameSlider("MusicSlider", musicRow.transform);
+        var musicSliderLE = musicSlider.AddComponent<LayoutElement>();
+        musicSliderLE.preferredWidth = 350;
+        musicSliderLE.minHeight = 30;
+
+        var musicVal = CreateText(musicRow.transform, "MusicValueText", "50%", 26, Color.white, 80);
+        musicVal.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineLeft;
+        var musicValLE = musicVal.AddComponent<LayoutElement>();
+        musicValLE.preferredWidth = 80;
+
+        // Video header
+        var videoHeader = CreateText(canvasObj.transform, "VideoHeader", "VIDEO", 32, new Color(0.8f, 0.7f, 0.5f), 400);
+        var videoHdrRect = videoHeader.GetComponent<RectTransform>();
+        videoHdrRect.anchorMin = new Vector2(0.5f, 0.40f);
+        videoHdrRect.anchorMax = new Vector2(0.5f, 0.40f);
+        videoHdrRect.anchoredPosition = Vector2.zero;
+        videoHeader.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+        videoHeader.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+
+        // Fullscreen row
+        var fsRow = new GameObject("FullscreenRow");
+        fsRow.transform.SetParent(canvasObj.transform, false);
+        var fsRowRect = fsRow.AddComponent<RectTransform>();
+        fsRowRect.anchorMin = new Vector2(0.5f, 0.30f);
+        fsRowRect.anchorMax = new Vector2(0.5f, 0.30f);
+        fsRowRect.sizeDelta = new Vector2(400, 50);
+        fsRowRect.anchoredPosition = Vector2.zero;
+        var fsHlg = fsRow.AddComponent<HorizontalLayoutGroup>();
+        fsHlg.spacing = 15;
+        fsHlg.childAlignment = TextAnchor.MiddleCenter;
+        fsHlg.childControlWidth = true;
+        fsHlg.childControlHeight = true;
+        fsHlg.childForceExpandHeight = true;
+
+        var fsLabel = CreateText(fsRow.transform, "FullscreenLabel", "Fullscreen", 26, Color.white, 200);
+        fsLabel.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineRight;
+        var fsLabelLE = fsLabel.AddComponent<LayoutElement>();
+        fsLabelLE.preferredWidth = 200;
+
+        var fsToggle = CreateInGameToggle("FullscreenToggle", fsRow.transform);
+
+        // Back button
+        var backBtn = CreatePauseButton(canvasObj.transform, "BackButton", "BACK");
+        var backRect = backBtn.GetComponent<RectTransform>();
+        backRect.anchorMin = new Vector2(0.5f, 0.10f);
+        backRect.anchorMax = new Vector2(0.5f, 0.10f);
+        backRect.sizeDelta = new Vector2(300, 60);
+        backRect.anchoredPosition = Vector2.zero;
+
+        // OptionsManager GO
+        var mgrObj = new GameObject("OptionsManager");
+        var optMgr = mgrObj.AddComponent<OptionsManager>();
+        mgrObj.AddComponent<SceneLoader>();
+        var optSO = new SerializedObject(optMgr);
+        optSO.FindProperty("sfxVolumeSlider").objectReferenceValue = sfxSlider.GetComponent<Slider>();
+        optSO.FindProperty("sfxValueText").objectReferenceValue = sfxVal.GetComponent<TextMeshProUGUI>();
+        optSO.FindProperty("musicVolumeSlider").objectReferenceValue = musicSlider.GetComponent<Slider>();
+        optSO.FindProperty("musicValueText").objectReferenceValue = musicVal.GetComponent<TextMeshProUGUI>();
+        optSO.FindProperty("fullscreenToggle").objectReferenceValue = fsToggle.GetComponent<Toggle>();
+        optSO.FindProperty("backButton").objectReferenceValue = backBtn.GetComponent<Button>();
+        optSO.ApplyModifiedProperties();
+
+        Debug.Log("Options UI built successfully!");
     }
 #endif
 }

@@ -35,14 +35,14 @@ public class SceneWiring : MonoBehaviour
         CreateDefenderData("Crossbowman", DefenderType.Crossbowman, 2, 50, 12, 8f, 0.8f, new Color(0.2f, 0.4f, 0.8f));
         CreateDefenderData("Wizard", DefenderType.Wizard, 3, 100, 25, 12f, 0.5f, new Color(0.53f, 0.27f, 0.8f));
 
-        // Upgrade Data
-        CreateUpgradeData("HireEngineer", "Hire Engineer", "Engineer patrols and repairs walls", 30, 2, UpgradeType.SpawnEngineer);
-        CreateUpgradeData("HirePikeman", "Hire Pikeman", "Melee defender on walls", 40, 2, UpgradeType.SpawnPikeman);
-        CreateUpgradeData("HireCrossbowman", "Hire Crossbowman", "Ranged defender on walls", 50, 2, UpgradeType.SpawnCrossbowman);
-        CreateUpgradeData("HireWizard", "Hire Wizard", "AoE spell caster on walls", 100, 3, UpgradeType.SpawnWizard);
-        CreateUpgradeData("UpgBallistaDmg", "Ballista Damage+", "Increase ballista damage by 10", 60, 0, UpgradeType.BallistaDamage);
-        CreateUpgradeData("UpgBallistaRate", "Ballista Speed+", "Increase fire rate", 50, 0, UpgradeType.BallistaFireRate);
-        CreateUpgradeData("BuildWall", "Build Wall", "Place a new wall segment", 20, 0, UpgradeType.NewWall);
+        // Upgrade Data (costScaling: each purchase adds baseCost * scaling to the price)
+        CreateUpgradeData("HireEngineer", "Hire Engineer", "Engineer patrols and repairs walls", 30, 2, UpgradeType.SpawnEngineer, 0.25f);
+        CreateUpgradeData("HirePikeman", "Hire Pikeman", "Melee defender on walls", 40, 2, UpgradeType.SpawnPikeman, 0.25f);
+        CreateUpgradeData("HireCrossbowman", "Hire Crossbowman", "Ranged defender on walls", 50, 2, UpgradeType.SpawnCrossbowman, 0.25f);
+        CreateUpgradeData("HireWizard", "Hire Wizard", "AoE spell caster on walls", 100, 3, UpgradeType.SpawnWizard, 0.25f);
+        CreateUpgradeData("UpgBallistaDmg", "Ballista Damage+", "Increase ballista damage by 10", 60, 0, UpgradeType.BallistaDamage, 0.5f);
+        CreateUpgradeData("UpgBallistaRate", "Ballista Speed+", "Increase fire rate", 50, 0, UpgradeType.BallistaFireRate, 0.5f);
+        CreateUpgradeData("BuildWall", "Build Wall", "Place a new wall segment", 20, 0, UpgradeType.NewWall, 0.2f);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -86,7 +86,7 @@ public class SceneWiring : MonoBehaviour
         AssetDatabase.CreateAsset(data, "Assets/ScriptableObjects/Defenders/" + fileName + ".asset");
     }
 
-    static void CreateUpgradeData(string fileName, string name, string desc, int treasureCost, int menialCost, UpgradeType type)
+    static void CreateUpgradeData(string fileName, string name, string desc, int treasureCost, int menialCost, UpgradeType type, float costScaling = 0f)
     {
         var data = ScriptableObject.CreateInstance<UpgradeData>();
         data.upgradeName = name;
@@ -95,6 +95,7 @@ public class SceneWiring : MonoBehaviour
         data.menialCost = menialCost;
         data.upgradeType = type;
         data.repeatable = true;
+        data.costScaling = costScaling;
         AssetDatabase.CreateAsset(data, "Assets/ScriptableObjects/Upgrades/" + fileName + ".asset");
     }
 
@@ -187,6 +188,8 @@ public class SceneWiring : MonoBehaviour
         spawnerSO.FindProperty("suicideGoblinData").objectReferenceValue = suicideGoblin;
         spawnerSO.FindProperty("goblinCannoneerData").objectReferenceValue = goblinCannoneer;
         spawnerSO.FindProperty("orcWarBossData").objectReferenceValue = orcWarBoss;
+        spawnerSO.FindProperty("hpScalingPerDay").floatValue = 0.1f;
+        spawnerSO.FindProperty("damageScalingPerDay").floatValue = 0.05f;
         spawnerSO.ApplyModifiedProperties();
 
         // --- Wire MenialManager ---
@@ -383,9 +386,21 @@ public class SceneWiring : MonoBehaviour
         sndSO.FindProperty("trollHit").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/troll_hit.wav");
         sndSO.FindProperty("menialHit").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/menial_hit.wav");
         sndSO.FindProperty("wallHit").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/wall_hit.wav");
+        sndSO.FindProperty("wallCollapse").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/wall_collapse.wav");
         sndSO.FindProperty("attackStart").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/attack_start.wav");
+
+        // Music tracks
+        var musicProp = sndSO.FindProperty("musicTracks");
+        var song1 = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Music/song1.mp3");
+        var song2 = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Music/song2.mp3");
+        int trackCount = (song1 != null ? 1 : 0) + (song2 != null ? 1 : 0);
+        musicProp.ClearArray();
+        int idx = 0;
+        if (song1 != null) { musicProp.InsertArrayElementAtIndex(idx); musicProp.GetArrayElementAtIndex(idx).objectReferenceValue = song1; idx++; }
+        if (song2 != null) { musicProp.InsertArrayElementAtIndex(idx); musicProp.GetArrayElementAtIndex(idx).objectReferenceValue = song2; idx++; }
+
         sndSO.ApplyModifiedProperties();
-        Debug.Log("[SceneWiring] SoundManager wired with 12 audio clips.");
+        Debug.Log($"[SceneWiring] SoundManager wired with 13 SFX clips and {trackCount} music tracks.");
 
         Debug.Log("Scene wired successfully!");
     }

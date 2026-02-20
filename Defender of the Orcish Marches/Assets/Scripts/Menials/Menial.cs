@@ -487,6 +487,7 @@ public class Menial : MonoBehaviour
     {
         if (IsDead) return;
         currentHP -= damage;
+        FloatingDamageNumber.Spawn(transform.position, damage, false);
         if (currentHP <= 0)
         {
             Die();

@@ -17,6 +17,8 @@ public class PauseMenu : MonoBehaviour
     [Header("Options Controls")]
     [SerializeField] private Slider sfxVolumeSlider;
     [SerializeField] private TextMeshProUGUI sfxValueText;
+    [SerializeField] private Slider musicVolumeSlider;
+    [SerializeField] private TextMeshProUGUI musicValueText;
     [SerializeField] private Toggle fullscreenToggle;
     [SerializeField] private Button optionsBackButton;
 
@@ -32,6 +34,8 @@ public class PauseMenu : MonoBehaviour
 
         if (sfxVolumeSlider != null)
             sfxVolumeSlider.onValueChanged.AddListener(OnSfxVolumeChanged);
+        if (musicVolumeSlider != null)
+            musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
         if (fullscreenToggle != null)
             fullscreenToggle.onValueChanged.AddListener(OnFullscreenChanged);
     }
@@ -45,6 +49,8 @@ public class PauseMenu : MonoBehaviour
 
         if (sfxVolumeSlider != null)
             sfxVolumeSlider.onValueChanged.RemoveListener(OnSfxVolumeChanged);
+        if (musicVolumeSlider != null)
+            musicVolumeSlider.onValueChanged.RemoveListener(OnMusicVolumeChanged);
         if (fullscreenToggle != null)
             fullscreenToggle.onValueChanged.RemoveListener(OnFullscreenChanged);
     }
@@ -126,6 +132,11 @@ public class PauseMenu : MonoBehaviour
             sfxVolumeSlider.value = GameSettings.SfxVolume;
             UpdateSfxText(sfxVolumeSlider.value);
         }
+        if (musicVolumeSlider != null)
+        {
+            musicVolumeSlider.value = GameSettings.MusicVolume;
+            UpdateMusicText(musicVolumeSlider.value);
+        }
         if (fullscreenToggle != null)
             fullscreenToggle.isOn = GameSettings.Fullscreen;
 
@@ -160,6 +171,20 @@ public class PauseMenu : MonoBehaviour
     {
         if (sfxValueText != null)
             sfxValueText.text = Mathf.RoundToInt(value * 100) + "%";
+    }
+
+    private void OnMusicVolumeChanged(float value)
+    {
+        GameSettings.MusicVolume = value;
+        UpdateMusicText(value);
+        if (SoundManager.Instance != null)
+            SoundManager.Instance.SetMusicVolume(value);
+    }
+
+    private void UpdateMusicText(float value)
+    {
+        if (musicValueText != null)
+            musicValueText.text = Mathf.RoundToInt(value * 100) + "%";
     }
 
     private void OnFullscreenChanged(bool isOn)

@@ -17,9 +17,11 @@ public class GameManager : MonoBehaviour
     public int MenialCount { get; private set; }
     public int IdleMenialCount { get; set; }
     public float GameTime { get; private set; }
+    public int EnemyKills { get; private set; }
 
     public event Action<int> OnTreasureChanged;
     public event Action<int> OnMenialsChanged;
+    public event Action<int> OnKillsChanged;
     public event Action OnGameOver;
     public event Action<bool> OnPauseChanged;
 
@@ -56,9 +58,23 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        Enemy.OnEnemyDied += HandleEnemyDied;
         OnTreasureChanged?.Invoke(Treasure);
         OnMenialsChanged?.Invoke(MenialCount);
+        OnKillsChanged?.Invoke(EnemyKills);
         GameSettings.ApplySettings();
+    }
+
+    private void OnDestroy()
+    {
+        Enemy.OnEnemyDied -= HandleEnemyDied;
+    }
+
+    private void HandleEnemyDied(Enemy enemy)
+    {
+        EnemyKills++;
+        Debug.Log($"[GameManager] Enemy killed: {enemy.Data?.enemyName}. Total kills={EnemyKills}");
+        OnKillsChanged?.Invoke(EnemyKills);
     }
 
     private void Update()

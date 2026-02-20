@@ -90,8 +90,8 @@ public class GameOverScreen : MonoBehaviour
             int seconds = Mathf.FloorToInt(time % 60);
             int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
             statsText.text = string.Format(
-                "Survived {0} Day{1}\nSurvival Time: {2}:{3:00}\nGold Collected: {4}",
-                dayNumber, dayNumber != 1 ? "s" : "", minutes, seconds, GameManager.Instance.Treasure);
+                "Survived {0} Day{1}\nSurvival Time: {2}:{3:00}\nEnemies Killed: {4}\nGold Collected: {5}",
+                dayNumber, dayNumber != 1 ? "s" : "", minutes, seconds, GameManager.Instance.EnemyKills, GameManager.Instance.Treasure);
         }
     }
 

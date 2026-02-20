@@ -7,6 +7,8 @@ public class OptionsManager : MonoBehaviour
     [Header("Audio")]
     [SerializeField] private Slider sfxVolumeSlider;
     [SerializeField] private TextMeshProUGUI sfxValueText;
+    [SerializeField] private Slider musicVolumeSlider;
+    [SerializeField] private TextMeshProUGUI musicValueText;
 
     [Header("Video")]
     [SerializeField] private Toggle fullscreenToggle;
@@ -35,6 +37,13 @@ public class OptionsManager : MonoBehaviour
             UpdateSfxText(sfxVolumeSlider.value);
         }
 
+        if (musicVolumeSlider != null)
+        {
+            musicVolumeSlider.value = GameSettings.MusicVolume;
+            musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+            UpdateMusicText(musicVolumeSlider.value);
+        }
+
         if (fullscreenToggle != null)
         {
             fullscreenToggle.isOn = GameSettings.Fullscreen;
@@ -49,6 +58,8 @@ public class OptionsManager : MonoBehaviour
     {
         if (sfxVolumeSlider != null)
             sfxVolumeSlider.onValueChanged.RemoveListener(OnSfxVolumeChanged);
+        if (musicVolumeSlider != null)
+            musicVolumeSlider.onValueChanged.RemoveListener(OnMusicVolumeChanged);
         if (fullscreenToggle != null)
             fullscreenToggle.onValueChanged.RemoveListener(OnFullscreenChanged);
         if (backButton != null)
@@ -65,6 +76,20 @@ public class OptionsManager : MonoBehaviour
     {
         if (sfxValueText != null)
             sfxValueText.text = Mathf.RoundToInt(value * 100) + "%";
+    }
+
+    private void OnMusicVolumeChanged(float value)
+    {
+        GameSettings.MusicVolume = value;
+        UpdateMusicText(value);
+        if (SoundManager.Instance != null)
+            SoundManager.Instance.SetMusicVolume(value);
+    }
+
+    private void UpdateMusicText(float value)
+    {
+        if (musicValueText != null)
+            musicValueText.text = Mathf.RoundToInt(value * 100) + "%";
     }
 
     private void OnFullscreenChanged(bool isOn)

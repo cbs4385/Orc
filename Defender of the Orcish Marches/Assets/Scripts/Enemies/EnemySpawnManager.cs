@@ -11,6 +11,12 @@ public class EnemySpawnManager : MonoBehaviour
     [SerializeField] private float initialSpawnInterval = 3f;
     [SerializeField] private float minSpawnInterval = 0.5f;
 
+    [Header("Stat Scaling")]
+    [Tooltip("Enemy HP increases by this fraction of base per day. 0.1 = +10% per day.")]
+    [SerializeField] private float hpScalingPerDay = 0.1f;
+    [Tooltip("Enemy damage increases by this fraction of base per day. 0.05 = +5% per day.")]
+    [SerializeField] private float damageScalingPerDay = 0.05f;
+
     [Header("Enemy Prefabs")]
     [SerializeField] private GameObject enemyPrefab;
     [SerializeField] private GameObject treasurePickupPrefab;
@@ -90,9 +96,10 @@ public class EnemySpawnManager : MonoBehaviour
         if (enemy != null)
         {
             enemy.Initialize(orcWarBossData);
+            ApplyDayScaling(enemy);
             activeEnemies.Add(enemy);
             bossSpawnedThisDay = true;
-            Debug.Log($"[EnemySpawnManager] WAR BOSS spawned at {spawnPos}! HP={orcWarBossData.maxHP}, Damage={orcWarBossData.damage}");
+            Debug.Log($"[EnemySpawnManager] WAR BOSS spawned at {spawnPos}! HP={enemy.CurrentHP}, Damage={enemy.ScaledDamage}");
         }
     }
 
@@ -143,8 +150,18 @@ public class EnemySpawnManager : MonoBehaviour
         if (enemy != null)
         {
             enemy.Initialize(data);
+            ApplyDayScaling(enemy);
             activeEnemies.Add(enemy);
         }
+    }
+
+    private void ApplyDayScaling(Enemy enemy)
+    {
+        int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
+        if (dayNumber <= 1) return;
+        float hpMult = 1f + hpScalingPerDay * (dayNumber - 1);
+        float dmgMult = 1f + damageScalingPerDay * (dayNumber - 1);
+        enemy.ApplyDayScaling(hpMult, dmgMult);
     }
 
     private EnemyData ChooseEnemyType()
@@ -196,4 +213,80 @@ public class EnemySpawnManager : MonoBehaviour
     }
 
     public int GetActiveEnemyCount() => activeEnemies.Count;
+
+    /// <summary>
+    /// Returns a preview of the wave for the given day number.
+    /// </summary>
+    public WavePreviewData GetWavePreview(int dayNumber)
+    {
+        var data = new WavePreviewData();
+        data.dayNumber = dayNumber;
+
+        // Enemy types available this day
+        var types = new List<string>();
+        var newTypes = new List<string>();
+
+        types.Add(orcGruntData != null ? orcGruntData.enemyName : "Orc Grunt");
+        if (dayNumber >= 2 && bowOrcData != null)
+        {
+            types.Add(bowOrcData.enemyName);
+            if (dayNumber == 2) newTypes.Add(bowOrcData.enemyName);
+        }
+        if (dayNumber >= 3 && trollData != null)
+        {
+            types.Add(trollData.enemyName);
+            if (dayNumber == 3) newTypes.Add(trollData.enemyName);
+        }
+        if (dayNumber >= 4 && suicideGoblinData != null)
+        {
+            types.Add(suicideGoblinData.enemyName);
+            if (dayNumber == 4) newTypes.Add(suicideGoblinData.enemyName);
+        }
+        if (dayNumber >= 5 && goblinCannoneerData != null)
+        {
+            types.Add(goblinCannoneerData.enemyName);
+            if (dayNumber == 5) newTypes.Add(goblinCannoneerData.enemyName);
+        }
+        data.enemyTypes = types.ToArray();
+        data.newEnemyTypes = newTypes.ToArray();
+
+        // Spawn direction
+        float halfSpread = Mathf.Min(5f + 10f * (dayNumber - 1), 180f);
+        data.spawnDirection = DescribeSpawnArc(halfSpread);
+
+        // Boss
+        data.hasBoss = halfSpread >= 90f && orcWarBossData != null;
+        if (data.hasBoss)
+        {
+            data.bossName = orcWarBossData.enemyName;
+        }
+
+        // Stat scaling
+        data.hpMultiplier = 1f + hpScalingPerDay * (dayNumber - 1);
+        data.damageMultiplier = 1f + damageScalingPerDay * (dayNumber - 1);
+
+        return data;
+    }
+
+    private string DescribeSpawnArc(float halfSpread)
+    {
+        if (halfSpread <= 15f) return "From the West";
+        if (halfSpread <= 45f) return "From the West (wide arc)";
+        if (halfSpread <= 75f) return "From Northwest to Southwest";
+        if (halfSpread <= 105f) return "From North to South";
+        if (halfSpread <= 150f) return "Nearly surrounded";
+        return "From all directions";
+    }
+}
+
+public struct WavePreviewData
+{
+    public int dayNumber;
+    public string[] enemyTypes;
+    public string[] newEnemyTypes;
+    public string spawnDirection;
+    public bool hasBoss;
+    public string bossName;
+    public float hpMultiplier;
+    public float damageMultiplier;
 }

@@ -153,6 +153,7 @@ public class Refugee : MonoBehaviour
     {
         if (isDead) return;
         currentHP -= damage;
+        FloatingDamageNumber.Spawn(transform.position, damage, false);
         if (currentHP <= 0)
         {
             isDead = true;

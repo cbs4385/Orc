@@ -13,7 +13,7 @@ public class MenialManager : MonoBehaviour
 
     private List<Menial> allMenials = new List<Menial>();
     private UnityEngine.Camera mainCam;
-    private GameObject activeBanner;
+    private List<GameObject> activeBanners = new List<GameObject>();
 
     private void Awake()
     {
@@ -73,8 +73,9 @@ public class MenialManager : MonoBehaviour
             TrySendMenialToLoot();
         }
 
-        // Clean up dead menials from list
+        // Clean up dead menials and expired banners
         allMenials.RemoveAll(m => m == null || m.IsDead);
+        activeBanners.RemoveAll(b => b == null);
     }
 
     private void TrySendMenialToLoot()
@@ -193,9 +194,6 @@ public class MenialManager : MonoBehaviour
 
     private void SpawnBanner(Vector3 position)
     {
-        // Destroy previous banner
-        if (activeBanner != null) Destroy(activeBanner);
-
         var root = new GameObject("LootBanner");
         root.transform.position = new Vector3(position.x, 0f, position.z);
 
@@ -242,8 +240,8 @@ public class MenialManager : MonoBehaviour
         var banner = root.AddComponent<LootBanner>();
         banner.lifetime = 4f;
 
-        activeBanner = root;
-        Debug.Log($"[MenialManager] Banner placed at {position}, search radius={lootSearchRadius}");
+        activeBanners.Add(root);
+        Debug.Log($"[MenialManager] Banner placed at {position}, search radius={lootSearchRadius} ({activeBanners.Count} active)");
     }
 
     /// <summary>

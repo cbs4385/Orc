@@ -8,6 +8,7 @@ public class Enemy : MonoBehaviour
 
     public EnemyData Data => data;
     public int CurrentHP { get; private set; }
+    public int ScaledDamage { get; private set; }
     public bool IsDead { get; private set; }
 
     public static event Action<Enemy> OnEnemyDied;
@@ -22,6 +23,7 @@ public class Enemy : MonoBehaviour
     {
         data = enemyData;
         CurrentHP = data.maxHP;
+        ScaledDamage = data.damage;
 
         // Swap model if the EnemyData specifies a custom model
         if (data.modelPrefab != null)
@@ -77,6 +79,13 @@ public class Enemy : MonoBehaviour
         OnEnemySpawned?.Invoke(this);
     }
 
+    public void ApplyDayScaling(float hpMultiplier, float damageMultiplier)
+    {
+        CurrentHP = Mathf.RoundToInt(data.maxHP * hpMultiplier);
+        ScaledDamage = Mathf.RoundToInt(data.damage * damageMultiplier);
+        Debug.Log($"[Enemy] {data.enemyName} day-scaled: HP={CurrentHP} (base {data.maxHP}), Damage={ScaledDamage} (base {data.damage})");
+    }
+
     private void Update()
     {
         if (damageFlashTimer > 0)
@@ -121,6 +130,7 @@ public class Enemy : MonoBehaviour
         if (IsDead) return;
         CurrentHP -= damage;
 
+        FloatingDamageNumber.Spawn(transform.position, damage, true);
         FlashWhite();
 
         if (CurrentHP <= 0)

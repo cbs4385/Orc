@@ -29,12 +29,13 @@ public class Wall : MonoBehaviour
     {
         if (IsDestroyed) return;
         CurrentHP = Mathf.Max(0, CurrentHP - damage);
+        FloatingDamageNumber.Spawn(transform.position, damage, false);
         OnWallDamaged?.Invoke(this);
         UpdateVisual();
 
         if (CurrentHP <= 0)
         {
-            if (SoundManager.Instance != null) SoundManager.Instance.PlayWallHit(transform.position);
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayWallCollapse(transform.position);
             OnWallDestroyed?.Invoke(this);
             gameObject.SetActive(false);
         }

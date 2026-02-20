@@ -52,7 +52,7 @@ public class EnemyAttack : MonoBehaviour
         var wall = target.GetComponent<Wall>();
         if (wall != null)
         {
-            wall.TakeDamage(enemy.Data.damage);
+            wall.TakeDamage(enemy.ScaledDamage);
             return;
         }
 
@@ -60,7 +60,7 @@ public class EnemyAttack : MonoBehaviour
         var defender = target.GetComponent<Defender>();
         if (defender != null)
         {
-            defender.TakeDamage(enemy.Data.damage);
+            defender.TakeDamage(enemy.ScaledDamage);
             return;
         }
 
@@ -68,7 +68,7 @@ public class EnemyAttack : MonoBehaviour
         var menial = target.GetComponent<Menial>();
         if (menial != null)
         {
-            menial.TakeDamage(enemy.Data.damage);
+            menial.TakeDamage(enemy.ScaledDamage);
             return;
         }
 
@@ -76,7 +76,7 @@ public class EnemyAttack : MonoBehaviour
         var refugee = target.GetComponent<Refugee>();
         if (refugee != null)
         {
-            refugee.TakeDamage(enemy.Data.damage);
+            refugee.TakeDamage(enemy.ScaledDamage);
         }
     }
 
@@ -98,7 +98,7 @@ public class EnemyAttack : MonoBehaviour
             var projectile = proj.GetComponent<EnemyProjectile>();
             if (projectile != null)
             {
-                projectile.Initialize(dir, 10f, enemy.Data.damage, enemy.Data.attackRange * 1.5f);
+                projectile.Initialize(dir, 10f, enemy.ScaledDamage, enemy.Data.attackRange * 1.5f);
             }
         }
         else
@@ -114,16 +114,16 @@ public class EnemyAttack : MonoBehaviour
 
         // Deal massive damage and die
         var wall = target.GetComponent<Wall>();
-        if (wall != null) wall.TakeDamage(enemy.Data.damage);
+        if (wall != null) wall.TakeDamage(enemy.ScaledDamage);
 
         var defender = target.GetComponent<Defender>();
-        if (defender != null) defender.TakeDamage(enemy.Data.damage);
+        if (defender != null) defender.TakeDamage(enemy.ScaledDamage);
 
         var menial = target.GetComponent<Menial>();
-        if (menial != null) menial.TakeDamage(enemy.Data.damage);
+        if (menial != null) menial.TakeDamage(enemy.ScaledDamage);
 
         var refugee = target.GetComponent<Refugee>();
-        if (refugee != null) refugee.TakeDamage(enemy.Data.damage);
+        if (refugee != null) refugee.TakeDamage(enemy.ScaledDamage);
 
         // Self-destruct
         enemy.TakeDamage(9999);
