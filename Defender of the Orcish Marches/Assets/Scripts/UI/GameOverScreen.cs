@@ -9,18 +9,24 @@ public class GameOverScreen : MonoBehaviour
     [SerializeField] private TextMeshProUGUI statsText;
     [SerializeField] private TextMeshProUGUI scoreText;
     [SerializeField] private Button restartButton;
+    [SerializeField] private Button exitButton;
 
+    private SceneLoader sceneLoader;
     private bool subscribed;
 
     private void Start()
     {
+        sceneLoader = GetComponent<SceneLoader>();
+        if (sceneLoader == null)
+            sceneLoader = gameObject.AddComponent<SceneLoader>();
+
         if (panelRoot != null) panelRoot.SetActive(false);
         TrySubscribe();
 
         if (restartButton != null)
-        {
             restartButton.onClick.AddListener(OnRestartClicked);
-        }
+        if (exitButton != null)
+            exitButton.onClick.AddListener(OnExitClicked);
     }
 
     private void OnEnable()
@@ -28,11 +34,16 @@ public class GameOverScreen : MonoBehaviour
         subscribed = false;
         TrySubscribe();
 
-        // Re-add button listener (lost after domain reload)
+        // Re-add button listeners (lost after domain reload)
         if (restartButton != null)
         {
             restartButton.onClick.RemoveListener(OnRestartClicked);
             restartButton.onClick.AddListener(OnRestartClicked);
+        }
+        if (exitButton != null)
+        {
+            exitButton.onClick.RemoveListener(OnExitClicked);
+            exitButton.onClick.AddListener(OnExitClicked);
         }
     }
 
@@ -179,5 +190,12 @@ public class GameOverScreen : MonoBehaviour
         {
             GameManager.Instance.RestartGame();
         }
+    }
+
+    private void OnExitClicked()
+    {
+        Debug.Log("[GameOverScreen] Exit clicked — returning to main menu.");
+        if (sceneLoader != null)
+            sceneLoader.LoadMainMenu();
     }
 }

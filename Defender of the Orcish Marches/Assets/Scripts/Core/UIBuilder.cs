@@ -205,12 +205,19 @@ public class UIBuilder : MonoBehaviour
         goScoreTmp.richText = true;
         goScoreTmp.fontStyle = FontStyles.Bold;
 
-        // Restart button
+        // Restart button (left of center)
         var restartBtn = CreateUIButton(gameOverRoot.transform, "RestartButton", "RESTART", 200, 50);
         var restartBtnRect = restartBtn.GetComponent<RectTransform>();
         restartBtnRect.anchorMin = new Vector2(0.5f, 0.12f);
         restartBtnRect.anchorMax = new Vector2(0.5f, 0.12f);
-        restartBtnRect.anchoredPosition = Vector2.zero;
+        restartBtnRect.anchoredPosition = new Vector2(-110, 0);
+
+        // Exit button (right of center)
+        var exitBtn = CreateUIButton(gameOverRoot.transform, "ExitButton", "EXIT", 200, 50);
+        var exitBtnRect = exitBtn.GetComponent<RectTransform>();
+        exitBtnRect.anchorMin = new Vector2(0.5f, 0.12f);
+        exitBtnRect.anchorMax = new Vector2(0.5f, 0.12f);
+        exitBtnRect.anchoredPosition = new Vector2(110, 0);
 
         gameOverRoot.SetActive(false);
 
@@ -222,6 +229,7 @@ public class UIBuilder : MonoBehaviour
         goSO.FindProperty("statsText").objectReferenceValue = goStatsTmp;
         goSO.FindProperty("scoreText").objectReferenceValue = goScoreTmp;
         goSO.FindProperty("restartButton").objectReferenceValue = restartBtn.GetComponent<Button>();
+        goSO.FindProperty("exitButton").objectReferenceValue = exitBtn.GetComponent<Button>();
         goSO.ApplyModifiedProperties();
 
         // ===== PAUSE MENU OVERLAY =====

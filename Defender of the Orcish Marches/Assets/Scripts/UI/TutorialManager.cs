@@ -159,9 +159,10 @@ public class TutorialManager : MonoBehaviour
                 spriteName = "tut_topdown",
                 body = "The bar at the top of the screen shows vital information:\n\n" +
                        "  <b>Gold</b> — your currency for buying upgrades and defenders\n" +
-                       "  <b>Menials</b> — your workforce count\n" +
+                       "  <b>Menials</b> — idle / total workforce count\n" +
                        "  <b>Phase Timer</b> — time remaining in the current phase\n" +
                        "  <b>Enemy Count</b> — how many foes remain\n" +
+                       "  <b>Kills</b> — total enemies slain\n" +
                        "  <b>Day/Night Wheel</b> — shows the current cycle position"
             },
             new TutorialPage
@@ -177,12 +178,23 @@ public class TutorialManager : MonoBehaviour
             },
             new TutorialPage
             {
+                title = "Daily Events",
+                spriteName = "tut_side",
+                body = "Each new day brings a random <b>Daily Event</b> that modifies the rules.\n\n" +
+                       "<b>Beneficial:</b> increased loot, stronger defenders, faster menials, or tougher walls.\n\n" +
+                       "<b>Detrimental:</b> more enemy spawns, tougher enemies, faster foes, or siege damage.\n\n" +
+                       "<b>Mixed:</b> a bonus paired with a drawback — for example, richer loot but more spawns.\n\n" +
+                       "Watch for the event announcement at the start of each day and adapt your strategy."
+            },
+            new TutorialPage
+            {
                 title = "The Ballista",
                 spriteName = "tut_ballista",
                 body = "Your primary weapon is the <b>Ballista</b> mounted on the tower.\n\n" +
-                       "<b>Click anywhere</b> on the battlefield to aim. The ballista will automatically " +
-                       "fire projectiles at the target location.\n\n" +
-                       "Use it to pick off dangerous enemies before they reach your walls."
+                       "<b>Left Click</b> on the battlefield to aim and fire at the target location.\n\n" +
+                       "You can purchase additional ballistas from the upgrade panel (up to 3 total). " +
+                       "Press <b>Tab</b> to switch between them.\n\n" +
+                       "Use the ballista to pick off dangerous enemies before they reach your walls."
             },
             new TutorialPage
             {
@@ -191,9 +203,10 @@ public class TutorialManager : MonoBehaviour
                 body = "<b>Walls</b> form a protective ring around your tower. Enemies must break through " +
                        "them to reach the interior.\n\n" +
                        "A single <b>Gate</b> on the east side lets your menials and refugees pass through. " +
-                       "Enemies approach from the west, so the gate is on the safe side — for now.\n\n" +
+                       "It opens automatically when friendly units approach.\n\n" +
                        "Walls take damage from enemy attacks. If a wall segment is destroyed, " +
-                       "enemies will pour through the breach."
+                       "enemies will pour through the breach. You can <b>Build Wall</b> from the " +
+                       "upgrade panel to place new wall segments."
             },
             new TutorialPage
             {
@@ -201,29 +214,29 @@ public class TutorialManager : MonoBehaviour
                 spriteName = "tut_treasure",
                 body = "Gold is your primary resource for purchasing upgrades and recruiting defenders.\n\n" +
                        "When enemies die, they drop <b>Treasure</b> on the ground.\n\n" +
-                       "Your <b>Menials</b> will automatically collect nearby treasure and bring it back, " +
-                       "adding gold to your stockpile.\n\n" +
+                       "<b>Right-click</b> near treasure to send the nearest idle menial to collect it. " +
+                       "They will pick up loot along their path, then return it to the fortress.\n\n" +
                        "Spend wisely — there is never enough gold for everything."
             },
             new TutorialPage
             {
                 title = "Resources: Menials",
                 spriteName = "tut_menial",
-                body = "<b>Menials</b> are your workforce — they collect loot dropped by slain enemies.\n\n" +
+                body = "<b>Menials</b> are your workforce — <b>right-click</b> near loot to send them out to collect it.\n\n" +
                        "Menials can also be <b>recruited as Defenders</b> through the upgrade panel. " +
-                       "Recruiting a defender consumes one menial.\n\n" +
-                       "Be careful: too few menials means uncollected gold. " +
-                       "Too many recruited means no one to gather resources."
+                       "Each defender costs <b>2-3 menials</b> who walk to the tower and convert.\n\n" +
+                       "The HUD shows <b>idle/total</b> menials. Balance your workforce: " +
+                       "too few menials means uncollected gold, too many recruited means no one to gather resources."
             },
             new TutorialPage
             {
                 title = "The Upgrade Panel",
                 spriteName = "tut_side",
                 body = "Press <b>U</b> to open the <b>Upgrade Panel</b>.\n\n" +
-                       "Here you can spend gold on:\n" +
-                       "  <b>Wall Repairs</b> — restore damaged wall segments\n" +
+                       "Here you can spend gold (and menials) on:\n" +
+                       "  <b>Build Wall</b> — place new wall segments\n" +
                        "  <b>New Defenders</b> — recruit menials into combat roles\n" +
-                       "  <b>Ballista Upgrades</b> — improve your tower weapon\n\n" +
+                       "  <b>Ballista Upgrades</b> — more damage, faster fire rate, or additional ballistas\n\n" +
                        "Press <b>U</b> again or <b>Escape</b> to close the panel."
             },
             new TutorialPage
@@ -231,11 +244,11 @@ public class TutorialManager : MonoBehaviour
                 title = "Defenders",
                 spriteName = "tut_defenders",
                 body = "Defenders are units that fight alongside you. Each type has a unique role:\n\n" +
-                       "  <b>Engineer</b> — repairs damaged walls (range: short)\n" +
-                       "  <b>Pikeman</b> — melee fighter, engages enemies up close\n" +
-                       "  <b>Crossbowman</b> — ranged attacker, fires from a distance\n" +
-                       "  <b>Wizard</b> — powerful AoE magic, longest range\n\n" +
-                       "Recruit them from the upgrade panel. Each costs gold and one menial."
+                       "  <b>Engineer</b> (30g, 2m) — repairs damaged walls\n" +
+                       "  <b>Pikeman</b> (40g, 2m) — melee fighter, engages enemies up close\n" +
+                       "  <b>Crossbowman</b> (50g, 2m) — ranged attacker, fires from a distance\n" +
+                       "  <b>Wizard</b> (100g, 3m) — powerful AoE magic, longest range\n\n" +
+                       "Recruit them from the upgrade panel. Costs increase with each purchase."
             },
             new TutorialPage
             {
@@ -247,18 +260,28 @@ public class TutorialManager : MonoBehaviour
                        "  <b>Troll</b> — heavy hitter, smashes walls quickly\n" +
                        "  <b>Suicide Goblin</b> — fast, explodes on contact\n" +
                        "  <b>Cannoneer</b> — long-range siege unit\n" +
-                       "  <b>Orc War Boss</b> — massive, devastating; appears when the spawn arc reaches a half-circle (day 10)\n\n" +
-                       "Each day the enemy spawn arc widens. Adapt your defenses accordingly."
+                       "  <b>Orc War Boss</b> — massive, devastating; appears around day 10\n\n" +
+                       "Each day the enemy spawn arc widens and enemies grow stronger."
             },
             new TutorialPage
             {
                 title = "Refugees",
                 spriteName = "tut_refugee",
                 body = "<b>Refugees</b> arrive from the wilds outside your fortress.\n\n" +
-                       "They will try to reach the <b>East Gate</b>. If they make it inside, " +
-                       "they become <b>Menials</b> — adding to your workforce.\n\n" +
-                       "Protect them from enemies on their way in. More refugees means more workers " +
-                       "and more potential defenders."
+                       "If they reach the tower, they join as <b>Menials</b> — adding to your workforce.\n\n" +
+                       "Some refugees carry <b>Power-ups</b> (shown by a colored glow). " +
+                       "These grant your ballista special abilities like <b>Double Shot</b> or <b>Burst Damage</b>.\n\n" +
+                       "Protect them from enemies on their way in."
+            },
+            new TutorialPage
+            {
+                title = "Vegetation",
+                spriteName = "tut_overview",
+                body = "<b>Bushes</b> and <b>Trees</b> grow in the western wilderness.\n\n" +
+                       "Vegetation spreads at <b>night</b>, filling the battlefield over time. " +
+                       "Trees block enemy and defender pathing.\n\n" +
+                       "Menials will automatically <b>clear</b> vegetation that blocks their path " +
+                       "while collecting loot."
             },
             new TutorialPage
             {
@@ -276,10 +299,12 @@ public class TutorialManager : MonoBehaviour
                 spriteName = "tut_overview",
                 body = "<b>Hotkey Summary:</b>\n\n" +
                        "  <b>Scroll Wheel</b> — Zoom in/out\n" +
-                       "  <b>Left Click</b> — Aim ballista\n" +
+                       "  <b>Left Click</b> — Fire ballista\n" +
+                       "  <b>Right Click</b> — Send menial to collect loot\n" +
+                       "  <b>Tab</b> — Switch active ballista\n" +
                        "  <b>U</b> — Open/close upgrade panel\n" +
-                       "  <b>Escape</b> — Pause menu\n" +
-                       "  <b>Space</b> — Resume from pause\n\n" +
+                       "  <b>Space</b> — Toggle pause\n" +
+                       "  <b>Escape</b> — Pause menu\n\n" +
                        "Good luck, Commander. The Marches depend on you!"
             }
         };
