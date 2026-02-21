@@ -140,8 +140,9 @@ public class TutorialManager : MonoBehaviour
                 title = "Your Fortress",
                 spriteName = "tut_fortress",
                 body = "At the center of the map stands your <b>Tower</b> — if enemies reach it, the game is over.\n\n" +
-                       "Surrounding the tower is a ring of <b>Walls</b> that block enemy advance. " +
-                       "Your units can slip through the gaps between wall segments.\n\n" +
+                       "Surrounding the tower is a square ring of <b>Walls</b> with octagonal towers " +
+                       "at each joint. Your menials and defenders can slip through the narrow gaps " +
+                       "between towers, but enemies are too large to fit.\n\n" +
                        "Protect the walls. They are your first line of defense."
             },
             new TutorialPage
@@ -151,17 +152,19 @@ public class TutorialManager : MonoBehaviour
                 body = "Use the <b>Scroll Wheel</b> to zoom in and out across the battlefield.\n\n" +
                        "The camera is centered on your fortress, giving you a full overhead view " +
                        "of the surrounding terrain.\n\n" +
-                       "Keep an eye on the western approach — that is where the enemy hordes come from."
+                       "Enemies initially attack from the <b>west</b>, but the spawn arc widens each day — " +
+                       "keep watch in all directions."
             },
             new TutorialPage
             {
                 title = "The HUD",
                 spriteName = "tut_topdown",
                 body = "The bar at the top of the screen shows vital information:\n\n" +
-                       "  <b>Gold</b> — your currency for buying upgrades and defenders\n" +
+                       "  <b>Gold</b> — your currency for upgrades and defenders\n" +
                        "  <b>Menials</b> — idle / total workforce count\n" +
-                       "  <b>Phase Timer</b> — time remaining in the current phase\n" +
-                       "  <b>Enemy Count</b> — how many foes remain\n" +
+                       "  <b>Defenders</b> — count of each defender type\n" +
+                       "  <b>Phase Timer</b> — elapsed game time\n" +
+                       "  <b>Enemy Count</b> — remaining / total enemies this day\n" +
                        "  <b>Kills</b> — total enemies slain\n" +
                        "  <b>Day/Night Wheel</b> — shows the current cycle position"
             },
@@ -170,11 +173,27 @@ public class TutorialManager : MonoBehaviour
                 title = "Day & Night Cycle",
                 spriteName = "tut_side",
                 body = "The game alternates between <b>Day</b> and <b>Night</b> phases.\n\n" +
-                       "<b>Day (Attack Phase)</b>\nEnemies spawn from the <b>west</b> and assault your fortress. " +
-                       "Each day the spawn arc widens, threatening more of your walls.\n\n" +
-                       "<b>Night (Build Phase)</b>\nNo enemies attack. Use this time to buy upgrades, " +
-                       "recruit defenders, and repair walls.\n\n" +
-                       "The day/night wheel on the HUD shows where you are in the cycle."
+                       "<b>Day (Attack Phase)</b>\nEnemies spawn and assault your fortress. " +
+                       "Each day the spawn arc widens, threatening more of your walls. " +
+                       "Enemies grow stronger with each passing day.\n\n" +
+                       "<b>Night (Build Phase)</b>\nOnce all enemies are cleared and the sun sets, " +
+                       "a <b>Build Phase</b> begins. Use this time to place new walls, " +
+                       "recruit defenders, and prepare for the next assault."
+            },
+            new TutorialPage
+            {
+                title = "Build Mode",
+                spriteName = "tut_wallgate",
+                body = "When the <b>Build Phase</b> begins at sunset, wall placement starts automatically " +
+                       "(if you have an engineer and enough gold).\n\n" +
+                       "A green <b>ghost wall</b> follows your cursor. " +
+                       "It snaps to existing walls when close enough.\n\n" +
+                       "  <b>Left Click</b> — place a wall (costs gold)\n" +
+                       "  <b>A / D</b> — rotate the ghost wall\n" +
+                       "  <b>B</b> — exit build mode\n" +
+                       "  <b>Right Click / Escape</b> — exit build mode\n\n" +
+                       "The ghost turns <b>red</b> when you can't afford the next wall. " +
+                       "Build mode ends automatically when you run out of gold."
             },
             new TutorialPage
             {
@@ -198,15 +217,14 @@ public class TutorialManager : MonoBehaviour
             },
             new TutorialPage
             {
-                title = "Walls",
+                title = "Walls & Engineers",
                 spriteName = "tut_wallgate",
-                body = "<b>Walls</b> form a protective ring around your tower. Enemies must break through " +
-                       "them to reach the interior.\n\n" +
-                       "Your menials and defenders can slip through the narrow gaps between wall segments, " +
-                       "but enemies cannot.\n\n" +
-                       "Walls take damage from enemy attacks. If a wall segment is destroyed, " +
-                       "enemies will pour through the breach. You can <b>Build Wall</b> from the " +
-                       "upgrade panel to place new wall segments."
+                body = "<b>Walls</b> form a protective ring around your tower. Each segment is flanked by " +
+                       "octagonal towers that connect to adjacent walls.\n\n" +
+                       "Walls take damage from enemy attacks. When destroyed, enemies pour through the breach.\n\n" +
+                       "New walls placed during <b>Build Mode</b> start under construction — " +
+                       "an <b>Engineer</b> must walk over and build them before they become solid.\n\n" +
+                       "Engineers also automatically <b>repair</b> damaged walls during combat."
             },
             new TutorialPage
             {
@@ -234,9 +252,9 @@ public class TutorialManager : MonoBehaviour
                 spriteName = "tut_side",
                 body = "Press <b>U</b> to open the <b>Upgrade Panel</b>.\n\n" +
                        "Here you can spend gold (and menials) on:\n" +
-                       "  <b>Build Wall</b> — place new wall segments\n" +
                        "  <b>New Defenders</b> — recruit menials into combat roles\n" +
                        "  <b>Ballista Upgrades</b> — more damage, faster fire rate, or additional ballistas\n\n" +
+                       "Number keys <b>1-9</b> act as hotkeys for each upgrade button.\n" +
                        "Press <b>U</b> again or <b>Escape</b> to close the panel."
             },
             new TutorialPage
@@ -244,11 +262,12 @@ public class TutorialManager : MonoBehaviour
                 title = "Defenders",
                 spriteName = "tut_defenders",
                 body = "Defenders are units that fight alongside you. Each type has a unique role:\n\n" +
-                       "  <b>Engineer</b> (30g, 2m) — repairs damaged walls\n" +
+                       "  <b>Engineer</b> (30g, 2m) — repairs damaged walls, builds new ones\n" +
                        "  <b>Pikeman</b> (40g, 2m) — melee fighter, engages enemies up close\n" +
                        "  <b>Crossbowman</b> (50g, 2m) — ranged attacker, fires from a distance\n" +
                        "  <b>Wizard</b> (100g, 3m) — powerful AoE magic, longest range\n\n" +
-                       "Recruit them from the upgrade panel. Costs increase with each purchase."
+                       "Recruit them from the upgrade panel. Costs increase with each purchase. " +
+                       "You need at least one <b>Engineer</b> to enter Build Mode."
             },
             new TutorialPage
             {
@@ -261,7 +280,7 @@ public class TutorialManager : MonoBehaviour
                        "  <b>Suicide Goblin</b> — fast, explodes on contact\n" +
                        "  <b>Cannoneer</b> — long-range siege unit\n" +
                        "  <b>Orc War Boss</b> — massive, devastating; appears around day 10\n\n" +
-                       "Each day the enemy spawn arc widens and enemies grow stronger."
+                       "Enemies that remain when night falls will <b>retreat</b>, but return the next day."
             },
             new TutorialPage
             {
@@ -277,7 +296,7 @@ public class TutorialManager : MonoBehaviour
             {
                 title = "Vegetation",
                 spriteName = "tut_overview",
-                body = "<b>Bushes</b> and <b>Trees</b> grow in the western wilderness.\n\n" +
+                body = "<b>Bushes</b> and <b>Trees</b> grow in the wilderness.\n\n" +
                        "Vegetation spreads at <b>night</b>, filling the battlefield over time. " +
                        "Trees block enemy and defender pathing.\n\n" +
                        "Menials will automatically <b>clear</b> vegetation that blocks their path " +
@@ -291,7 +310,9 @@ public class TutorialManager : MonoBehaviour
                        "and rush toward the tower.\n\n" +
                        "If any enemy reaches the <b>Tower</b>, the game is <b>over</b>.\n\n" +
                        "Keep your walls standing, station defenders near weak points, " +
-                       "and use the ballista to thin enemy ranks before they arrive."
+                       "and use the ballista to thin enemy ranks before they arrive.\n\n" +
+                       "When the enemy path is blocked by walls, they will focus their attacks " +
+                       "on the weakest wall to try to break through."
             },
             new TutorialPage
             {
@@ -299,12 +320,15 @@ public class TutorialManager : MonoBehaviour
                 spriteName = "tut_overview",
                 body = "<b>Hotkey Summary:</b>\n\n" +
                        "  <b>Scroll Wheel</b> — Zoom in/out\n" +
-                       "  <b>Left Click</b> — Fire ballista\n" +
+                       "  <b>Left Click</b> — Fire ballista (or place wall in build mode)\n" +
                        "  <b>Right Click</b> — Send menial to collect loot\n" +
                        "  <b>Tab</b> — Switch active ballista\n" +
                        "  <b>U</b> — Open/close upgrade panel\n" +
+                       "  <b>1-9</b> — Upgrade hotkeys\n" +
+                       "  <b>A / D</b> — Rotate wall in build mode\n" +
+                       "  <b>B</b> — Exit build mode\n" +
                        "  <b>Space</b> — Toggle pause\n" +
-                       "  <b>Escape</b> — Pause menu\n\n" +
+                       "  <b>Escape</b> — Pause menu / exit build mode\n\n" +
                        "Good luck, Commander. The Marches depend on you!"
             }
         };
