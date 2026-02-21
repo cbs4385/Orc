@@ -115,7 +115,8 @@ public class MenialManager : MonoBehaviour
 
         if (nearestLoot == null)
         {
-            Debug.Log("[MenialManager] No loot found near click position.");
+            // No loot — try to find vegetation to clear instead
+            TrySendMenialToVegetation(clickPos);
             return;
         }
 
@@ -142,6 +143,55 @@ public class MenialManager : MonoBehaviour
         {
             Debug.Log($"[MenialManager] Assigned menial to loot at {nearestLoot.transform.position} (value={nearestLoot.Value}, {idleCount} idle)");
             bestMenial.AssignLoot(nearestLoot);
+        }
+        else
+        {
+            Debug.Log($"[MenialManager] No idle menials available ({allMenials.Count} total)");
+        }
+    }
+
+    private void TrySendMenialToVegetation(Vector3 clickPos)
+    {
+        // Check if any alive vegetation exists within the search radius
+        var allVeg = FindObjectsByType<Vegetation>(FindObjectsSortMode.None);
+        int vegCount = 0;
+
+        foreach (var veg in allVeg)
+        {
+            if (veg == null || veg.IsDead) continue;
+            if (Vector3.Distance(clickPos, veg.transform.position) <= lootSearchRadius)
+                vegCount++;
+        }
+
+        if (vegCount == 0)
+        {
+            Debug.Log("[MenialManager] No loot or vegetation found near click position.");
+            return;
+        }
+
+        Debug.Log($"[MenialManager] Found {vegCount} vegetation pieces in radius at {clickPos}");
+
+        // Find nearest idle menial
+        Menial bestMenial = null;
+        float bestDist = float.MaxValue;
+        int idleCount = 0;
+        foreach (var menial in allMenials)
+        {
+            if (menial == null || menial.IsDead) continue;
+            if (!menial.IsIdle) continue;
+            idleCount++;
+            float dist = Vector3.Distance(menial.transform.position, clickPos);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                bestMenial = menial;
+            }
+        }
+
+        if (bestMenial != null)
+        {
+            Debug.Log($"[MenialManager] Assigned menial to clear {vegCount} vegetation at {clickPos}, radius={lootSearchRadius} ({idleCount} idle)");
+            bestMenial.AssignVegetationArea(clickPos, lootSearchRadius);
         }
         else
         {

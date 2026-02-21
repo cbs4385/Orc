@@ -101,25 +101,17 @@ public class VegetationManager : MonoBehaviour
 
         for (int attempt = 0; attempt < 20; attempt++)
         {
-            // Random position within western third of the play area
-            float westernThirdX = -MAP_RADIUS + (2f * MAP_RADIUS) / 3f; // ~-13.3
-            float x = Random.Range(-MAP_RADIUS + EDGE_BUFFER, westernThirdX);
-            float z = Random.Range(-MAP_RADIUS + EDGE_BUFFER, MAP_RADIUS - EDGE_BUFFER);
+            // Rectangular spawn area: [-40, -40] to [-6, 40] (FORTRESS_EXCLUSION distance check handles the inner boundary)
+            float x = Random.Range(-MAP_RADIUS, -FORTRESS_EXCLUSION - 1f);
+            float z = Random.Range(-MAP_RADIUS, MAP_RADIUS);
 
             Vector3 candidate = new Vector3(x, 0, z);
-
-            // Check within map radius from origin
-            if (candidate.magnitude > MAP_RADIUS - EDGE_BUFFER) continue;
 
             // Exclude area around fortress
             float distToFortress = Vector3.Distance(candidate, fc);
             if (distToFortress < FORTRESS_EXCLUSION) continue;
 
-            // Validate on NavMesh
-            if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, 2f, NavMesh.AllAreas))
-            {
-                return new Vector3(hit.position.x, 0, hit.position.z);
-            }
+            return candidate;
         }
 
         return Vector3.zero;

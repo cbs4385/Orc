@@ -87,10 +87,12 @@ public class GameHUD : MonoBehaviour
             timerText.text = string.Format("{0}:{1:00}", minutes, seconds);
         }
 
-        // Update enemy count
+        // Update enemy count (remaining/total for the day)
         if (enemyCountText != null && EnemySpawnManager.Instance != null)
         {
-            enemyCountText.text = "Enemies: " + EnemySpawnManager.Instance.GetActiveEnemyCount();
+            int remaining = EnemySpawnManager.Instance.DayEnemiesRemaining;
+            int total = EnemySpawnManager.Instance.DayTotalEnemies;
+            enemyCountText.text = string.Format("Enemies: {0}/{1}", remaining, total);
         }
 
         // Update defender counts by type

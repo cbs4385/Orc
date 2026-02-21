@@ -10,7 +10,8 @@ public enum MenialState
     Returning,
     EnteringTower,
     PickingUp, // Brief pause while grabbing a loot item
-    ClearingVegetation // Pausing to clear vegetation blocking path
+    ClearingVegetation, // Pausing to clear vegetation blocking path
+    Fleeing // Running away from nearby enemies
 }
 
 [RequireComponent(typeof(NavMeshAgent))]
@@ -38,9 +39,18 @@ public class Menial : MonoBehaviour
 
     // Vegetation clearing
     private Vegetation targetVegetation;
+    private Vector3 clearingCenter;   // center of player-assigned clearing area
+    private float clearingRadius;     // radius of the clearing area (0 = no assignment)
     private float clearingTimer;
     private MenialState stateBeforeClearing;
     private const float VEGETATION_CLEAR_RANGE = 1.5f;
+
+    // Fleeing from enemies
+    private MenialState stateBeforeFleeing;
+    private float dangerScanTimer;
+    private const float DANGER_SCAN_INTERVAL = 0.15f;
+    private const float FLEE_SPEED_MULTIPLIER = 1.5f;
+    private float normalSpeed;
 
     // Wandering
     private float wanderTimer;
@@ -112,6 +122,9 @@ public class Menial : MonoBehaviour
     {
         if (IsDead) return;
 
+        // Check for danger before any task logic
+        if (CheckForDanger()) return;
+
         switch (CurrentState)
         {
             case MenialState.Idle:
@@ -134,6 +147,9 @@ public class Menial : MonoBehaviour
                 break;
             case MenialState.ClearingVegetation:
                 UpdateClearingVegetation();
+                break;
+            case MenialState.Fleeing:
+                UpdateFleeing();
                 break;
         }
 
@@ -213,6 +229,72 @@ public class Menial : MonoBehaviour
         }
     }
 
+    public void AssignVegetationArea(Vector3 center, float radius)
+    {
+        if (CurrentState != MenialState.Idle || IsDead) return;
+
+        clearingCenter = center;
+        clearingRadius = radius;
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.IdleMenialCount--;
+
+        if (!agent.isOnNavMesh)
+        {
+            Debug.LogWarning("[Menial] NOT ON NAVMESH - cannot path to vegetation area!");
+            return;
+        }
+
+        agent.stoppingDistance = 0.5f;
+        agent.isStopped = false;
+
+        // Find the nearest gate toward the clearing area
+        targetGate = FindNearestGate(center);
+        if (targetGate != null)
+        {
+            CurrentState = MenialState.WalkingToGate;
+            Vector3 gatePos = targetGate.transform.position;
+            Vector3 toCenter = (GameManager.FortressCenter - gatePos).normalized;
+            Vector3 gateApproach = gatePos + toCenter * 1.5f;
+            gateApproach.y = 0;
+            agent.SetDestination(gateApproach);
+            Debug.Log($"[Menial] Assigned to clear vegetation area at {center}, radius={radius}, heading to gate.");
+        }
+        else
+        {
+            // No gate found, try direct path to area center
+            CurrentState = MenialState.Collecting;
+            agent.SetDestination(center);
+            Debug.Log($"[Menial] Assigned to clear vegetation area at {center}, radius={radius}, no gate — going direct.");
+        }
+    }
+
+    /// <summary>
+    /// Find the nearest alive vegetation within the assigned clearing area.
+    /// </summary>
+    private Vegetation FindNextVegetationInArea()
+    {
+        if (clearingRadius <= 0) return null;
+
+        var allVeg = FindObjectsByType<Vegetation>(FindObjectsSortMode.None);
+        Vegetation best = null;
+        float bestDist = float.MaxValue;
+
+        foreach (var veg in allVeg)
+        {
+            if (veg == null || veg.IsDead) continue;
+            // Must be within the clearing area
+            if (Vector3.Distance(clearingCenter, veg.transform.position) > clearingRadius) continue;
+            float dist = Vector3.Distance(transform.position, veg.transform.position);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = veg;
+            }
+        }
+        return best;
+    }
+
     private Gate FindNearestGate(Vector3 lootPosition)
     {
         Gate nearest = null;
@@ -236,10 +318,14 @@ public class Menial : MonoBehaviour
 
     private void UpdateWalkingToGate()
     {
-        if (targetLoot == null || targetLoot.IsCollected)
+        bool hasLoot = targetLoot != null && !targetLoot.IsCollected;
+        bool hasVeg = clearingRadius > 0 && FindNextVegetationInArea() != null;
+
+        if (!hasLoot && !hasVeg)
         {
-            // Original target gone — check if there's other loot nearby to collect
+            // No targets left
             targetLoot = null;
+            clearingRadius = 0;
             ReturnHome();
             return;
         }
@@ -257,11 +343,19 @@ public class Menial : MonoBehaviour
         {
             float distToGate = Vector3.Distance(transform.position, targetGate.transform.position);
 
-            // Once the gate is open and we're near it, switch to collecting (path to loot)
+            // Once the gate is open and we're near it, switch to collecting
             if (distToGate < 3f && targetGate.IsOpen)
             {
                 CurrentState = MenialState.Collecting;
-                agent.SetDestination(targetLoot.transform.position);
+                if (hasLoot)
+                {
+                    agent.SetDestination(targetLoot.transform.position);
+                }
+                else
+                {
+                    var nextVeg = FindNextVegetationInArea();
+                    agent.SetDestination(nextVeg != null ? nextVeg.transform.position : clearingCenter);
+                }
                 return;
             }
 
@@ -290,13 +384,32 @@ public class Menial : MonoBehaviour
 
         if (targetLoot == null || targetLoot.IsCollected)
         {
-            // Original target gone — look for more loot nearby
+            // Original loot target gone — look for more loot nearby
             targetLoot = FindNearestUncollectedLoot();
             if (targetLoot != null)
             {
                 agent.SetDestination(targetLoot.transform.position);
                 return;
             }
+
+            // No loot — check if there's more vegetation to clear in the assigned area
+            if (clearingRadius > 0)
+            {
+                var nextVeg = FindNextVegetationInArea();
+                if (nextVeg != null)
+                {
+                    // Walk toward next vegetation; TryClearNearbyVegetation handles clearing at 1.5m
+                    if (!agent.pathPending && (!agent.hasPath || agent.remainingDistance < 0.5f))
+                    {
+                        agent.SetDestination(nextVeg.transform.position);
+                    }
+                    return;
+                }
+                // Area is clear — done
+                clearingRadius = 0;
+                Debug.Log($"[Menial] Clearing area at {clearingCenter} is fully cleared. Heading home.");
+            }
+
             ReturnHome();
             return;
         }
@@ -473,10 +586,138 @@ public class Menial : MonoBehaviour
         return best;
     }
 
+    /// <summary>
+    /// Scan for nearby enemies. If any enemy is within its attack range, enter Fleeing state.
+    /// Returns true if currently fleeing (caller should skip normal task logic).
+    /// </summary>
+    private bool CheckForDanger()
+    {
+        // Already fleeing — handled by UpdateFleeing
+        if (CurrentState == MenialState.Fleeing) return true;
+
+        // Don't interrupt tower entry
+        if (CurrentState == MenialState.EnteringTower) return false;
+
+        dangerScanTimer -= Time.deltaTime;
+        if (dangerScanTimer > 0) return false;
+        dangerScanTimer = DANGER_SCAN_INTERVAL;
+
+        var enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+        foreach (var enemy in enemies)
+        {
+            if (enemy == null || enemy.IsDead) continue;
+            float dist = Vector3.Distance(transform.position, enemy.transform.position);
+            float dangerRange = enemy.Data != null ? enemy.Data.attackRange + 1f : 2.5f;
+            if (dist < dangerRange)
+            {
+                EnterFleeState();
+                Debug.Log($"[Menial] Danger! Enemy {enemy.Data?.enemyName} within {dist:F1}m (range={dangerRange:F1}). Fleeing toward courtyard!");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void EnterFleeState()
+    {
+        stateBeforeFleeing = CurrentState;
+
+        // If we were idle, update the idle count
+        if (CurrentState == MenialState.Idle && GameManager.Instance != null)
+            GameManager.Instance.IdleMenialCount--;
+
+        CurrentState = MenialState.Fleeing;
+        normalSpeed = agent.speed;
+        float dailySpeed = DailyEventManager.Instance != null ? DailyEventManager.Instance.MenialSpeedMultiplier : 1f;
+        agent.speed = moveSpeed * dailySpeed * FLEE_SPEED_MULTIPLIER;
+
+        if (agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+            agent.stoppingDistance = 0.5f;
+            agent.SetDestination(GameManager.FortressCenter);
+        }
+    }
+
+    private void UpdateFleeing()
+    {
+        if (!agent.isOnNavMesh) return;
+
+        // Check if still in danger
+        dangerScanTimer -= Time.deltaTime;
+        if (dangerScanTimer <= 0)
+        {
+            dangerScanTimer = DANGER_SCAN_INTERVAL;
+            bool stillInDanger = false;
+
+            var enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+            foreach (var enemy in enemies)
+            {
+                if (enemy == null || enemy.IsDead) continue;
+                float dist = Vector3.Distance(transform.position, enemy.transform.position);
+                float dangerRange = enemy.Data != null ? enemy.Data.attackRange + 1f : 2.5f;
+                if (dist < dangerRange)
+                {
+                    stillInDanger = true;
+                    break;
+                }
+            }
+
+            if (!stillInDanger)
+            {
+                // Safe — resume previous task
+                agent.speed = normalSpeed;
+                Debug.Log($"[Menial] Safe now. Resuming state={stateBeforeFleeing}.");
+
+                // If we were idle before, restore idle count
+                if (stateBeforeFleeing == MenialState.Idle && GameManager.Instance != null)
+                    GameManager.Instance.IdleMenialCount++;
+
+                CurrentState = stateBeforeFleeing;
+
+                // Re-path to appropriate destination based on resumed state
+                switch (CurrentState)
+                {
+                    case MenialState.Collecting:
+                        if (targetLoot != null && !targetLoot.IsCollected)
+                            agent.SetDestination(targetLoot.transform.position);
+                        else
+                        {
+                            var nextVeg = FindNextVegetationInArea();
+                            if (nextVeg != null)
+                                agent.SetDestination(nextVeg.transform.position);
+                            else
+                                ReturnHome();
+                        }
+                        break;
+                    case MenialState.WalkingToGate:
+                        if (targetGate != null)
+                        {
+                            Vector3 gatePos = targetGate.transform.position;
+                            Vector3 toCenter = (GameManager.FortressCenter - gatePos).normalized;
+                            agent.SetDestination(gatePos + toCenter * 1.5f);
+                        }
+                        break;
+                    case MenialState.Returning:
+                        ReturnHome();
+                        break;
+                }
+                return;
+            }
+        }
+
+        // Still fleeing — keep heading toward courtyard center
+        if (!agent.pathPending && agent.remainingDistance < 1f)
+        {
+            agent.SetDestination(GameManager.FortressCenter);
+        }
+    }
+
     private void ReturnHome()
     {
         CurrentState = MenialState.Returning;
         targetGate = null;
+        clearingRadius = 0;
 
         // Find nearest gate to return through
         Vector3 fc = GameManager.FortressCenter;

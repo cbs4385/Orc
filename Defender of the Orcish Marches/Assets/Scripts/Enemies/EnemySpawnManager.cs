@@ -39,6 +39,22 @@ public class EnemySpawnManager : MonoBehaviour
     // Enemies that retreated at nightfall carry over to next day's spawn
     private List<EnemyData> remnantEnemies = new List<EnemyData>();
 
+    // Night harassment spawns (night 2+)
+    private float nightHarassTimer;
+    private const float NIGHT_HARASS_INTERVAL = 10f;
+    private const float NIGHT_HARASS_CHANCE = 0.1f;
+
+    // Day enemy tracking for HUD
+    private int dayTotalEnemies;
+    private int dayKills;
+    private int regularSpawnsRemaining;
+
+    /// <summary>Total enemies expected this day (remnants + new spawns + boss).</summary>
+    public int DayTotalEnemies => dayTotalEnemies;
+
+    /// <summary>Enemies remaining (not yet killed) this day.</summary>
+    public int DayEnemiesRemaining => Mathf.Max(0, dayTotalEnemies - dayKills);
+
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -80,9 +96,17 @@ public class EnemySpawnManager : MonoBehaviour
     {
         dawnGraceTimer = 2f;
         bossSpawnedThisDay = false;
+        dayKills = 0;
         int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
         float halfSpread = 5f + 10f * (dayNumber - 1);
-        Debug.Log($"[EnemySpawnManager] Dawn grace period started (2s). Day {dayNumber}, spawn arc halfSpread={halfSpread:F0}deg. Remnants={remnantEnemies.Count}");
+
+        // Calculate exact spawn budget for the day
+        int remnantCount = remnantEnemies.Count;
+        regularSpawnsRemaining = CalculateSpawnCount(dayNumber);
+        bool willSpawnBoss = halfSpread >= 90f && orcWarBossData != null;
+        dayTotalEnemies = remnantCount + regularSpawnsRemaining + (willSpawnBoss ? 1 : 0);
+
+        Debug.Log($"[EnemySpawnManager] Day {dayNumber}: remnants={remnantCount}, spawns={regularSpawnsRemaining}, boss={willSpawnBoss}, total={dayTotalEnemies}");
 
         // Spawn remnants from previous night — all at once, spread along the spawn arc
         if (remnantEnemies.Count > 0)
@@ -91,10 +115,31 @@ public class EnemySpawnManager : MonoBehaviour
         }
 
         // Spawn boss from due west when arc reaches half-circle (day 10+)
-        if (halfSpread >= 90f && !bossSpawnedThisDay && orcWarBossData != null)
+        if (willSpawnBoss && !bossSpawnedThisDay)
         {
             SpawnBoss();
         }
+    }
+
+    private float GetSpawnInterval(int dayNumber)
+    {
+        float difficulty = Mathf.Clamp01((dayNumber - 1) / 10f);
+        float dailySpawnRate = DailyEventManager.Instance != null ? DailyEventManager.Instance.SpawnRateMultiplier : 1f;
+        float interval = Mathf.Lerp(initialSpawnInterval, minSpawnInterval, difficulty) * GameSettings.GetSpawnRateMultiplier() / dailySpawnRate;
+        return Mathf.Max(interval, 0.1f);
+    }
+
+    private int CalculateSpawnCount(int dayNumber)
+    {
+        float interval = GetSpawnInterval(dayNumber);
+
+        // Spawn window: from dawn grace end (2s) to noon (half of day phase)
+        float phaseDuration = DayNightCycle.Instance != null ? DayNightCycle.Instance.CurrentPhaseDuration : 60f;
+        float spawnWindow = phaseDuration * 0.5f - 2f;
+        if (spawnWindow <= 0f) return 0;
+
+        // First enemy spawns immediately, then one per interval
+        return Mathf.FloorToInt(spawnWindow / interval) + 1;
     }
 
     private void SpawnRemnants(int dayNumber)
@@ -140,6 +185,7 @@ public class EnemySpawnManager : MonoBehaviour
 
     private void HandleNightStarted()
     {
+        nightHarassTimer = NIGHT_HARASS_INTERVAL;
         int retreatingCount = 0;
         // Take a snapshot — the list will be modified as enemies reach the edge
         var snapshot = new List<Enemy>(activeEnemies);
@@ -198,13 +244,27 @@ public class EnemySpawnManager : MonoBehaviour
             DayNightCycle.Instance.OnDayStarted += HandleDayStarted;
             DayNightCycle.Instance.OnNightStarted += HandleNightStarted;
             dncSubscribed = true;
+
+            // Day 1 OnDayStarted already fired before we subscribed — calculate now
+            if (dayTotalEnemies == 0 && DayNightCycle.Instance.IsDay)
+            {
+                dawnGraceTimer = 2f;
+                int dayNumber = DayNightCycle.Instance.DayNumber;
+                regularSpawnsRemaining = CalculateSpawnCount(dayNumber);
+                float halfSpread = 5f + 10f * (dayNumber - 1);
+                bool willSpawnBoss = halfSpread >= 90f && orcWarBossData != null;
+                dayTotalEnemies = remnantEnemies.Count + regularSpawnsRemaining + (willSpawnBoss ? 1 : 0);
+                Debug.Log($"[EnemySpawnManager] Late init Day {dayNumber}: spawns={regularSpawnsRemaining}, total={dayTotalEnemies}");
+            }
         }
 
-        // Don't spawn at night
-        if (DayNightCycle.Instance != null && DayNightCycle.Instance.IsNight) return;
-
-        // Noon cutoff: all enemies for the day finish spawning by midpoint of day phase
-        if (DayNightCycle.Instance != null && DayNightCycle.Instance.PhaseProgress > 0.5f) return;
+        // Night: only harassment spawns (no regular spawns)
+        if (DayNightCycle.Instance != null && DayNightCycle.Instance.IsNight)
+        {
+            UpdateNightHarassment();
+            return;
+        }
+        if (regularSpawnsRemaining <= 0) return;
 
         // Dawn grace period
         if (dawnGraceTimer > 0f)
@@ -217,10 +277,46 @@ public class EnemySpawnManager : MonoBehaviour
         if (spawnTimer <= 0)
         {
             SpawnEnemy();
+            regularSpawnsRemaining--;
             int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
-            float difficulty = Mathf.Clamp01((dayNumber - 1) / 10f);
-            float dailySpawnRate = DailyEventManager.Instance != null ? DailyEventManager.Instance.SpawnRateMultiplier : 1f;
-            spawnTimer = Mathf.Lerp(initialSpawnInterval, minSpawnInterval, difficulty) * GameSettings.GetSpawnRateMultiplier() / dailySpawnRate;
+            spawnTimer = GetSpawnInterval(dayNumber);
+        }
+    }
+
+    private void UpdateNightHarassment()
+    {
+        int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
+        if (dayNumber < 2) return;
+
+        nightHarassTimer -= Time.deltaTime;
+        if (nightHarassTimer <= 0)
+        {
+            nightHarassTimer = NIGHT_HARASS_INTERVAL;
+            if (Random.value < NIGHT_HARASS_CHANCE)
+            {
+                SpawnNightHarassEnemy();
+            }
+        }
+    }
+
+    private void SpawnNightHarassEnemy()
+    {
+        if (enemyPrefab == null) return;
+
+        Vector3 spawnPos = GetRandomEdgePosition();
+        // 50/50 suicide goblin or bow orc
+        EnemyData data = (Random.value < 0.5f && suicideGoblinData != null) ? suicideGoblinData : bowOrcData;
+        if (data == null) return;
+
+        GameObject go = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        Enemy enemy = go.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.Initialize(data);
+            ApplyDayScaling(enemy);
+            activeEnemies.Add(enemy);
+            dayTotalEnemies++;
+            Debug.Log($"[EnemySpawnManager] Night harassment spawn: {data.enemyName} at {spawnPos}");
         }
     }
 
@@ -297,6 +393,7 @@ public class EnemySpawnManager : MonoBehaviour
     private void HandleEnemyDied(Enemy enemy)
     {
         activeEnemies.Remove(enemy);
+        dayKills++;
     }
 
     public int GetActiveEnemyCount() => activeEnemies.Count;

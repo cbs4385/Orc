@@ -42,7 +42,7 @@ public class DayNightCycle : MonoBehaviour
     private float phaseTimer;
     private bool isFirstDay = true;
 
-    private float CurrentPhaseDuration
+    public float CurrentPhaseDuration
     {
         get
         {

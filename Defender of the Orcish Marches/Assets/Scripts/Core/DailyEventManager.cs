@@ -179,16 +179,50 @@ public class DailyEventManager : MonoBehaviour
     {
         if (!dncSubscribed) TrySubscribe();
 
-        // Fallback: if DayNightCycle already started Day 1 before we subscribed, pick now
+        // Fallback: if DayNightCycle already started before we subscribed, pick now
         if (!HasActiveEvent && DayNightCycle.Instance != null)
         {
-            PickRandomEvent();
+            int dayNumber = DayNightCycle.Instance.DayNumber;
+            if (dayNumber <= 1)
+            {
+                // Day 1 has no event — mark as handled so we don't keep checking
+                ResetMultipliers();
+                HasActiveEvent = true;
+                Debug.Log("[DailyEventManager] Day 1 fallback — no event (intro day).");
+            }
+            else
+            {
+                PickRandomEvent();
+            }
         }
     }
 
     private void HandleDayStarted()
     {
+        int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
+        if (dayNumber <= 1)
+        {
+            // Day 1 has no event — keep all multipliers at 1.0 for a consistent intro wave
+            ResetMultipliers();
+            Debug.Log("[DailyEventManager] Day 1 — no event (intro day).");
+            return;
+        }
         PickRandomEvent();
+    }
+
+    private void ResetMultipliers()
+    {
+        LootValueMultiplier = 1f;
+        DefenderDamageMultiplier = 1f;
+        MenialSpeedMultiplier = 1f;
+        EnemyDamageMultiplier = 1f;
+        SpawnRateMultiplier = 1f;
+        EnemyHPMultiplier = 1f;
+        EnemySpeedMultiplier = 1f;
+        DefenderAttackSpeedMultiplier = 1f;
+        CurrentEventName = "";
+        CurrentEventDescription = "";
+        HasActiveEvent = true;
     }
 
     private void PickRandomEvent()

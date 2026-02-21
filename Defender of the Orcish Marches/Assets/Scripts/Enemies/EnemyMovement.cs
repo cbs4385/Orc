@@ -325,4 +325,28 @@ public class EnemyMovement : MonoBehaviour
     {
         if (agent != null && agent.isOnNavMesh) agent.isStopped = false;
     }
+
+    private void OnDrawGizmos()
+    {
+        if (agent == null || !agent.hasPath) return;
+
+        var corners = agent.path.corners;
+        if (corners.Length < 2) return;
+
+        // Color by enemy state
+        if (IsRetreating)
+            Gizmos.color = Color.yellow;
+        else if (enemy != null && enemy.IsDead)
+            return;
+        else
+            Gizmos.color = Color.red;
+
+        Vector3 lift = Vector3.up * 0.15f;
+        for (int i = 0; i < corners.Length - 1; i++)
+            Gizmos.DrawLine(corners[i] + lift, corners[i + 1] + lift);
+
+        // Draw small sphere at destination
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawSphere(corners[corners.Length - 1] + lift, 0.2f);
+    }
 }

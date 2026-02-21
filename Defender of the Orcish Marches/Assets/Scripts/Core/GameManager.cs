@@ -7,7 +7,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     /// <summary>World-space center of the fortress. All fortress-relative calculations use this.</summary>
-    public static readonly Vector3 FortressCenter = new Vector3(15f, 0f, 0f);
+    public static readonly Vector3 FortressCenter = Vector3.zero;
 
     public enum GameState { Playing, Paused, GameOver }
 
