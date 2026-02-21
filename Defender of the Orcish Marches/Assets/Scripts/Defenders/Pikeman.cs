@@ -57,15 +57,17 @@ public class Pikeman : Defender
         if (dist > range)
         {
             Vector3 enemyPos = currentTarget.transform.position;
-            float enemyDist = new Vector2(enemyPos.x, enemyPos.z).magnitude;
+            Vector3 fc = GameManager.FortressCenter;
+            Vector3 enemyOffset = enemyPos - fc;
+            float enemyDist = new Vector2(enemyOffset.x, enemyOffset.z).magnitude;
 
             Vector3 destination;
             if (enemyDist > 4f)
             {
                 // Enemy is outside the walls — walk toward the inner wall face
                 // Walls are at ~4.5 radius, inner face at ~4.2
-                Vector3 dir = new Vector3(enemyPos.x, 0, enemyPos.z).normalized;
-                destination = dir * 4f;
+                Vector3 dir = new Vector3(enemyOffset.x, 0, enemyOffset.z).normalized;
+                destination = fc + dir * 4f;
                 destination.y = 0;
             }
             else

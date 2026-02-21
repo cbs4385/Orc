@@ -227,6 +227,7 @@ public class SceneSetup : MonoBehaviour
 
         // Walls centered at ±3.75 (moved inward by 0.25 = half wall thickness)
         // E/W walls extend to full ±4 on Z to wrap corners cleanly
+        Vector3 fc = GameManager.FortressCenter;
         float wallCenter = 3.75f; // 4 - 0.25 (half of 0.5 thickness)
         float wallThick = 0.5f;
 
@@ -256,30 +257,30 @@ public class SceneSetup : MonoBehaviour
         float nsWidth = wallCenter - 1f;             // 2.75
 
         // North wall (z=3.75)
-        CreateWallSegment(wallManager.transform, "Wall_NW", new Vector3(-nsCenterX, 1, wallCenter), new Vector3(nsWidth, 2, wallThick), wallMat);
-        CreateWallSegment(wallManager.transform, "Wall_NE", new Vector3(nsCenterX, 1, wallCenter), new Vector3(nsWidth, 2, wallThick), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_NW", fc + new Vector3(-nsCenterX, 1, wallCenter), new Vector3(nsWidth, 2, wallThick), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_NE", fc + new Vector3(nsCenterX, 1, wallCenter), new Vector3(nsWidth, 2, wallThick), wallMat);
         // South wall (z=-3.75)
-        CreateWallSegment(wallManager.transform, "Wall_SW", new Vector3(-nsCenterX, 1, -wallCenter), new Vector3(nsWidth, 2, wallThick), wallMat);
-        CreateWallSegment(wallManager.transform, "Wall_SE", new Vector3(nsCenterX, 1, -wallCenter), new Vector3(nsWidth, 2, wallThick), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_SW", fc + new Vector3(-nsCenterX, 1, -wallCenter), new Vector3(nsWidth, 2, wallThick), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_SE", fc + new Vector3(nsCenterX, 1, -wallCenter), new Vector3(nsWidth, 2, wallThick), wallMat);
 
         // E/W walls: extend z from ±1 to ±4 (full corner wrap), length=3, center at ±2.5
         float ewLen = 3f;
         float ewCenterZ = 2.5f;
 
         // East wall (x=3.75)
-        CreateWallSegment(wallManager.transform, "Wall_EN", new Vector3(wallCenter, 1, ewCenterZ), new Vector3(wallThick, 2, ewLen), wallMat);
-        CreateWallSegment(wallManager.transform, "Wall_ES", new Vector3(wallCenter, 1, -ewCenterZ), new Vector3(wallThick, 2, ewLen), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_EN", fc + new Vector3(wallCenter, 1, ewCenterZ), new Vector3(wallThick, 2, ewLen), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_ES", fc + new Vector3(wallCenter, 1, -ewCenterZ), new Vector3(wallThick, 2, ewLen), wallMat);
         // West wall (x=-3.75)
-        CreateWallSegment(wallManager.transform, "Wall_WN", new Vector3(-wallCenter, 1, ewCenterZ), new Vector3(wallThick, 2, ewLen), wallMat);
-        CreateWallSegment(wallManager.transform, "Wall_WS", new Vector3(-wallCenter, 1, -ewCenterZ), new Vector3(wallThick, 2, ewLen), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_WN", fc + new Vector3(-wallCenter, 1, ewCenterZ), new Vector3(wallThick, 2, ewLen), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_WS", fc + new Vector3(-wallCenter, 1, -ewCenterZ), new Vector3(wallThick, 2, ewLen), wallMat);
 
         // 1 gate (East only) — enemies spawn from the west
-        CreateGate(wallManager.transform, "Gate_E", new Vector3(wallCenter, 0, 0), 90f, gateMat, postMat);
+        CreateGate(wallManager.transform, "Gate_E", fc + new Vector3(wallCenter, 0, 0), 90f, gateMat, postMat);
 
         // Fill wall segments where the removed gates were (N, S, W)
-        CreateWallSegment(wallManager.transform, "Wall_NC", new Vector3(0, 1, wallCenter), new Vector3(2, 2, wallThick), wallMat);
-        CreateWallSegment(wallManager.transform, "Wall_SC", new Vector3(0, 1, -wallCenter), new Vector3(2, 2, wallThick), wallMat);
-        CreateWallSegment(wallManager.transform, "Wall_WC", new Vector3(-wallCenter, 1, 0), new Vector3(wallThick, 2, 2), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_NC", fc + new Vector3(0, 1, wallCenter), new Vector3(2, 2, wallThick), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_SC", fc + new Vector3(0, 1, -wallCenter), new Vector3(2, 2, wallThick), wallMat);
+        CreateWallSegment(wallManager.transform, "Wall_WC", fc + new Vector3(-wallCenter, 1, 0), new Vector3(wallThick, 2, 2), wallMat);
 
         // Update the WallSegment prefab so newly placed walls also use the FBX mesh
         UpdateWallPrefab();

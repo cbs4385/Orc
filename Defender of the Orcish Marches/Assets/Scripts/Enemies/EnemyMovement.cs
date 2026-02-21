@@ -12,7 +12,7 @@ public class EnemyMovement : MonoBehaviour
     private const float RETARGET_INTERVAL = 1f;
 
     // Tower position - enemies walk here when walls are breached
-    private static readonly Vector3 TowerPosition = Vector3.zero;
+    private static Vector3 TowerPosition => GameManager.FortressCenter;
 
     public Transform CurrentTarget => currentTarget;
     public bool HasReachedTarget => agent != null && !agent.pathPending &&
@@ -134,7 +134,8 @@ public class EnemyMovement : MonoBehaviour
             }
 
             // If already inside the walls, head straight for the tower
-            float distFromCenter = new Vector2(transform.position.x, transform.position.z).magnitude;
+            Vector3 offset = transform.position - TowerPosition;
+            float distFromCenter = new Vector2(offset.x, offset.z).magnitude;
             if (distFromCenter < 4.5f)
             {
                 agent.SetDestination(TowerPosition);
@@ -193,7 +194,7 @@ public class EnemyMovement : MonoBehaviour
                 currentTarget = approachWall.transform;
                 // Target exterior face so NavMesh doesn't route around the wall
                 Vector3 wallPos = approachWall.transform.position;
-                Vector3 outward = wallPos.normalized;
+                Vector3 outward = (wallPos - TowerPosition).normalized;
                 Vector3 exteriorPoint = wallPos + outward * 1f;
                 exteriorPoint.y = 0;
                 agent.SetDestination(exteriorPoint);

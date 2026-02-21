@@ -179,9 +179,10 @@ public class UpgradeManager : MonoBehaviour
         }
 
         // Spawn near the tower but not inside it - offset to a random courtyard position
+        Vector3 fc = GameManager.FortressCenter;
         float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
         float dist = UnityEngine.Random.Range(2f, 3f);
-        Vector3 spawnPos = new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
+        Vector3 spawnPos = fc + new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
 
         // Ensure valid NavMesh position
         UnityEngine.AI.NavMeshHit hit;

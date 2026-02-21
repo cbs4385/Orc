@@ -161,9 +161,10 @@ public class MenialManager : MonoBehaviour
         else
         {
             // Spawn outside the tower (tower radius ~1.5) but inside walls (wall ring at ~4)
+            Vector3 fc = GameManager.FortressCenter;
             float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
             float dist = Random.Range(2f, 3f);
-            spawnPos = new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
+            spawnPos = fc + new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
         }
 
         // Find a valid NavMesh position near the spawn point

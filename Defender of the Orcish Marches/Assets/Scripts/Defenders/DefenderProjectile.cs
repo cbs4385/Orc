@@ -45,7 +45,22 @@ public class DefenderProjectile : MonoBehaviour
         }
 
         direction.Normalize();
-        transform.position += direction * speed * Time.deltaTime;
+        float step = speed * Time.deltaTime;
+
+        // Check for vegetation blocking along travel path
+        if (Physics.Raycast(transform.position, direction, out RaycastHit vegHit, step))
+        {
+            var veg = vegHit.collider.GetComponentInParent<Vegetation>();
+            if (veg != null && !veg.IsDead)
+            {
+                veg.TakeDamage(damage);
+                Debug.Log($"[DefenderProjectile] Hit {veg.Type} at {vegHit.point}");
+                Destroy(gameObject);
+                return;
+            }
+        }
+
+        transform.position += direction * step;
         transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
 
         // Max range safety

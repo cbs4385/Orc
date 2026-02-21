@@ -135,12 +135,14 @@ public class Defender : MonoBehaviour
         {
             // Path toward enemy but clamp destination inside the courtyard
             Vector3 targetPos = currentTarget.transform.position;
-            float targetDistFromCenter = new Vector2(targetPos.x, targetPos.z).magnitude;
+            Vector3 fc = GameManager.FortressCenter;
+            Vector3 offset = targetPos - fc;
+            float targetDistFromCenter = new Vector2(offset.x, offset.z).magnitude;
             if (targetDistFromCenter > 3.5f)
             {
                 // Enemy is outside courtyard - move to the courtyard edge toward them
-                Vector3 dir = (targetPos - Vector3.zero).normalized;
-                targetPos = dir * 3f;
+                Vector3 dir = offset.normalized;
+                targetPos = fc + dir * 3f;
                 targetPos.y = 0;
             }
             agent.isStopped = false;

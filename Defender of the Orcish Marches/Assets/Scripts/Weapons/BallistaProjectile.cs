@@ -42,6 +42,32 @@ public class BallistaProjectile : MonoBehaviour
                 HandleHit(enemy);
                 return;
             }
+
+            var veg = hit.collider.GetComponentInParent<Vegetation>();
+            if (veg != null && !veg.IsDead)
+            {
+                transform.position = hit.point;
+                veg.TakeDamage(damage);
+                Debug.Log($"[BallistaProjectile] Hit {veg.Type} at {hit.point}");
+
+                // Burst damage still splashes to nearby enemies
+                if (burstDamage && burstRadius > 0)
+                {
+                    BurstDamageVFX.Spawn(transform.position, burstRadius);
+                    var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+                    foreach (var nearby in allEnemies)
+                    {
+                        if (nearby.IsDead) continue;
+                        float dist = Vector3.Distance(transform.position, nearby.transform.position);
+                        if (dist <= burstRadius)
+                        {
+                            nearby.TakeDamage(damage / 2);
+                        }
+                    }
+                }
+                Destroy(gameObject);
+                return;
+            }
         }
 
         transform.position = oldPos + direction * step;
@@ -58,6 +84,30 @@ public class BallistaProjectile : MonoBehaviour
         if (enemy != null && !enemy.IsDead)
         {
             HandleHit(enemy);
+            return;
+        }
+
+        var veg = other.GetComponentInParent<Vegetation>();
+        if (veg != null && !veg.IsDead)
+        {
+            veg.TakeDamage(damage);
+            Debug.Log($"[BallistaProjectile] Trigger hit {veg.Type} at {transform.position}");
+
+            if (burstDamage && burstRadius > 0)
+            {
+                BurstDamageVFX.Spawn(transform.position, burstRadius);
+                var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+                foreach (var nearby in allEnemies)
+                {
+                    if (nearby.IsDead) continue;
+                    float dist = Vector3.Distance(transform.position, nearby.transform.position);
+                    if (dist <= burstRadius)
+                    {
+                        nearby.TakeDamage(damage / 2);
+                    }
+                }
+            }
+            Destroy(gameObject);
         }
     }
 

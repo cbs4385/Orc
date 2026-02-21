@@ -9,7 +9,8 @@ public enum MenialState
     Collecting,
     Returning,
     EnteringTower,
-    PickingUp // Brief pause while grabbing a loot item
+    PickingUp, // Brief pause while grabbing a loot item
+    ClearingVegetation // Pausing to clear vegetation blocking path
 }
 
 [RequireComponent(typeof(NavMeshAgent))]
@@ -34,6 +35,12 @@ public class Menial : MonoBehaviour
     private const float PICKUP_DELAY = 0.25f;
     private float pickupTimer;
     private MenialState stateBeforePickup; // state to resume after pickup delay
+
+    // Vegetation clearing
+    private Vegetation targetVegetation;
+    private float clearingTimer;
+    private MenialState stateBeforeClearing;
+    private const float VEGETATION_CLEAR_RANGE = 1.5f;
 
     // Wandering
     private float wanderTimer;
@@ -125,10 +132,14 @@ public class Menial : MonoBehaviour
             case MenialState.PickingUp:
                 UpdatePickingUp();
                 break;
+            case MenialState.ClearingVegetation:
+                UpdateClearingVegetation();
+                break;
         }
 
         // Track if we're outside the wall ring
-        float distFromCenter = new Vector2(transform.position.x, transform.position.z).magnitude;
+        Vector3 fc = GameManager.FortressCenter;
+        float distFromCenter = new Vector2(transform.position.x - fc.x, transform.position.z - fc.z).magnitude;
         IsOutsideWalls = distFromCenter > 4.5f;
     }
 
@@ -147,15 +158,16 @@ public class Menial : MonoBehaviour
         if (!agent.isOnNavMesh) return;
 
         // Keep wander targets strictly inside the courtyard (radius 2-3 from center)
+        Vector3 fc = GameManager.FortressCenter;
         float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
         float dist = Random.Range(2f, 3f);
-        Vector3 wanderTarget = new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
+        Vector3 wanderTarget = fc + new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
 
         NavMeshHit hit;
         if (NavMesh.SamplePosition(wanderTarget, out hit, 1f, NavMesh.AllAreas))
         {
             // Double-check the sampled position is inside the courtyard
-            float hitDist = new Vector2(hit.position.x, hit.position.z).magnitude;
+            float hitDist = new Vector2(hit.position.x - fc.x, hit.position.z - fc.z).magnitude;
             if (hitDist < 3.5f)
             {
                 agent.SetDestination(hit.position);
@@ -188,7 +200,7 @@ public class Menial : MonoBehaviour
             CurrentState = MenialState.WalkingToGate;
             // Path to the gate's inside face (toward center from gate position)
             Vector3 gatePos = targetGate.transform.position;
-            Vector3 toCenter = -gatePos.normalized;
+            Vector3 toCenter = (GameManager.FortressCenter - gatePos).normalized;
             Vector3 gateApproach = gatePos + toCenter * 1.5f;
             gateApproach.y = 0;
             agent.SetDestination(gateApproach);
@@ -237,6 +249,9 @@ public class Menial : MonoBehaviour
         // Scan for loot along the way
         if (TryGrabNearbyLoot(MenialState.WalkingToGate)) return;
 
+        // Clear vegetation blocking path
+        if (TryClearNearbyVegetation(MenialState.WalkingToGate)) return;
+
         // Check if we're close to the gate
         if (targetGate != null)
         {
@@ -255,7 +270,7 @@ public class Menial : MonoBehaviour
             {
                 // Re-path to approach point to stay near gate
                 Vector3 gatePos = targetGate.transform.position;
-                Vector3 toCenter = -gatePos.normalized;
+                Vector3 toCenter = (GameManager.FortressCenter - gatePos).normalized;
                 Vector3 gateApproach = gatePos + toCenter * 1.5f;
                 gateApproach.y = 0;
                 agent.SetDestination(gateApproach);
@@ -269,6 +284,9 @@ public class Menial : MonoBehaviour
 
         // Scan for loot along the way (including the target)
         if (TryGrabNearbyLoot(MenialState.Collecting)) return;
+
+        // Clear vegetation blocking path
+        if (TryClearNearbyVegetation(MenialState.Collecting)) return;
 
         if (targetLoot == null || targetLoot.IsCollected)
         {
@@ -297,8 +315,12 @@ public class Menial : MonoBehaviour
         // Scan for loot along the way home
         if (TryGrabNearbyLoot(MenialState.Returning)) return;
 
+        // Clear vegetation blocking path
+        if (TryClearNearbyVegetation(MenialState.Returning)) return;
+
         // Check if we're back inside the courtyard
-        float distFromCenter = new Vector2(transform.position.x, transform.position.z).magnitude;
+        Vector3 fc = GameManager.FortressCenter;
+        float distFromCenter = new Vector2(transform.position.x - fc.x, transform.position.z - fc.z).magnitude;
         if (distFromCenter < 3.5f)
         {
             // Arrived home - deposit treasure
@@ -319,7 +341,7 @@ public class Menial : MonoBehaviour
             // Re-path to home
             float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
             float homeDist = Random.Range(2f, 3f);
-            Vector3 homePos = new Vector3(Mathf.Cos(angle) * homeDist, 0, Mathf.Sin(angle) * homeDist);
+            Vector3 homePos = fc + new Vector3(Mathf.Cos(angle) * homeDist, 0, Mathf.Sin(angle) * homeDist);
             agent.SetDestination(homePos);
         }
     }
@@ -384,6 +406,51 @@ public class Menial : MonoBehaviour
         // If we were collecting and our target is gone, UpdateCollecting will find new loot or return home
     }
 
+    private void UpdateClearingVegetation()
+    {
+        // If vegetation was destroyed externally, resume immediately
+        if (targetVegetation == null || targetVegetation.IsDead)
+        {
+            Debug.Log("[Menial] Target vegetation gone, resuming previous state.");
+            targetVegetation = null;
+            CurrentState = stateBeforeClearing;
+            if (agent.isOnNavMesh) agent.isStopped = false;
+            return;
+        }
+
+        clearingTimer -= Time.deltaTime;
+        if (clearingTimer <= 0)
+        {
+            Debug.Log($"[Menial] Finished clearing {targetVegetation.Type} at {targetVegetation.transform.position}");
+            targetVegetation.Clear();
+            targetVegetation = null;
+            CurrentState = stateBeforeClearing;
+            if (agent.isOnNavMesh) agent.isStopped = false;
+        }
+    }
+
+    private bool TryClearNearbyVegetation(MenialState resumeState)
+    {
+        if (VegetationManager.Instance == null) return false;
+
+        // Reuse the scan timer from loot scanning (already decremented in TryGrabNearbyLoot)
+        // Only check when scan timer allows — but since scan timer is shared, we check here too
+        // to avoid a separate timer. The scan interval is short enough.
+        var veg = VegetationManager.Instance.FindNearestVegetation(transform.position, VEGETATION_CLEAR_RANGE);
+        if (veg != null && !veg.IsDead)
+        {
+            targetVegetation = veg;
+            clearingTimer = veg.ClearTimeRequired;
+            stateBeforeClearing = resumeState;
+            CurrentState = MenialState.ClearingVegetation;
+            if (agent.isOnNavMesh) agent.isStopped = true;
+            Debug.Log($"[Menial] Clearing {veg.Type} at {veg.transform.position} (time={clearingTimer}s)");
+            return true;
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Find the nearest uncollected loot in the world (used when original target is gone).
     /// </summary>
@@ -412,12 +479,13 @@ public class Menial : MonoBehaviour
         targetGate = null;
 
         // Find nearest gate to return through
+        Vector3 fc = GameManager.FortressCenter;
         Gate returnGate = FindNearestGateToSelf();
         if (returnGate != null)
         {
             // Path toward the gate first - it will open as we approach
             Vector3 gatePos = returnGate.transform.position;
-            Vector3 toCenter = -gatePos.normalized;
+            Vector3 toCenter = (fc - gatePos).normalized;
             Vector3 homePos = gatePos + toCenter * 3f;
             homePos.y = 0;
 
@@ -431,7 +499,7 @@ public class Menial : MonoBehaviour
         {
             float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
             float dist = Random.Range(2f, 3f);
-            Vector3 homePos = new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
+            Vector3 homePos = fc + new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
 
             if (agent.isOnNavMesh)
             {
@@ -461,17 +529,18 @@ public class Menial : MonoBehaviour
     public void SendToTower(System.Action callback)
     {
         if (IsDead) return;
+        bool wasIdle = IsIdle;
         CurrentState = MenialState.EnteringTower;
         onEnteredTower = callback;
 
-        if (GameManager.Instance != null && IsIdle)
+        if (GameManager.Instance != null && wasIdle)
             GameManager.Instance.IdleMenialCount--;
 
         if (agent != null && agent.isOnNavMesh)
         {
             agent.stoppingDistance = 0.5f;
             agent.isStopped = false;
-            agent.SetDestination(Vector3.zero);
+            agent.SetDestination(GameManager.FortressCenter);
         }
         Debug.Log($"[Menial] Heading to tower for conversion at {transform.position}");
     }
@@ -480,7 +549,7 @@ public class Menial : MonoBehaviour
     {
         if (!agent.isOnNavMesh) return;
 
-        float distFromCenter = Vector3.Distance(transform.position, Vector3.zero);
+        float distFromCenter = Vector3.Distance(transform.position, GameManager.FortressCenter);
         // Use generous threshold - ballista/tower occupies the center
         if (distFromCenter < 3f)
         {

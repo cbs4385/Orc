@@ -123,7 +123,7 @@ public class WallManager : MonoBehaviour
     public Vector3 GetNearestWallPosition(Vector3 fromPosition)
     {
         var wall = GetNearestWall(fromPosition);
-        return wall != null ? wall.transform.position : Vector3.zero;
+        return wall != null ? wall.transform.position : GameManager.FortressCenter;
     }
 
     public bool HasBreach()

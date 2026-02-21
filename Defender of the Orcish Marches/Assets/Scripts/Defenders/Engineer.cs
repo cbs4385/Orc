@@ -33,7 +33,7 @@ public class Engineer : Defender
             if (agent != null && agent.isOnNavMesh)
             {
                 Vector3 wallPos = targetWall.transform.position;
-                Vector3 toCenter = (Vector3.zero - wallPos).normalized;
+                Vector3 toCenter = (GameManager.FortressCenter - wallPos).normalized;
                 Vector3 insidePos = wallPos + toCenter * 0.6f;
                 insidePos.y = 0;
                 agent.SetDestination(insidePos);

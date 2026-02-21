@@ -53,6 +53,15 @@ public class EnemyProjectile : MonoBehaviour
         {
             refugee.TakeDamage(damage);
             Destroy(gameObject);
+            return;
+        }
+
+        var veg = other.GetComponentInParent<Vegetation>();
+        if (veg != null && !veg.IsDead)
+        {
+            veg.TakeDamage(damage);
+            Debug.Log($"[EnemyProjectile] Hit {veg.Type} at {transform.position}");
+            Destroy(gameObject);
         }
     }
 }

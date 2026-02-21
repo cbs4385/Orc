@@ -76,7 +76,15 @@ public class BurstDamageVFX : MonoBehaviour
         cachedParticleMat.SetFloat("_Surface", 1); // Transparent
         cachedParticleMat.SetFloat("_Blend", 0);   // Alpha blend
         cachedParticleMat.mainTexture = GetCircleTexture();
+        cachedParticleMat.SetFloat("_ColorMode", 0); // Multiply
         cachedParticleMat.renderQueue = 3000;
+        // Enable URP transparency keywords so alpha channel is respected
+        cachedParticleMat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        cachedParticleMat.EnableKeyword("_BLENDMODE_ALPHA");
+        cachedParticleMat.SetOverrideTag("RenderType", "Transparent");
+        cachedParticleMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        cachedParticleMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        cachedParticleMat.SetInt("_ZWrite", 0);
         return cachedParticleMat;
     }
 

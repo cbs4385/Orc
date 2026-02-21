@@ -272,12 +272,12 @@ public class SceneWiring : MonoBehaviour
             {
                 towerObj = (GameObject)PrefabUtility.InstantiatePrefab(towerFbx);
                 towerObj.name = "Tower";
-                towerObj.transform.position = Vector3.zero;
+                towerObj.transform.position = GameManager.FortressCenter;
                 // Make tower static for batching
                 towerObj.isStatic = true;
                 foreach (Transform child in towerObj.GetComponentsInChildren<Transform>())
                     child.gameObject.isStatic = true;
-                Debug.Log("[SceneWiring] Created Tower from FBX model at origin.");
+                Debug.Log($"[SceneWiring] Created Tower from FBX model at {GameManager.FortressCenter}.");
             }
             else
             {
@@ -314,7 +314,7 @@ public class SceneWiring : MonoBehaviour
                 Debug.Log("[SceneWiring] Created ScorpioBase (primitive) on tower.");
             }
 
-            ballistaObj.transform.position = new Vector3(0, 3.2f, 0);
+            ballistaObj.transform.position = GameManager.FortressCenter + new Vector3(0, 3.2f, 0);
             ballistaObj.AddComponent<Ballista>();
 
             // Create firePoint — forward of center along the firing axis
@@ -449,7 +449,59 @@ public class SceneWiring : MonoBehaviour
         sndSO.ApplyModifiedProperties();
         Debug.Log($"[SceneWiring] SoundManager wired with 13 SFX clips and {trackCount} music tracks.");
 
+        // --- Wire VegetationManager ---
+        var vegMgrObj = GameObject.Find("VegetationManager");
+        if (vegMgrObj == null)
+        {
+            vegMgrObj = new GameObject("VegetationManager");
+            vegMgrObj.AddComponent<VegetationManager>();
+        }
+        else if (vegMgrObj.GetComponent<VegetationManager>() == null)
+        {
+            vegMgrObj.AddComponent<VegetationManager>();
+        }
+        var vegMgr = vegMgrObj.GetComponent<VegetationManager>();
+        var vegMgrSO = new SerializedObject(vegMgr);
+        vegMgrSO.FindProperty("bushPrefab").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Vegetation/Bush.prefab");
+        vegMgrSO.FindProperty("treePrefab").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Vegetation/Tree.prefab");
+        vegMgrSO.ApplyModifiedProperties();
+        Debug.Log("[SceneWiring] VegetationManager wired with bush and tree prefabs.");
+
         Debug.Log("Scene wired successfully!");
+    }
+
+    [MenuItem("Game/Update Serialized Values")]
+    public static void UpdateSerializedValues()
+    {
+        // Update CameraController zoom speed
+        var cam = GameObject.Find("Main Camera");
+        if (cam != null)
+        {
+            var cc = cam.GetComponent<CameraController>();
+            if (cc != null)
+            {
+                var so = new SerializedObject(cc);
+                so.FindProperty("zoomSpeed").floatValue = 9f;
+                so.ApplyModifiedProperties();
+                Debug.Log("[SceneWiring] CameraController zoomSpeed set to 9.");
+            }
+        }
+
+        // Update DayNightCycle first day duration
+        var dncObj = GameObject.Find("DayNightCycle");
+        if (dncObj != null)
+        {
+            var dnc = dncObj.GetComponent<DayNightCycle>();
+            if (dnc != null)
+            {
+                var so = new SerializedObject(dnc);
+                so.FindProperty("firstDayDuration").floatValue = 90f;
+                so.ApplyModifiedProperties();
+                Debug.Log("[SceneWiring] DayNightCycle firstDayDuration set to 90.");
+            }
+        }
     }
 #endif
 }

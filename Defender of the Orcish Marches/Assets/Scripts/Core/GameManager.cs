@@ -6,12 +6,24 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    /// <summary>World-space center of the fortress. All fortress-relative calculations use this.</summary>
+    public static readonly Vector3 FortressCenter = new Vector3(15f, 0f, 0f);
+
     public enum GameState { Playing, Paused, GameOver }
 
     public GameState CurrentState { get; private set; } = GameState.Playing;
     public int Treasure { get; private set; }
     public int MenialCount { get; private set; }
-    public int IdleMenialCount { get; set; }
+    private int _idleMenialCount;
+    public int IdleMenialCount
+    {
+        get => _idleMenialCount;
+        set
+        {
+            _idleMenialCount = value;
+            OnMenialsChanged?.Invoke(MenialCount);
+        }
+    }
     public float GameTime { get; private set; }
     public int EnemyKills { get; private set; }
 
@@ -106,7 +118,6 @@ public class GameManager : MonoBehaviour
         if (CurrentState != GameState.Playing) return;
         MenialCount += count;
         IdleMenialCount += count;
-        OnMenialsChanged?.Invoke(MenialCount);
     }
 
     public void RemoveMenial(int count = 1)
@@ -123,7 +134,6 @@ public class GameManager : MonoBehaviour
         if (CurrentState != GameState.Playing || IdleMenialCount < count) return false;
         MenialCount -= count;
         IdleMenialCount -= count;
-        OnMenialsChanged?.Invoke(MenialCount);
         return true;
     }
 

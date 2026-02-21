@@ -10,7 +10,7 @@ public class DayNightCycle : MonoBehaviour
     [Header("Timing")]
     [SerializeField] private float dayDuration = 60f;
     [SerializeField] private float nightDuration = 30f;
-    [SerializeField] private float firstDayDuration = 60f;
+    [SerializeField] private float firstDayDuration = 90f;
 
     [Header("Lighting")]
     [SerializeField] private Light directionalLight;
@@ -80,7 +80,7 @@ public class DayNightCycle : MonoBehaviour
         phaseTimer = 0f;
         isFirstDay = true;
         Debug.Log($"[DayNightCycle] Day {DayNumber} started (first day, {firstDayDuration}s).");
-        if (SoundManager.Instance != null) SoundManager.Instance.PlayAttackStart(Vector3.zero);
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayAttackStart(GameManager.FortressCenter);
         OnDayStarted?.Invoke();
         OnNewDay?.Invoke(DayNumber);
     }
@@ -118,7 +118,7 @@ public class DayNightCycle : MonoBehaviour
         DayNumber++;
         phaseTimer = 0f;
         Debug.Log($"[DayNightCycle] Day {DayNumber} started. Duration={dayDuration}s.");
-        if (SoundManager.Instance != null) SoundManager.Instance.PlayAttackStart(Vector3.zero);
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayAttackStart(GameManager.FortressCenter);
         OnDayStarted?.Invoke();
         OnNewDay?.Invoke(DayNumber);
     }

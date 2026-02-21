@@ -493,6 +493,117 @@ static void CreateRefugeePrefab()
         Debug.Log("[PrefabCreator] FireMissile prefab created.");
     }
 
+    [MenuItem("Game/Create Vegetation Prefabs")]
+    public static void CreateVegetationPrefabs()
+    {
+        CreateBushPrefab();
+        CreateTreePrefab();
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("Vegetation prefabs created!");
+    }
+
+    static void CreateBushPrefab()
+    {
+        // Ensure vegetation folder exists
+        if (!AssetDatabase.IsValidFolder("Assets/Prefabs/Vegetation"))
+            AssetDatabase.CreateFolder("Assets/Prefabs", "Vegetation");
+
+        // Create or load bush material
+        var bushMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Bush.mat");
+        if (bushMat == null)
+        {
+            bushMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            bushMat.color = new Color(0.2f, 0.55f, 0.15f);
+            bushMat.SetFloat("_Smoothness", 0f);
+            AssetDatabase.CreateAsset(bushMat, "Assets/Materials/Bush.mat");
+        }
+
+        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        go.name = "Bush";
+        go.transform.localScale = new Vector3(0.8f, 0.6f, 0.8f);
+        go.transform.position = new Vector3(0, 0.3f, 0);
+
+        // Replace default collider with one tall enough to block projectiles at y=0.5
+        // SphereCollider radius is scaled by max axis (0.8), so world radius = 0.7*0.8 = 0.56
+        // Centered at local y=0 → world y=0.3, extends from y=-0.26 to y=0.86
+        Object.DestroyImmediate(go.GetComponent<SphereCollider>());
+        var col = go.AddComponent<SphereCollider>();
+        col.radius = 0.7f;
+        col.center = Vector3.zero;
+
+        go.GetComponent<Renderer>().sharedMaterial = bushMat;
+        go.AddComponent<Vegetation>();
+
+        PrefabUtility.SaveAsPrefabAsset(go, "Assets/Prefabs/Vegetation/Bush.prefab");
+        Object.DestroyImmediate(go);
+        Debug.Log("[PrefabCreator] Bush prefab created.");
+    }
+
+    static void CreateTreePrefab()
+    {
+        // Ensure vegetation folder exists
+        if (!AssetDatabase.IsValidFolder("Assets/Prefabs/Vegetation"))
+            AssetDatabase.CreateFolder("Assets/Prefabs", "Vegetation");
+
+        // Create materials
+        var trunkMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        trunkMat.color = new Color(0.4f, 0.25f, 0.1f);
+        trunkMat.SetFloat("_Smoothness", 0f);
+        if (AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TreeTrunk.mat") == null)
+            AssetDatabase.CreateAsset(trunkMat, "Assets/Materials/TreeTrunk.mat");
+        else
+            trunkMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TreeTrunk.mat");
+
+        var canopyMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        canopyMat.color = new Color(0.1f, 0.45f, 0.1f);
+        canopyMat.SetFloat("_Smoothness", 0f);
+        if (AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TreeCanopy.mat") == null)
+            AssetDatabase.CreateAsset(canopyMat, "Assets/Materials/TreeCanopy.mat");
+        else
+            canopyMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TreeCanopy.mat");
+
+        var root = new GameObject("Tree");
+
+        // Trunk (cylinder)
+        var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        trunk.name = "Trunk";
+        trunk.transform.SetParent(root.transform);
+        trunk.transform.localPosition = new Vector3(0, 0.75f, 0);
+        trunk.transform.localScale = new Vector3(0.3f, 0.75f, 0.3f);
+        Object.DestroyImmediate(trunk.GetComponent<CapsuleCollider>());
+        trunk.GetComponent<Renderer>().sharedMaterial = trunkMat;
+
+        // Canopy (sphere)
+        var canopy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        canopy.name = "Canopy";
+        canopy.transform.SetParent(root.transform);
+        canopy.transform.localPosition = new Vector3(0, 2.0f, 0);
+        canopy.transform.localScale = new Vector3(1.5f, 1.2f, 1.5f);
+        Object.DestroyImmediate(canopy.GetComponent<SphereCollider>());
+        canopy.GetComponent<Renderer>().sharedMaterial = canopyMat;
+
+        // CapsuleCollider on root
+        var col = root.AddComponent<CapsuleCollider>();
+        col.radius = 0.4f;
+        col.height = 3.5f;
+        col.center = new Vector3(0, 1.5f, 0);
+
+        // NavMeshObstacle for trees (they block pathing)
+        var obstacle = root.AddComponent<NavMeshObstacle>();
+        obstacle.carving = true;
+        obstacle.shape = NavMeshObstacleShape.Capsule;
+        obstacle.radius = 0.5f;
+        obstacle.height = 2.0f;
+        obstacle.center = new Vector3(0, 1.0f, 0);
+
+        root.AddComponent<Vegetation>();
+
+        PrefabUtility.SaveAsPrefabAsset(root, "Assets/Prefabs/Vegetation/Tree.prefab");
+        Object.DestroyImmediate(root);
+        Debug.Log("[PrefabCreator] Tree prefab created.");
+    }
+
     static void AssignDefenderData(GameObject root, string assetPath)
     {
         var defenderData = AssetDatabase.LoadAssetAtPath<DefenderData>(assetPath);

@@ -6,7 +6,7 @@ public class CameraController : MonoBehaviour
     [Header("Zoom Settings")]
     [SerializeField] private float minZoom = 8f;
     [SerializeField] private float maxZoom = 23.5f;
-    [SerializeField] private float zoomSpeed = 3f;
+    [SerializeField] private float zoomSpeed = 9f;
     [SerializeField] private float zoomSmoothing = 8f;
 
     private UnityEngine.Camera cam;

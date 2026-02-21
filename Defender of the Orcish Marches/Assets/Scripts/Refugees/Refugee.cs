@@ -74,7 +74,7 @@ public class Refugee : MonoBehaviour
     {
         // Navigate to tower center
         if (agent.isOnNavMesh)
-            agent.SetDestination(Vector3.zero);
+            agent.SetDestination(GameManager.FortressCenter);
     }
 
     public void SetPowerUp(RefugeePowerUp powerUp)
