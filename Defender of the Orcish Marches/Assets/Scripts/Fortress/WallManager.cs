@@ -140,11 +140,13 @@ public class WallManager : MonoBehaviour
         if (wallPrefab == null) return null;
         if (rotation == default) rotation = Quaternion.identity;
         var go = Instantiate(wallPrefab, position, rotation, transform);
-        // Ensure mesh exists (prefab's built-in Cube mesh can be lost during serialization)
-        WallPlacement.EnsureWallMesh(go);
         var wall = go.GetComponent<Wall>();
-        if (wall != null) RegisterWall(wall);
-        Debug.Log($"[WallManager] Wall placed at {position}, rotation={rotation.eulerAngles}.");
+        if (wall != null)
+        {
+            RegisterWall(wall);
+            wall.SetUnderConstruction();
+        }
+        Debug.Log($"[WallManager] Wall placed (under construction) at {position}, rotation={rotation.eulerAngles}.");
         return go;
     }
 }

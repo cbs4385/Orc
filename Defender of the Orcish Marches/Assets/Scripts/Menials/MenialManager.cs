@@ -84,7 +84,8 @@ public class MenialManager : MonoBehaviour
         var wallPlacement = FindAnyObjectByType<WallPlacement>();
         if (wallPlacement != null && wallPlacement.IsPlacing) return;
 
-        if (mainCam == null) { mainCam = UnityEngine.Camera.main; return; }
+        if (mainCam == null) mainCam = UnityEngine.Camera.main;
+        if (mainCam == null) return;
 
         // Raycast to find treasure
         Vector2 mousePos = Mouse.current.position.ReadValue();
@@ -120,33 +121,56 @@ public class MenialManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[MenialManager] Selected loot at {nearestLoot.transform.position}, value={nearestLoot.Value}");
+        // Collect all uncollected loot within the search radius
+        var lootInRadius = new List<TreasurePickup>();
+        foreach (var pickup in allPickups)
+        {
+            if (pickup.IsCollected) continue;
+            if (Vector3.Distance(clickPos, pickup.transform.position) <= lootSearchRadius)
+                lootInRadius.Add(pickup);
+        }
 
-        // Find nearest idle menial
+        Debug.Log($"[MenialManager] Found {lootInRadius.Count} loot in radius at {clickPos}");
+
+        // Find nearest available menial to the click position
         Menial bestMenial = null;
-        float bestDist = float.MaxValue;
-        int idleCount = 0;
+        float bestMenialDist = float.MaxValue;
         foreach (var menial in allMenials)
         {
             if (menial == null || menial.IsDead) continue;
-            if (!menial.IsIdle) continue;
-            idleCount++;
-            float dist = Vector3.Distance(menial.transform.position, nearestLoot.transform.position);
-            if (dist < bestDist)
+            if (!menial.IsAvailable) continue;
+            float dist = Vector3.Distance(clickPos, menial.transform.position);
+            if (dist < bestMenialDist)
             {
-                bestDist = dist;
+                bestMenialDist = dist;
                 bestMenial = menial;
             }
         }
 
-        if (bestMenial != null)
+        if (bestMenial == null)
         {
-            Debug.Log($"[MenialManager] Assigned menial to loot at {nearestLoot.transform.position} (value={nearestLoot.Value}, {idleCount} idle)");
-            bestMenial.AssignLoot(nearestLoot);
+            Debug.Log($"[MenialManager] No available menials ({allMenials.Count} total)");
+            return;
         }
-        else
+
+        // Assign the menial to the nearest loot piece in the radius
+        TreasurePickup bestLoot = null;
+        float bestLootDist = float.MaxValue;
+        foreach (var loot in lootInRadius)
         {
-            Debug.Log($"[MenialManager] No idle menials available ({allMenials.Count} total)");
+            if (loot == null || loot.IsCollected) continue;
+            float dist = Vector3.Distance(bestMenial.transform.position, loot.transform.position);
+            if (dist < bestLootDist)
+            {
+                bestLootDist = dist;
+                bestLoot = loot;
+            }
+        }
+
+        if (bestLoot != null)
+        {
+            bestMenial.AssignLoot(bestLoot);
+            Debug.Log($"[MenialManager] Assigned 1 menial to loot at {bestLoot.transform.position} ({lootInRadius.Count} loot pieces in radius)");
         }
     }
 
@@ -171,16 +195,14 @@ public class MenialManager : MonoBehaviour
 
         Debug.Log($"[MenialManager] Found {vegCount} vegetation pieces in radius at {clickPos}");
 
-        // Find nearest idle menial
+        // Find nearest available menial to the click position
         Menial bestMenial = null;
         float bestDist = float.MaxValue;
-        int idleCount = 0;
         foreach (var menial in allMenials)
         {
             if (menial == null || menial.IsDead) continue;
-            if (!menial.IsIdle) continue;
-            idleCount++;
-            float dist = Vector3.Distance(menial.transform.position, clickPos);
+            if (!menial.IsAvailable) continue;
+            float dist = Vector3.Distance(clickPos, menial.transform.position);
             if (dist < bestDist)
             {
                 bestDist = dist;
@@ -190,12 +212,12 @@ public class MenialManager : MonoBehaviour
 
         if (bestMenial != null)
         {
-            Debug.Log($"[MenialManager] Assigned menial to clear {vegCount} vegetation at {clickPos}, radius={lootSearchRadius} ({idleCount} idle)");
             bestMenial.AssignVegetationArea(clickPos, lootSearchRadius);
+            Debug.Log($"[MenialManager] Assigned 1 menial to clear {vegCount} vegetation at {clickPos}");
         }
         else
         {
-            Debug.Log($"[MenialManager] No idle menials available ({allMenials.Count} total)");
+            Debug.Log($"[MenialManager] No available menials ({allMenials.Count} total)");
         }
     }
 
@@ -210,18 +232,24 @@ public class MenialManager : MonoBehaviour
         }
         else
         {
-            // Spawn outside the tower (tower radius ~1.5) but inside walls (wall ring at ~4)
+            // Spawn outside the tower (radius ~1.5) but inside walls (wall ring at ~4.5)
             Vector3 fc = GameManager.FortressCenter;
             float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-            float dist = Random.Range(2f, 3f);
+            float dist = Random.Range(3f, 4f);
             spawnPos = fc + new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
         }
 
-        // Find a valid NavMesh position near the spawn point
+        // Find a valid NavMesh position near the spawn point (small radius to avoid snapping to tower center)
         UnityEngine.AI.NavMeshHit hit;
-        if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+        if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out hit, 1.5f, UnityEngine.AI.NavMesh.AllAreas))
         {
-            spawnPos = hit.position;
+            // Reject positions too close to the tower center
+            Vector3 fc2 = GameManager.FortressCenter;
+            float hitDist = new Vector2(hit.position.x - fc2.x, hit.position.z - fc2.z).magnitude;
+            if (hitDist >= 2f)
+                spawnPos = hit.position;
+            else
+                Debug.LogWarning($"[MenialManager] NavMesh sample too close to tower ({hitDist:F1}m), using original spawn pos.");
         }
 
         var go = Instantiate(menialPrefab, spawnPos, Quaternion.identity, transform);

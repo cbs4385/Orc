@@ -56,7 +56,7 @@ public class TutorialImageCapture : MonoBehaviour
         Capture(cam, rt, fullDir, "tut_ballista",
             new Vector3(2.5f, 5.5f, 2.5f), new Vector3(0f, 3.2f, 0f));
 
-        // Wall + gate: looking at the east gate (the only gate)
+        // Wall: looking at the east wall section
         Capture(cam, rt, fullDir, "tut_wallgate",
             new Vector3(8f, 5f, 0f), new Vector3(3.75f, 1f, 0f));
 

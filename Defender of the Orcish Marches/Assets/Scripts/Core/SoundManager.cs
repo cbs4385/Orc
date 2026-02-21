@@ -36,6 +36,7 @@ public class SoundManager : MonoBehaviour
     private AudioSource musicSource;
     private int currentTrackIndex;
     private int[] shuffledOrder;
+    private int lastPlayedTrack = -1;
 
     private void Awake()
     {
@@ -134,14 +135,30 @@ public class SoundManager : MonoBehaviour
             for (int i = 0; i < shuffledOrder.Length; i++)
                 shuffledOrder[i] = i;
         }
+
+        // Use System.Random for guaranteed per-shuffle entropy — separate from
+        // UnityEngine.Random so gameplay randomness isn't affected
+        var rng = new System.Random();
+
         // Fisher-Yates shuffle
         for (int i = shuffledOrder.Length - 1; i > 0; i--)
         {
-            int j = Random.Range(0, i + 1);
+            int j = rng.Next(0, i + 1);
             int tmp = shuffledOrder[i];
             shuffledOrder[i] = shuffledOrder[j];
             shuffledOrder[j] = tmp;
         }
+
+        // Ensure first track of new shuffle isn't the same as the last played track
+        // (prevents repeating a song at the boundary between two shuffles or on restart)
+        if (musicTracks.Length > 1 && shuffledOrder[0] == lastPlayedTrack)
+        {
+            int swapIdx = 1 + rng.Next(shuffledOrder.Length - 1);
+            int tmp = shuffledOrder[0];
+            shuffledOrder[0] = shuffledOrder[swapIdx];
+            shuffledOrder[swapIdx] = tmp;
+        }
+
         Debug.Log($"[SoundManager] Shuffled music order: [{string.Join(", ", shuffledOrder)}]");
     }
 
@@ -149,6 +166,7 @@ public class SoundManager : MonoBehaviour
     {
         if (musicTracks == null || index < 0 || index >= musicTracks.Length) return;
         if (musicTracks[index] == null) return;
+        lastPlayedTrack = index;
         musicSource.clip = musicTracks[index];
         musicSource.volume = musicVolume;
         musicSource.Play();

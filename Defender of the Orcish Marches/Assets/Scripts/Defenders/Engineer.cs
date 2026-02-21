@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -14,53 +15,232 @@ public class Engineer : Defender
     private float dangerScanTimer;
     private const float DANGER_SCAN_INTERVAL = 0.15f;
 
+    // Track walls where no valid stand position could be found
+    private HashSet<Wall> failedWalls = new HashSet<Wall>();
+    private float failedWallResetTimer;
+    private const float FAILED_WALL_RESET_INTERVAL = 10f;
+
+    // Cached stand position for current target wall
+    private Vector3 currentStandPos;
+    private Wall standWall;
+
+    // Clockwise stand position search
+    private const int SEARCH_ANGLES = 16;           // 16 directions (22.5° apart)
+    private const float ENGINEER_CHECK_RADIUS = 0.2f; // overlap sphere size for collision check
+    private const float MIN_NAVMESH_CLEARANCE = 0.3f;  // min distance from NavMesh edge
+
     protected override void Update()
     {
         if (IsDead) return;
         if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameManager.GameState.Playing) return;
 
-        // Check for danger before repair logic
         if (CheckForDanger()) return;
 
         repairTimer -= Time.deltaTime;
 
-        // Find damaged or destroyed wall (destroyed walls = breaches to rebuild)
+        // Periodically allow retrying failed walls
+        failedWallResetTimer -= Time.deltaTime;
+        if (failedWallResetTimer <= 0)
+        {
+            failedWalls.Clear();
+            failedWallResetTimer = FAILED_WALL_RESET_INTERVAL;
+        }
+
+        // Find a damaged wall to repair
         if (targetWall == null || targetWall.CurrentHP >= targetWall.MaxHP)
         {
-            if (WallManager.Instance != null)
-            {
-                targetWall = WallManager.Instance.GetNearestDamagedWall(transform.position);
-            }
+            targetWall = GetNextDamagedWall();
+            standWall = null;
         }
 
         float repairRange = data != null ? data.range : 2f;
 
         if (targetWall != null)
         {
-            // Move toward the inside face of the wall
             if (agent != null && agent.isOnNavMesh)
             {
-                Vector3 wallPos = targetWall.transform.position;
-                Vector3 toCenter = (GameManager.FortressCenter - wallPos).normalized;
-                Vector3 insidePos = wallPos + toCenter * 0.6f;
-                insidePos.y = 0;
-                agent.SetDestination(insidePos);
+                // Calculate stand position when target changes
+                if (standWall != targetWall)
+                {
+                    if (FindStandPosition(targetWall, out Vector3 pos))
+                    {
+                        currentStandPos = pos;
+                        standWall = targetWall;
+                        agent.isStopped = false;
+                        agent.SetDestination(currentStandPos);
+                        Debug.Log($"[Engineer] Moving to repair {targetWall.name} at standPos={currentStandPos}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[Engineer] No valid stand position for {targetWall.name} — skipping.");
+                        failedWalls.Add(targetWall);
+                        targetWall = null;
+                        standWall = null;
+                    }
+                }
+                else if (!agent.pathPending && agent.remainingDistance > 0.3f)
+                {
+                    agent.isStopped = false;
+                }
             }
 
-            // Repair when within range — wide enough for multiple engineers to work side-by-side
-            float dist = Vector3.Distance(transform.position, targetWall.transform.position);
-            if (dist < repairRange && repairTimer <= 0)
+            // Repair when within range
+            if (targetWall != null)
             {
-                targetWall.Repair(repairAmount);
-                repairTimer = repairInterval;
-                Debug.Log($"[Engineer] Repaired {targetWall.name} for {repairAmount} HP (now {targetWall.CurrentHP}/{targetWall.MaxHP})");
+                float dist = Vector3.Distance(transform.position, targetWall.transform.position);
+                if (dist < repairRange && repairTimer <= 0)
+                {
+                    targetWall.Repair(repairAmount);
+                    repairTimer = repairInterval;
+                    Debug.Log($"[Engineer] Repaired {targetWall.name} for {repairAmount} HP (now {targetWall.CurrentHP}/{targetWall.MaxHP})");
+                }
             }
         }
     }
 
     /// <summary>
-    /// Check for nearby enemies that have line-of-sight (no wall between us).
-    /// Returns true if fleeing (caller should skip repair logic).
+    /// Scan clockwise around the wall to find the first position where the engineer
+    /// can stand on NavMesh without overlapping any wall/tower collider.
+    /// Starts from the courtyard-facing direction and tries multiple distances.
+    /// </summary>
+    private bool FindStandPosition(Wall wall, out Vector3 result)
+    {
+        Vector3 wallPos = wall.transform.position;
+        wallPos.y = 0;
+
+        // Start scanning from the direction facing the courtyard
+        Vector3 toCenter = GameManager.FortressCenter - wallPos;
+        toCenter.y = 0;
+        float startAngle = Mathf.Atan2(toCenter.z, toCenter.x);
+
+        // Try at increasing distances — prefer close (adjacent) to far
+        float[] distances = { 0.8f, 1.1f, 1.5f, 2.0f };
+
+        foreach (float dist in distances)
+        {
+            for (int step = 0; step < SEARCH_ANGLES; step++)
+            {
+                // Clockwise: subtract angle each step
+                float angle = startAngle - (step * 2f * Mathf.PI / SEARCH_ANGLES);
+                Vector3 candidate = wallPos + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * dist;
+
+                // Must be on NavMesh
+                if (!NavMesh.SamplePosition(candidate, out NavMeshHit navHit, 0.5f, NavMesh.AllAreas))
+                    continue;
+
+                Vector3 sampledPos = navHit.position;
+
+                // Must have enough flat NavMesh area (not squeezed against an edge)
+                if (NavMesh.FindClosestEdge(sampledPos, out NavMeshHit edgeHit, NavMesh.AllAreas))
+                {
+                    if (edgeHit.distance < MIN_NAVMESH_CLEARANCE)
+                        continue;
+                }
+
+                // Must not overlap any wall or tower collider
+                if (IsInsideWallGeometry(sampledPos))
+                    continue;
+
+                result = sampledPos;
+                return true;
+            }
+        }
+
+        result = Vector3.zero;
+        return false;
+    }
+
+    /// <summary>
+    /// Check if a position overlaps any wall body or tower collider.
+    /// Uses Physics.OverlapSphere for walls with enabled colliders,
+    /// plus manual bounds checks for ALL walls (catches under-construction walls with disabled colliders).
+    /// </summary>
+    private bool IsInsideWallGeometry(Vector3 pos)
+    {
+        // Physics check for walls with enabled colliders
+        var overlaps = Physics.OverlapSphere(pos + Vector3.up * 0.5f, ENGINEER_CHECK_RADIUS);
+        foreach (var col in overlaps)
+        {
+            if (col.GetComponentInParent<Wall>() != null)
+                return true;
+        }
+
+        // Manual bounds check for ALL walls (including under-construction with disabled colliders)
+        if (WallManager.Instance != null)
+        {
+            foreach (var wall in WallManager.Instance.AllWalls)
+            {
+                if (wall == null) continue;
+                if (IsInsideWallBounds(pos, wall))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Manual geometry check: is the position inside the wall body or tower volumes?
+    /// Works regardless of whether colliders are enabled.
+    /// </summary>
+    private bool IsInsideWallBounds(Vector3 worldPos, Wall wall)
+    {
+        Vector3 local = wall.transform.InverseTransformPoint(worldPos);
+        float padding = ENGINEER_CHECK_RADIUS;
+
+        // Wall body: local size (1, 2, 0.5) → half extents (0.5, -, 0.25)
+        float halfX = 0.5f + padding;
+        float halfZ = 0.25f + padding;
+        if (Mathf.Abs(local.x) < halfX && Mathf.Abs(local.z) < halfZ)
+            return true;
+
+        // Towers at ±TOWER_OFFSET in local X, radius = OCT_APOTHEM
+        float towerRadius = WallCorners.OCT_APOTHEM + padding;
+        Vector2 localXZ = new Vector2(local.x, local.z);
+        Vector2 leftTower = new Vector2(-WallCorners.TOWER_OFFSET, 0);
+        Vector2 rightTower = new Vector2(WallCorners.TOWER_OFFSET, 0);
+
+        if (Vector2.Distance(localXZ, leftTower) < towerRadius)
+            return true;
+        if (Vector2.Distance(localXZ, rightTower) < towerRadius)
+            return true;
+
+        return false;
+    }
+
+    private Wall GetNextDamagedWall()
+    {
+        if (WallManager.Instance == null) return null;
+
+        Wall nearest = null;
+        float nearestDist = float.MaxValue;
+
+        foreach (var wall in WallManager.Instance.AllWalls)
+        {
+            if (wall == null) continue;
+            if (wall.CurrentHP >= wall.MaxHP) continue;
+            if (failedWalls.Contains(wall)) continue;
+            float dist = Vector3.Distance(transform.position, wall.transform.position);
+            if (dist < nearestDist)
+            {
+                nearestDist = dist;
+                nearest = wall;
+            }
+        }
+
+        // If all damaged walls are in the failed set, clear and retry
+        if (nearest == null && failedWalls.Count > 0)
+        {
+            Debug.Log("[Engineer] All damaged walls in failed set — clearing and retrying.");
+            failedWalls.Clear();
+            return WallManager.Instance.GetNearestDamagedWall(transform.position);
+        }
+
+        return nearest;
+    }
+
+    /// <summary>
+    /// Check for nearby enemies with line-of-sight. Returns true if fleeing.
     /// </summary>
     private bool CheckForDanger()
     {
@@ -77,10 +257,8 @@ public class Engineer : Defender
             float dangerRange = enemy.Data != null ? enemy.Data.attackRange + 1f : 2.5f;
             if (dist < dangerRange)
             {
-                // Check wall occlusion — if a wall blocks line of sight, we're safe
                 if (IsWallBetween(transform.position, enemy.transform.position))
                     continue;
-
                 threatFound = true;
                 break;
             }
@@ -88,9 +266,8 @@ public class Engineer : Defender
 
         if (threatFound && !isFleeing)
         {
-            // Start fleeing
             isFleeing = true;
-            Debug.Log($"[Engineer] Danger! Unobstructed enemy nearby. Fleeing toward courtyard!");
+            Debug.Log("[Engineer] Danger! Unobstructed enemy nearby. Fleeing toward courtyard!");
             if (agent != null && agent.isOnNavMesh)
             {
                 agent.isStopped = false;
@@ -99,33 +276,26 @@ public class Engineer : Defender
         }
         else if (!threatFound && isFleeing)
         {
-            // Safe again — resume repair
             isFleeing = false;
+            targetWall = null;
+            standWall = null;
             Debug.Log("[Engineer] Safe now. Resuming repairs.");
         }
 
         if (isFleeing)
         {
-            // Keep heading toward courtyard center
             if (agent != null && agent.isOnNavMesh && !agent.pathPending && agent.remainingDistance < 1f)
-            {
                 agent.SetDestination(GameManager.FortressCenter);
-            }
         }
 
         return isFleeing;
     }
 
-    /// <summary>
-    /// Raycast between two positions. Returns true if a wall collider blocks the line.
-    /// </summary>
     private bool IsWallBetween(Vector3 from, Vector3 to)
     {
         Vector3 dir = to - from;
-        float dist = dir.magnitude;
-        if (dist < 0.01f) return false;
+        if (dir.sqrMagnitude < 0.0001f) return false;
 
-        // Cast at chest height to avoid ground hits
         Vector3 origin = from + Vector3.up * 0.5f;
         Vector3 target = to + Vector3.up * 0.5f;
         Vector3 direction = (target - origin).normalized;
@@ -133,7 +303,6 @@ public class Engineer : Defender
 
         if (Physics.Raycast(origin, direction, out RaycastHit hit, castDist))
         {
-            // Check if what we hit is a wall (has Wall component or is tagged)
             if (hit.collider.GetComponentInParent<Wall>() != null)
                 return true;
         }

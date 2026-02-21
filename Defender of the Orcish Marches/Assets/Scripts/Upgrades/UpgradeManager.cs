@@ -44,6 +44,10 @@ public class UpgradeManager : MonoBehaviour
         if (GameManager.Instance == null) return false;
         int count = GetPurchaseCount(upgrade.upgradeType);
         if (!upgrade.repeatable && count > 0) return false;
+
+        // Walls are purchased via build mode, not the upgrade panel
+        if (upgrade.upgradeType == UpgradeType.NewWall) return false;
+
         int scaledTreasure = upgrade.GetTreasureCost(count);
         int scaledMenial = upgrade.GetMenialCost(count);
         bool canAfford = GameManager.Instance.CanAfford(scaledTreasure, scaledMenial);
@@ -150,20 +154,6 @@ public class UpgradeManager : MonoBehaviour
                     BallistaManager.Instance.ActiveBallista.UpgradeFireRate(0.5f);
                 break;
 
-            case UpgradeType.NewWall:
-                var wallPlacement = FindAnyObjectByType<WallPlacement>();
-                Debug.Log($"[UpgradeManager] NewWall: WallPlacement found={wallPlacement != null}");
-                if (wallPlacement != null)
-                {
-                    Debug.Log($"[UpgradeManager] NewWall: Calling StartPlacement. WallPlacement.IsPlacing={wallPlacement.IsPlacing}");
-                    wallPlacement.StartPlacement();
-                }
-                else
-                {
-                    Debug.LogError("[UpgradeManager] NewWall: No WallPlacement component found in scene!");
-                }
-                break;
-
             default:
                 Debug.LogWarning($"[UpgradeManager] ApplyNonHireUpgrade: unhandled upgradeType={upgrade.upgradeType}");
                 break;
@@ -207,6 +197,11 @@ public class UpgradeManager : MonoBehaviour
     private int GetPurchaseCount(UpgradeType type)
     {
         return purchaseCounts.TryGetValue(type, out int count) ? count : 0;
+    }
+
+    public void IncrementPurchaseCountPublic(UpgradeType type)
+    {
+        IncrementPurchaseCount(type);
     }
 
     private void IncrementPurchaseCount(UpgradeType type)

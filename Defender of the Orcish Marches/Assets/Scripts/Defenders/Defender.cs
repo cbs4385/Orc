@@ -18,11 +18,13 @@ public class Defender : MonoBehaviour
     protected virtual void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-        if (agent != null)
-        {
-            // Exclude gate area (area 3) so defenders cannot path through gates
-            agent.areaMask = NavMesh.AllAreas & ~(1 << 3);
-        }
+    }
+
+    protected virtual void OnEnable()
+    {
+        // Re-acquire references after domain reload
+        if (agent == null)
+            agent = GetComponent<NavMeshAgent>();
     }
 
     public virtual void Initialize(DefenderData defenderData)

@@ -7,6 +7,11 @@ using UnityEngine;
 /// </summary>
 public class WallCorners : MonoBehaviour
 {
+    // Geometry constants from the FBX model (generate_wall.py)
+    public const float TOWER_OFFSET = 1.1036f;  // Tower center from wall center (WALL_HALF_W + OCT_APOTHEM)
+    public const float OCT_APOTHEM = 0.6036f;   // Octagon center-to-flat distance
+    public const float WALL_SPACING = 2.2072f;  // Adjacent wall center-to-center distance (2 * TOWER_OFFSET)
+
     /// <summary>
     /// Corner indices: [0]=LeftFront, [1]=LeftBack, [2]=RightFront, [3]=RightBack
     /// "Left" = -localX end, "Right" = +localX end
@@ -42,8 +47,8 @@ public class WallCorners : MonoBehaviour
         Vector3 forward = transform.forward;
         Vector3 scale = transform.localScale;
 
-        HalfWidth = scale.x * 0.5f;
-        HalfDepth = scale.z * 0.5f;
+        HalfWidth = scale.x * 0.5f;   // Wall body half-width
+        HalfDepth = scale.z * 0.25f;  // Wall body half-depth (0.5 deep at scale 1)
 
         Vector3 toRight = right * HalfWidth;
         Vector3 toFront = forward * HalfDepth;
@@ -71,12 +76,13 @@ public class WallCorners : MonoBehaviour
     }
 
     /// <summary>
-    /// Get the center point of a specific end.
+    /// Get the center point of a specific end (tower center position).
+    /// Uses TOWER_OFFSET instead of HalfWidth since the tower extends beyond the wall body.
     /// </summary>
     public Vector3 GetEndCenter(int endSign)
     {
         Vector3 right = transform.right;
-        return transform.position + right * (endSign * HalfWidth);
+        return transform.position + right * (endSign * TOWER_OFFSET * transform.localScale.x);
     }
 
     /// <summary>
@@ -120,6 +126,29 @@ public class WallCorners : MonoBehaviour
                         new Vector3(Corners[2].x, y, Corners[2].z));
         Gizmos.DrawLine(new Vector3(Corners[1].x, y, Corners[1].z),
                         new Vector3(Corners[3].x, y, Corners[3].z));
+
+        // Tower circles at end centers (cyan)
+        Gizmos.color = Color.cyan;
+        const int segments = 16;
+        for (int sign = -1; sign <= 1; sign += 2)
+        {
+            Vector3 center = GetEndCenter(sign);
+            center.y = y;
+            DrawGizmoCircle(center, OCT_APOTHEM * transform.localScale.x, segments);
+        }
+    }
+
+    private static void DrawGizmoCircle(Vector3 center, float radius, int segments)
+    {
+        float step = 2f * Mathf.PI / segments;
+        Vector3 prev = center + new Vector3(radius, 0, 0);
+        for (int i = 1; i <= segments; i++)
+        {
+            float angle = step * i;
+            Vector3 next = center + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+            Gizmos.DrawLine(prev, next);
+            prev = next;
+        }
     }
 #endif
 }

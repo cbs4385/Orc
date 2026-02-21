@@ -3,7 +3,6 @@ using UnityEngine.InputSystem;
 
 public class WallPlacement : MonoBehaviour
 {
-    [SerializeField] private int wallCost = 20;
     [SerializeField] private GameObject wallGhostPrefab;
 
     // Serialized so they survive domain reload (script recompilation in editor)
@@ -12,7 +11,8 @@ public class WallPlacement : MonoBehaviour
 
     private UnityEngine.Camera mainCam;
     private float ghostRotationY;
-    private bool skipNextFrame;
+    private bool subscribedToBuildMode;
+    private bool ghostIsRed; // tracks current ghost tint to avoid per-frame material writes
 
     public bool IsPlacing => isPlacing;
 
@@ -36,21 +36,50 @@ public class WallPlacement : MonoBehaviour
             Destroy(ghostWall);
             ghostWall = null;
         }
+
+        // Cancel placement if build mode ends while placing
+        if (BuildModeManager.Instance != null)
+        {
+            BuildModeManager.Instance.OnBuildModeEnded += HandleBuildModeEnded;
+            subscribedToBuildMode = true;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (BuildModeManager.Instance != null)
+            BuildModeManager.Instance.OnBuildModeEnded -= HandleBuildModeEnded;
+    }
+
+    private void HandleBuildModeEnded()
+    {
+        if (isPlacing)
+        {
+            Debug.Log("[WallPlacement] Build mode ended — stopping placement.");
+            StopPlacement();
+        }
     }
 
     private void Update()
     {
+        // Late-subscribe to BuildModeManager
+        if (!subscribedToBuildMode && BuildModeManager.Instance != null)
+        {
+            BuildModeManager.Instance.OnBuildModeEnded += HandleBuildModeEnded;
+            subscribedToBuildMode = true;
+        }
+
         if (!isPlacing) return;
         if (Mouse.current == null) return;
 
-        // Skip the frame when StartPlacement was called (button click would also register as left-click)
-        if (skipNextFrame) { skipNextFrame = false; return; }
-
-        // Right-click or Escape to cancel
+        // Right-click or Escape to exit build mode entirely
         if (Mouse.current.rightButton.wasPressedThisFrame ||
             (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame))
         {
-            CancelPlacement();
+            Debug.Log("[WallPlacement] Right-click/Escape — exiting build mode.");
+            StopPlacement();
+            if (BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildMode)
+                BuildModeManager.Instance.ExitBuildMode();
             return;
         }
 
@@ -84,7 +113,7 @@ public class WallPlacement : MonoBehaviour
         // Update ghost
         if (ghostWall != null)
         {
-            ghostWall.transform.position = new Vector3(finalPos.x, 0.5f, finalPos.z);
+            ghostWall.transform.position = new Vector3(finalPos.x, 1f, finalPos.z);
             ghostWall.transform.rotation = finalRot;
 
             // Refresh ghost's WallCorners so gizmos draw correctly
@@ -99,35 +128,44 @@ public class WallPlacement : MonoBehaviour
             return;
         }
 
-        // Left-click to place
+        // Tint ghost red/green based on affordability
+        UpdateGhostTint();
+
+        // Left-click to purchase and place wall
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            TryPlaceWall(new Vector3(finalPos.x, 0.5f, finalPos.z), finalRot);
+            TryPurchaseAndPlace(new Vector3(finalPos.x, 1f, finalPos.z), finalRot);
         }
     }
 
-    public void StartPlacement()
+    /// <summary>Called by BuildModeManager when entering build mode.</summary>
+    public void StartBuildModeGhost()
     {
-        // Clean up any existing ghost from a previous placement
+        // Clean up any existing ghost
         if (ghostWall != null)
         {
-            Debug.Log("[WallPlacement] Cleaning up previous ghost before new placement.");
             Destroy(ghostWall);
             ghostWall = null;
         }
 
         isPlacing = true;
         ghostRotationY = 0f;
-        skipNextFrame = true;
-        Debug.Log("[WallPlacement] StartPlacement called.");
+        Debug.Log("[WallPlacement] Build mode ghost started.");
+        SpawnGhost();
+    }
+
+    private void SpawnGhost()
+    {
+        if (wallGhostPrefab == null)
+        {
+            if (WallManager.Instance != null)
+                wallGhostPrefab = WallManager.Instance.WallPrefab;
+        }
+
         if (wallGhostPrefab != null)
         {
-            // Spawn ghost just outside the wall ring so it's immediately visible
-            // (mouse is over the UI button at this point, which projects far off-screen)
-            Vector3 initialPos = new Vector3(0f, 0.5f, -6f);
+            Vector3 initialPos = new Vector3(0f, 1f, -6f);
             ghostWall = Instantiate(wallGhostPrefab, initialPos, Quaternion.identity);
-            // Ensure the ghost has a mesh (prefab's built-in Cube mesh reference can be lost)
-            EnsureWallMesh(ghostWall);
             // Mark WallCorners as ghost so it skips any collider creation
             var ghostCorners = ghostWall.GetComponent<WallCorners>();
             if (ghostCorners != null)
@@ -141,54 +179,72 @@ public class WallPlacement : MonoBehaviour
             foreach (var col in ghostWall.GetComponentsInChildren<Collider>())
                 col.enabled = false;
             // Tint ghost green so it's clearly visible as a placement preview
-            // URP/Lit shader uses _BaseColor, not _Color (which mat.color maps to)
             Color ghostColor = new Color(0.3f, 0.9f, 0.3f, 1f);
             foreach (var rend in ghostWall.GetComponentsInChildren<Renderer>())
             {
-                var mat = rend.material;
-                mat.SetColor("_BaseColor", ghostColor);
+                Material[] mats = rend.materials;
+                for (int i = 0; i < mats.Length; i++)
+                    mats[i].SetColor("_BaseColor", ghostColor);
+                rend.materials = mats;
             }
-            Debug.Log($"[WallPlacement] Ghost ready at {initialPos}.");
+            Debug.Log($"[WallPlacement] Ghost spawned at {initialPos}.");
         }
         else
         {
-            Debug.LogError("[WallPlacement] wallGhostPrefab is null at StartPlacement! No ghost preview.");
+            Debug.LogError("[WallPlacement] wallGhostPrefab is null! No ghost preview.");
         }
     }
 
-    public void CancelPlacement()
+    private void TryPurchaseAndPlace(Vector3 position, Quaternion rotation)
     {
-        if (isPlacing)
+        if (BuildModeManager.Instance == null || !BuildModeManager.Instance.CanAffordWall())
         {
-            if (GameManager.Instance != null)
-            {
-                GameManager.Instance.AddTreasure(wallCost);
-                Debug.Log($"[WallPlacement] Placement cancelled, refunded {wallCost} gold.");
-            }
+            Debug.Log("[WallPlacement] Cannot afford wall — skipping placement.");
+            return;
         }
-        isPlacing = false;
-        if (ghostWall != null)
-        {
-            Destroy(ghostWall);
-            ghostWall = null;
-        }
-    }
 
-    private void TryPlaceWall(Vector3 position, Quaternion rotation)
-    {
+        int cost = BuildModeManager.Instance.WallCost;
+
+        // Spend gold
+        if (!GameManager.Instance.SpendTreasure(cost))
+        {
+            Debug.Log($"[WallPlacement] SpendTreasure failed for {cost}g.");
+            return;
+        }
+
+        // Place the wall
         if (WallManager.Instance != null)
         {
             WallManager.Instance.PlaceWall(position, rotation);
-            Debug.Log($"[WallPlacement] Wall placed at {position}, rotation={rotation.eulerAngles}.");
+            Debug.Log($"[WallPlacement] Wall purchased ({cost}g) and placed at {position}, rotation={rotation.eulerAngles}.");
         }
-        else
-        {
-            Debug.LogError("[WallPlacement] WallManager.Instance is null!");
-        }
-        FinishPlacement();
+
+        // Notify BuildModeManager (increments purchase count for cost scaling)
+        BuildModeManager.Instance.NotifyWallPlaced();
+
+        // Ghost stays active for next placement — no need to destroy/recreate
+        // BuildModeManager.Update() will auto-exit if player can't afford more
     }
 
-    private void FinishPlacement()
+    private void UpdateGhostTint()
+    {
+        if (ghostWall == null) return;
+        bool canAfford = BuildModeManager.Instance != null && BuildModeManager.Instance.CanAffordWall();
+        bool shouldBeRed = !canAfford;
+        if (shouldBeRed == ghostIsRed) return; // no change
+        ghostIsRed = shouldBeRed;
+
+        Color tint = shouldBeRed ? new Color(0.9f, 0.3f, 0.3f, 1f) : new Color(0.3f, 0.9f, 0.3f, 1f);
+        foreach (var rend in ghostWall.GetComponentsInChildren<Renderer>())
+        {
+            Material[] mats = rend.materials;
+            for (int i = 0; i < mats.Length; i++)
+                mats[i].SetColor("_BaseColor", tint);
+            rend.materials = mats;
+        }
+    }
+
+    private void StopPlacement()
     {
         isPlacing = false;
         if (ghostWall != null)
@@ -209,23 +265,5 @@ public class WallPlacement : MonoBehaviour
             return ray.GetPoint(distance);
         }
         return Vector3.zero;
-    }
-
-    /// <summary>
-    /// Ensures the wall GameObject has a mesh. The WallSegment prefab was created from
-    /// CreatePrimitive(Cube) but the built-in mesh reference doesn't survive prefab serialization,
-    /// so runtime-instantiated walls get a null mesh. This assigns the Cube mesh as a fallback.
-    /// </summary>
-    public static void EnsureWallMesh(GameObject wallGO)
-    {
-        var mf = wallGO.GetComponent<MeshFilter>();
-        if (mf == null) return;
-        if (mf.sharedMesh != null) return;
-
-        // Create a temporary cube to grab the built-in Cube mesh
-        var tempCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        mf.sharedMesh = tempCube.GetComponent<MeshFilter>().sharedMesh;
-        Destroy(tempCube);
-        Debug.Log($"[WallPlacement] Assigned Cube mesh to {wallGO.name} (prefab mesh was null).");
     }
 }

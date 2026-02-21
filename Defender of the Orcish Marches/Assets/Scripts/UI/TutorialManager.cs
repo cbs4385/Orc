@@ -141,7 +141,7 @@ public class TutorialManager : MonoBehaviour
                 spriteName = "tut_fortress",
                 body = "At the center of the map stands your <b>Tower</b> — if enemies reach it, the game is over.\n\n" +
                        "Surrounding the tower is a ring of <b>Walls</b> that block enemy advance. " +
-                       "A single <b>Gate</b> on the east side allows your units to pass through.\n\n" +
+                       "Your units can slip through the gaps between wall segments.\n\n" +
                        "Protect the walls. They are your first line of defense."
             },
             new TutorialPage
@@ -198,12 +198,12 @@ public class TutorialManager : MonoBehaviour
             },
             new TutorialPage
             {
-                title = "Walls & Gate",
+                title = "Walls",
                 spriteName = "tut_wallgate",
                 body = "<b>Walls</b> form a protective ring around your tower. Enemies must break through " +
                        "them to reach the interior.\n\n" +
-                       "A single <b>Gate</b> on the east side lets your menials and refugees pass through. " +
-                       "It opens automatically when friendly units approach.\n\n" +
+                       "Your menials and defenders can slip through the narrow gaps between wall segments, " +
+                       "but enemies cannot.\n\n" +
                        "Walls take damage from enemy attacks. If a wall segment is destroyed, " +
                        "enemies will pour through the breach. You can <b>Build Wall</b> from the " +
                        "upgrade panel to place new wall segments."

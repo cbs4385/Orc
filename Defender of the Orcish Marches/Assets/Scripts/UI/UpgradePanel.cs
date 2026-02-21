@@ -83,6 +83,9 @@ public class UpgradePanel : MonoBehaviour
         int index = 0;
         foreach (var upgrade in UpgradeManager.Instance.AvailableUpgrades)
         {
+            // Walls are purchased via build mode, not the upgrade panel
+            if (upgrade.upgradeType == UpgradeType.NewWall) continue;
+
             var go = Instantiate(buttonPrefab, buttonContainer);
             go.SetActive(true);
             var entry = new UpgradeButtonEntry

@@ -31,8 +31,10 @@ public class EnemyMovement : MonoBehaviour
         enemy = GetComponent<Enemy>();
     }
 
-    // Area mask excluding gate links (area 3) so enemies can't path through gates
-    private int enemyAreaMask;
+    // Enemies use a larger NavMesh radius so they cannot squeeze through the small
+    // gaps between adjacent wall towers. Menials/defenders keep default radius (0.5)
+    // and CAN pass through, allowing them to exit/enter the courtyard.
+    private const float ENEMY_NAV_RADIUS = 0.65f;
 
     private void Start()
     {
@@ -43,10 +45,7 @@ public class EnemyMovement : MonoBehaviour
             agent.stoppingDistance = enemy.Data.attackRange * 0.9f;
         }
 
-        // Exclude gate area (area 3) from enemy pathfinding
-        enemyAreaMask = NavMesh.AllAreas & ~(1 << 3);
-        agent.areaMask = enemyAreaMask;
-
+        agent.radius = ENEMY_NAV_RADIUS;
         FindTarget();
     }
 
@@ -70,7 +69,30 @@ public class EnemyMovement : MonoBehaviour
         if (retargetTimer <= 0)
         {
             retargetTimer = RETARGET_INTERVAL;
-            FindTarget();
+
+            // If the agent has a partial path (walls blocking), attack the nearest wall
+            if (agent.isOnNavMesh && !agent.pathPending && agent.pathStatus == NavMeshPathStatus.PathPartial)
+            {
+                Wall nearestWall = WallManager.Instance != null ? WallManager.Instance.GetNearestWall(transform.position) : null;
+                if (nearestWall != null && !nearestWall.IsDestroyed)
+                {
+                    currentTarget = nearestWall.transform;
+                    Vector3 wallPos = nearestWall.transform.position;
+                    Vector3 outward = (wallPos - TowerPosition).normalized;
+                    Vector3 exteriorPoint = wallPos + outward * 1f;
+                    exteriorPoint.y = 0;
+                    agent.SetDestination(exteriorPoint);
+                    Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} path blocked — attacking nearest wall {nearestWall.name}");
+                }
+                else
+                {
+                    FindTarget();
+                }
+            }
+            else
+            {
+                FindTarget();
+            }
         }
 
         // If any enemy reaches the tower area after a breach, game over
@@ -99,8 +121,6 @@ public class EnemyMovement : MonoBehaviour
 
         if (agent != null && agent.isOnNavMesh)
         {
-            // Remove area mask restrictions so retreat path isn't blocked by gate exclusion
-            agent.areaMask = NavMesh.AllAreas;
             agent.stoppingDistance = 0f;
             Vector3 retreatDest = new Vector3(-mapRadius, 0, transform.position.z);
             agent.SetDestination(retreatDest);

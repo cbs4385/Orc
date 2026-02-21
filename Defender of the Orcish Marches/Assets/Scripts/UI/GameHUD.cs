@@ -5,6 +5,8 @@ using TMPro;
 
 public class GameHUD : MonoBehaviour
 {
+    public static GameHUD Instance { get; private set; }
+
     [Header("Top Bar")]
     [SerializeField] private TextMeshProUGUI treasureText;
     [SerializeField] private TextMeshProUGUI menialText;
@@ -20,6 +22,24 @@ public class GameHUD : MonoBehaviour
     private bool subscribed;
     private Sprite pauseSprite;
     private Sprite playSprite;
+
+    // Notification banner
+    private GameObject bannerRoot;
+    private TextMeshProUGUI bannerText;
+    private float bannerTimer;
+    private bool bannerAutoHide;
+
+    // Build mode panel (top-right modal)
+    private GameObject buildPanelRoot;
+    private TextMeshProUGUI buildPanelCostText;
+    private TextMeshProUGUI buildPanelGoldText;
+
+    private void Awake()
+    {
+        Instance = this;
+        CreateBannerUI();
+        CreateBuildPanel();
+    }
 
     private void Start()
     {
@@ -58,6 +78,7 @@ public class GameHUD : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (Instance == this) Instance = null;
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnTreasureChanged -= UpdateTreasure;
@@ -84,10 +105,18 @@ public class GameHUD : MonoBehaviour
             float time = GameManager.Instance.GameTime;
             int minutes = Mathf.FloorToInt(time / 60);
             int seconds = Mathf.FloorToInt(time % 60);
-            timerText.text = string.Format("{0}:{1:00}", minutes, seconds);
+            bool inBuild = BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildMode;
+            bool idleSpeedup = BuildModeManager.Instance != null && BuildModeManager.Instance.IsIdleSpeedup;
+
+            if (inBuild)
+                timerText.text = string.Format("{0}:{1:00} [x0.1]", minutes, seconds);
+            else if (idleSpeedup)
+                timerText.text = string.Format("{0}:{1:00} [x3]", minutes, seconds);
+            else
+                timerText.text = string.Format("{0}:{1:00}", minutes, seconds);
         }
 
-        // Update enemy count (remaining/total for the day)
+        // Update enemy count (always show enemies, no build mode override)
         if (enemyCountText != null && EnemySpawnManager.Instance != null)
         {
             int remaining = EnemySpawnManager.Instance.DayEnemiesRemaining;
@@ -95,12 +124,188 @@ public class GameHUD : MonoBehaviour
             enemyCountText.text = string.Format("Enemies: {0}/{1}", remaining, total);
         }
 
+        // Update build mode panel
+        UpdateBuildPanel();
+
         // Update defender counts by type
         if (defenderCountText != null)
         {
             UpdateDefenderCounts();
         }
+
+        // Update banner auto-hide
+        if (bannerRoot != null && bannerRoot.activeSelf && bannerAutoHide)
+        {
+            bannerTimer -= Time.unscaledDeltaTime;
+            if (bannerTimer <= 0f)
+            {
+                bannerRoot.SetActive(false);
+                Debug.Log("[GameHUD] Banner auto-hidden.");
+            }
+        }
     }
+
+    // --- Notification Banner ---
+
+    private void CreateBannerUI()
+    {
+        bannerRoot = new GameObject("NotificationBanner");
+        bannerRoot.transform.SetParent(transform, false);
+
+        var bannerRect = bannerRoot.AddComponent<RectTransform>();
+        bannerRect.anchorMin = new Vector2(0.2f, 0.4f);
+        bannerRect.anchorMax = new Vector2(0.8f, 0.6f);
+        bannerRect.offsetMin = Vector2.zero;
+        bannerRect.offsetMax = Vector2.zero;
+
+        // Semi-transparent background
+        var bg = bannerRoot.AddComponent<Image>();
+        bg.color = new Color(0f, 0f, 0f, 0.7f);
+        bg.raycastTarget = false;
+
+        // Text child
+        var textObj = new GameObject("BannerText");
+        textObj.transform.SetParent(bannerRoot.transform, false);
+
+        bannerText = textObj.AddComponent<TextMeshProUGUI>();
+        var textRect = bannerText.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = new Vector2(10, 5);
+        textRect.offsetMax = new Vector2(-10, -5);
+
+        bannerText.alignment = TextAlignmentOptions.Center;
+        bannerText.fontSize = 42;
+        bannerText.color = new Color(1f, 0.85f, 0.2f);
+        bannerText.fontStyle = FontStyles.Bold;
+        bannerText.raycastTarget = false;
+
+        bannerRoot.SetActive(false);
+        Debug.Log("[GameHUD] Notification banner UI created.");
+    }
+
+    /// <summary>Show a centered notification banner. If duration > 0, auto-hides after that many seconds.</summary>
+    public static void ShowBanner(string text, float duration = 0f)
+    {
+        if (Instance == null || Instance.bannerRoot == null) return;
+        Instance.bannerText.text = text;
+        Instance.bannerRoot.SetActive(true);
+        Instance.bannerAutoHide = duration > 0f;
+        Instance.bannerTimer = duration;
+        Debug.Log($"[GameHUD] Banner shown: \"{text}\" (autoHide={duration > 0f}, duration={duration:F1}s)");
+    }
+
+    /// <summary>Immediately hide the notification banner.</summary>
+    public static void HideBanner()
+    {
+        if (Instance == null || Instance.bannerRoot == null) return;
+        if (!Instance.bannerRoot.activeSelf) return;
+        Instance.bannerRoot.SetActive(false);
+        Debug.Log("[GameHUD] Banner hidden.");
+    }
+
+    // --- Build Mode Panel (top-right modal) ---
+
+    private void CreateBuildPanel()
+    {
+        buildPanelRoot = new GameObject("BuildModePanel");
+        buildPanelRoot.transform.SetParent(transform, false);
+
+        var panelRect = buildPanelRoot.AddComponent<RectTransform>();
+        // Top-right corner: anchor top-right, fixed size
+        panelRect.anchorMin = new Vector2(1f, 1f);
+        panelRect.anchorMax = new Vector2(1f, 1f);
+        panelRect.pivot = new Vector2(1f, 1f);
+        panelRect.anchoredPosition = new Vector2(-10f, -10f);
+        panelRect.sizeDelta = new Vector2(220f, 140f);
+
+        // Semi-transparent background
+        var bg = buildPanelRoot.AddComponent<Image>();
+        bg.color = new Color(0.1f, 0.05f, 0f, 0.85f);
+        bg.raycastTarget = false;
+
+        // Title
+        var titleObj = new GameObject("Title");
+        titleObj.transform.SetParent(buildPanelRoot.transform, false);
+        var titleTMP = titleObj.AddComponent<TextMeshProUGUI>();
+        var titleRect = titleTMP.GetComponent<RectTransform>();
+        titleRect.anchorMin = new Vector2(0f, 0.72f);
+        titleRect.anchorMax = new Vector2(1f, 1f);
+        titleRect.offsetMin = new Vector2(10, 0);
+        titleRect.offsetMax = new Vector2(-10, -5);
+        titleTMP.text = "BUILD MODE";
+        titleTMP.fontSize = 22;
+        titleTMP.fontStyle = FontStyles.Bold;
+        titleTMP.color = new Color(1f, 0.85f, 0.2f);
+        titleTMP.alignment = TextAlignmentOptions.Center;
+        titleTMP.raycastTarget = false;
+
+        // Wall cost line
+        var costObj = new GameObject("WallCost");
+        costObj.transform.SetParent(buildPanelRoot.transform, false);
+        buildPanelCostText = costObj.AddComponent<TextMeshProUGUI>();
+        var costRect = buildPanelCostText.GetComponent<RectTransform>();
+        costRect.anchorMin = new Vector2(0f, 0.44f);
+        costRect.anchorMax = new Vector2(1f, 0.72f);
+        costRect.offsetMin = new Vector2(10, 0);
+        costRect.offsetMax = new Vector2(-10, 0);
+        buildPanelCostText.fontSize = 18;
+        buildPanelCostText.color = Color.white;
+        buildPanelCostText.alignment = TextAlignmentOptions.Left;
+        buildPanelCostText.raycastTarget = false;
+
+        // Gold line
+        var goldObj = new GameObject("GoldInfo");
+        goldObj.transform.SetParent(buildPanelRoot.transform, false);
+        buildPanelGoldText = goldObj.AddComponent<TextMeshProUGUI>();
+        var goldRect = buildPanelGoldText.GetComponent<RectTransform>();
+        goldRect.anchorMin = new Vector2(0f, 0.22f);
+        goldRect.anchorMax = new Vector2(1f, 0.44f);
+        goldRect.offsetMin = new Vector2(10, 0);
+        goldRect.offsetMax = new Vector2(-10, 0);
+        buildPanelGoldText.fontSize = 18;
+        buildPanelGoldText.color = Color.white;
+        buildPanelGoldText.alignment = TextAlignmentOptions.Left;
+        buildPanelGoldText.raycastTarget = false;
+
+        // Controls hint
+        var hintObj = new GameObject("Hint");
+        hintObj.transform.SetParent(buildPanelRoot.transform, false);
+        var hintTMP = hintObj.AddComponent<TextMeshProUGUI>();
+        var hintRect = hintTMP.GetComponent<RectTransform>();
+        hintRect.anchorMin = new Vector2(0f, 0f);
+        hintRect.anchorMax = new Vector2(1f, 0.22f);
+        hintRect.offsetMin = new Vector2(10, 3);
+        hintRect.offsetMax = new Vector2(-10, 0);
+        hintTMP.text = "A/D rotate  B to exit";
+        hintTMP.fontSize = 14;
+        hintTMP.color = new Color(0.7f, 0.7f, 0.7f);
+        hintTMP.alignment = TextAlignmentOptions.Center;
+        hintTMP.raycastTarget = false;
+
+        buildPanelRoot.SetActive(false);
+        Debug.Log("[GameHUD] Build mode panel created (top-right).");
+    }
+
+    private void UpdateBuildPanel()
+    {
+        bool inBuild = BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildMode;
+
+        if (buildPanelRoot != null && buildPanelRoot.activeSelf != inBuild)
+            buildPanelRoot.SetActive(inBuild);
+
+        if (!inBuild || buildPanelRoot == null) return;
+
+        int wallCost = BuildModeManager.Instance.WallCost;
+        int gold = GameManager.Instance != null ? GameManager.Instance.Treasure : 0;
+        bool canAfford = gold >= wallCost;
+
+        buildPanelCostText.text = string.Format("Wall cost: {0}g", wallCost);
+        buildPanelGoldText.text = string.Format("Gold: {0}g", gold);
+        buildPanelGoldText.color = canAfford ? new Color(0.4f, 1f, 0.4f) : new Color(1f, 0.4f, 0.4f);
+    }
+
+    // --- Existing HUD ---
 
     private int engCount, pikeCount, xbowCount, wizCount;
 

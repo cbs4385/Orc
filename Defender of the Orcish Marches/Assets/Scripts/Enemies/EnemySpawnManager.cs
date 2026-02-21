@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class EnemySpawnManager : MonoBehaviour
 {
@@ -48,12 +50,24 @@ public class EnemySpawnManager : MonoBehaviour
     private int dayTotalEnemies;
     private int dayKills;
     private int regularSpawnsRemaining;
+    private bool clearedFiredThisDay;
 
-    /// <summary>Total enemies expected this day (remnants + new spawns + boss).</summary>
-    public int DayTotalEnemies => dayTotalEnemies;
+    public event Action OnAllEnemiesCleared;
 
-    /// <summary>Enemies remaining (not yet killed) this day.</summary>
-    public int DayEnemiesRemaining => Mathf.Max(0, dayTotalEnemies - dayKills);
+    /// <summary>Total enemies this day — tracks upward if actual spawns exceed prediction.</summary>
+    public int DayTotalEnemies => Mathf.Max(dayTotalEnemies, dayKills + DayEnemiesRemaining);
+
+    /// <summary>Enemies remaining: not-yet-spawned + currently alive. Always reflects reality.</summary>
+    public int DayEnemiesRemaining
+    {
+        get
+        {
+            int alive = 0;
+            foreach (var e in activeEnemies)
+                if (e != null && !e.IsDead) alive++;
+            return regularSpawnsRemaining + alive;
+        }
+    }
 
     private void Awake()
     {
@@ -96,6 +110,7 @@ public class EnemySpawnManager : MonoBehaviour
     {
         dawnGraceTimer = 2f;
         bossSpawnedThisDay = false;
+        clearedFiredThisDay = false;
         dayKills = 0;
         int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
         float halfSpread = 5f + 10f * (dayNumber - 1);
@@ -211,6 +226,7 @@ public class EnemySpawnManager : MonoBehaviour
         }
         activeEnemies.Remove(enemy);
         if (enemy != null) Destroy(enemy.gameObject);
+        CheckAllEnemiesCleared();
     }
 
     private void SpawnBoss()
@@ -285,6 +301,7 @@ public class EnemySpawnManager : MonoBehaviour
 
     private void UpdateNightHarassment()
     {
+        if (BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildMode) return;
         int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
         if (dayNumber < 2) return;
 
@@ -394,6 +411,19 @@ public class EnemySpawnManager : MonoBehaviour
     {
         activeEnemies.Remove(enemy);
         dayKills++;
+        CheckAllEnemiesCleared();
+    }
+
+    private void CheckAllEnemiesCleared()
+    {
+        if (clearedFiredThisDay) return;
+        if (regularSpawnsRemaining > 0) return;
+        activeEnemies.RemoveAll(e => e == null || e.IsDead);
+        if (activeEnemies.Count > 0) return;
+
+        clearedFiredThisDay = true;
+        Debug.Log("[EnemySpawnManager] All enemies cleared! Firing OnAllEnemiesCleared.");
+        OnAllEnemiesCleared?.Invoke();
     }
 
     public int GetActiveEnemyCount() => activeEnemies.Count;

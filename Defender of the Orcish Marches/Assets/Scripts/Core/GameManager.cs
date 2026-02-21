@@ -91,7 +91,8 @@ public class GameManager : MonoBehaviour
     {
         if (CurrentState == GameState.Playing)
         {
-            GameTime += Time.deltaTime;
+            float timeMult = BuildModeManager.Instance != null ? BuildModeManager.Instance.TimeMultiplier : 1f;
+            GameTime += Time.deltaTime * timeMult;
         }
 
         // ESC is handled by PauseMenu overlay
