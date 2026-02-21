@@ -84,7 +84,7 @@ public class WallPlacement : MonoBehaviour
         // Update ghost
         if (ghostWall != null)
         {
-            ghostWall.transform.position = new Vector3(finalPos.x, 0.5f, finalPos.z);
+            ghostWall.transform.position = new Vector3(finalPos.x, 1f, finalPos.z);
             ghostWall.transform.rotation = finalRot;
 
             // Refresh ghost's WallCorners so gizmos draw correctly
@@ -102,7 +102,7 @@ public class WallPlacement : MonoBehaviour
         // Left-click to place
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            TryPlaceWall(new Vector3(finalPos.x, 0.5f, finalPos.z), finalRot);
+            TryPlaceWall(new Vector3(finalPos.x, 1f, finalPos.z), finalRot);
         }
     }
 
@@ -124,10 +124,8 @@ public class WallPlacement : MonoBehaviour
         {
             // Spawn ghost just outside the wall ring so it's immediately visible
             // (mouse is over the UI button at this point, which projects far off-screen)
-            Vector3 initialPos = new Vector3(0f, 0.5f, -6f);
+            Vector3 initialPos = new Vector3(0f, 1f, -6f);
             ghostWall = Instantiate(wallGhostPrefab, initialPos, Quaternion.identity);
-            // Ensure the ghost has a mesh (prefab's built-in Cube mesh reference can be lost)
-            EnsureWallMesh(ghostWall);
             // Mark WallCorners as ghost so it skips any collider creation
             var ghostCorners = ghostWall.GetComponent<WallCorners>();
             if (ghostCorners != null)
@@ -141,12 +139,14 @@ public class WallPlacement : MonoBehaviour
             foreach (var col in ghostWall.GetComponentsInChildren<Collider>())
                 col.enabled = false;
             // Tint ghost green so it's clearly visible as a placement preview
-            // URP/Lit shader uses _BaseColor, not _Color (which mat.color maps to)
+            // URP/Lit shader uses _BaseColor — loop all materials on each renderer (FBX has 4 material slots)
             Color ghostColor = new Color(0.3f, 0.9f, 0.3f, 1f);
             foreach (var rend in ghostWall.GetComponentsInChildren<Renderer>())
             {
-                var mat = rend.material;
-                mat.SetColor("_BaseColor", ghostColor);
+                Material[] mats = rend.materials;
+                for (int i = 0; i < mats.Length; i++)
+                    mats[i].SetColor("_BaseColor", ghostColor);
+                rend.materials = mats;
             }
             Debug.Log($"[WallPlacement] Ghost ready at {initialPos}.");
         }
@@ -209,23 +209,5 @@ public class WallPlacement : MonoBehaviour
             return ray.GetPoint(distance);
         }
         return Vector3.zero;
-    }
-
-    /// <summary>
-    /// Ensures the wall GameObject has a mesh. The WallSegment prefab was created from
-    /// CreatePrimitive(Cube) but the built-in mesh reference doesn't survive prefab serialization,
-    /// so runtime-instantiated walls get a null mesh. This assigns the Cube mesh as a fallback.
-    /// </summary>
-    public static void EnsureWallMesh(GameObject wallGO)
-    {
-        var mf = wallGO.GetComponent<MeshFilter>();
-        if (mf == null) return;
-        if (mf.sharedMesh != null) return;
-
-        // Create a temporary cube to grab the built-in Cube mesh
-        var tempCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        mf.sharedMesh = tempCube.GetComponent<MeshFilter>().sharedMesh;
-        Destroy(tempCube);
-        Debug.Log($"[WallPlacement] Assigned Cube mesh to {wallGO.name} (prefab mesh was null).");
     }
 }

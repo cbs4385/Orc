@@ -13,16 +13,32 @@ public class Wall : MonoBehaviour
 
     public WallCorners Corners { get; private set; }
 
-    private Renderer rend;
-    private Color originalColor;
+    private Renderer[] renderers;
+    private Color[][] originalColors; // Per-renderer, per-material original colors
     private static readonly Color damagedColor = new Color(0.6f, 0.2f, 0.2f);
 
     private void Awake()
     {
         CurrentHP = maxHP;
         Corners = GetComponent<WallCorners>();
-        rend = GetComponentInChildren<Renderer>();
-        if (rend != null) originalColor = rend.material.color;
+
+        // Gather ALL renderers (FBX model has one renderer with 4 material sub-meshes)
+        renderers = GetComponentsInChildren<Renderer>();
+
+        // Cache original colors for each material on each renderer
+        originalColors = new Color[renderers.Length][];
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+            {
+                Material[] mats = renderers[i].materials;
+                originalColors[i] = new Color[mats.Length];
+                for (int j = 0; j < mats.Length; j++)
+                    originalColors[i][j] = mats[j].color;
+            }
+        }
+
+        Debug.Log($"[Wall] Initialized at {transform.position}, HP={maxHP}, renderers={renderers.Length}");
     }
 
     public void TakeDamage(int damage)
@@ -48,7 +64,6 @@ public class Wall : MonoBehaviour
 
         if (wasDestroyed && CurrentHP > 0)
         {
-            // Rebuild the wall
             gameObject.SetActive(true);
             Debug.Log($"[Wall] Rebuilt at {transform.position}, HP={CurrentHP}/{maxHP}");
         }
@@ -58,8 +73,18 @@ public class Wall : MonoBehaviour
 
     private void UpdateVisual()
     {
-        if (rend == null) return;
+        if (renderers == null || originalColors == null) return;
         float hpRatio = (float)CurrentHP / maxHP;
-        rend.material.color = Color.Lerp(damagedColor, originalColor, hpRatio);
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] == null || originalColors[i] == null) continue;
+            Material[] mats = renderers[i].materials;
+            for (int j = 0; j < mats.Length && j < originalColors[i].Length; j++)
+            {
+                mats[j].color = Color.Lerp(damagedColor, originalColors[i][j], hpRatio);
+            }
+            renderers[i].materials = mats;
+        }
     }
 }
