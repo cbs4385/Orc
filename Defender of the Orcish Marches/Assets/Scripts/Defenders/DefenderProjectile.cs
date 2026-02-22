@@ -47,9 +47,17 @@ public class DefenderProjectile : MonoBehaviour
         direction.Normalize();
         float step = speed * Time.deltaTime;
 
-        // Check for vegetation blocking along travel path
+        // Check for wall or vegetation blocking along travel path
         if (Physics.Raycast(transform.position, direction, out RaycastHit vegHit, step))
         {
+            var wall = vegHit.collider.GetComponentInParent<Wall>();
+            if (wall != null)
+            {
+                Debug.Log($"[DefenderProjectile] Blocked by wall {wall.name} at {vegHit.point}");
+                Destroy(gameObject);
+                return;
+            }
+
             var veg = vegHit.collider.GetComponentInParent<Vegetation>();
             if (veg != null && !veg.IsDead)
             {

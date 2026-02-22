@@ -104,30 +104,7 @@ public class EnemyMovement : MonoBehaviour
         {
             retargetTimer = RETARGET_INTERVAL;
             gapBlocked = false; // Re-evaluate on next retarget cycle
-
-            // If the agent has a partial path (walls blocking), attack the nearest wall
-            if (agent.isOnNavMesh && !agent.pathPending && agent.pathStatus == NavMeshPathStatus.PathPartial)
-            {
-                Wall nearestWall = WallManager.Instance != null ? WallManager.Instance.GetNearestWall(transform.position) : null;
-                if (nearestWall != null && !nearestWall.IsDestroyed)
-                {
-                    currentTarget = nearestWall.transform;
-                    Vector3 wallPos = nearestWall.transform.position;
-                    Vector3 outward = (wallPos - TowerPosition).normalized;
-                    Vector3 exteriorPoint = wallPos + outward * 1f;
-                    exteriorPoint.y = 0;
-                    agent.SetDestination(exteriorPoint);
-                    Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} path blocked — attacking nearest wall {nearestWall.name}");
-                }
-                else
-                {
-                    FindTarget();
-                }
-            }
-            else
-            {
-                FindTarget();
-            }
+            FindTarget();
         }
 
         // If any enemy reaches the tower area after a breach, game over
@@ -169,7 +146,6 @@ public class EnemyMovement : MonoBehaviour
 
     private void FindTarget()
     {
-
         if (!agent.isOnNavMesh) return;
 
         // === GOAL: Always reach the tower. Walls are just obstacles. ===
@@ -209,9 +185,34 @@ public class EnemyMovement : MonoBehaviour
             return;
         }
 
-        // Step 2: No breach — attack the wall blocking our path to the tower
+        // Step 2: Check if there are walls between us and the tower (physics raycast).
+        // We use physics instead of NavMesh because tower colliders block enemies physically
+        // but the NavMesh has walkable gaps at tower positions (no NavMeshObstacles there).
+        bool wallOnDirectLine = false;
+        {
+            Vector3 rayOrigin = new Vector3(transform.position.x, 1f, transform.position.z);
+            Vector3 rayTarget = new Vector3(TowerPosition.x, 1f, TowerPosition.z);
+            Vector3 rayDir = (rayTarget - rayOrigin).normalized;
+            float rayDist = Vector3.Distance(rayOrigin, rayTarget);
 
-        // Stick with current wall target if it's still alive
+            if (Physics.Raycast(rayOrigin, rayDir, out RaycastHit wallHit, rayDist))
+            {
+                var hitWall = wallHit.collider.GetComponentInParent<Wall>();
+                if (hitWall != null && !hitWall.IsDestroyed && !hitWall.IsUnderConstruction)
+                    wallOnDirectLine = true;
+            }
+        }
+
+        if (!wallOnDirectLine)
+        {
+            // No wall between us and the tower — go directly
+            currentTarget = null;
+            agent.SetDestination(TowerPosition);
+            Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} no walls blocking line to tower — heading directly");
+            return;
+        }
+
+        // Step 3: Path blocked — stick with current wall target if it's still alive
         if (currentTarget != null)
         {
             var curWall = currentTarget.GetComponent<Wall>();
@@ -234,7 +235,7 @@ public class EnemyMovement : MonoBehaviour
             }
         }
 
-        // No wall target yet — check for opportunistic targets before picking a wall
+        // Step 4: Check for opportunistic targets before picking a wall
         Transform nearbyTarget = FindNearbyOpportunisticTarget();
         if (nearbyTarget != null)
         {
@@ -243,26 +244,25 @@ public class EnemyMovement : MonoBehaviour
             return;
         }
 
-        // Pick the best wall target
+        // Step 5: Find the wall that's actually blocking our path to the tower
         if (WallManager.Instance != null)
         {
-            Wall approachWall = FindBestWallTarget();
-            if (approachWall != null)
+            Wall blockingWall = FindBlockingWall();
+            if (blockingWall != null)
             {
-                currentTarget = approachWall.transform;
-                // Target exterior face so NavMesh doesn't route around the wall
-                Vector3 wallPos = approachWall.transform.position;
+                currentTarget = blockingWall.transform;
+                Vector3 wallPos = blockingWall.transform.position;
                 Vector3 outward = (wallPos - TowerPosition).normalized;
                 Vector3 exteriorPoint = wallPos + outward * 1f;
                 exteriorPoint.y = 0;
                 agent.SetDestination(exteriorPoint);
-                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} targeting wall {approachWall.name} at {wallPos}, exterior={exteriorPoint}");
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} path blocked by {blockingWall.name} (HP={blockingWall.CurrentHP}/{blockingWall.MaxHP}) at {wallPos} — attacking");
                 return;
             }
         }
 
         // Fallback: walk toward the tower
-        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} no wall found, heading to tower");
+        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} no blocking wall found, heading to tower");
         agent.SetDestination(TowerPosition);
     }
 
@@ -301,49 +301,91 @@ public class EnemyMovement : MonoBehaviour
     }
 
     /// <summary>
-    /// Find the best wall to attack: prefers damaged walls in our approach direction.
-    /// Enemies converge on the weakest wall to breach it faster.
+    /// Find the wall that's actually blocking our direct path to the tower.
+    /// Uses physics raycast to find walls on the direct line, then scores
+    /// by distance and HP (lower HP = faster to breach = shorter time to reach tower).
     /// </summary>
-    private Wall FindBestWallTarget()
+    private Wall FindBlockingWall()
     {
         Vector3 pos = transform.position;
-        Vector3 toTower = (TowerPosition - pos);
+        Vector3 toTower = TowerPosition - pos;
         toTower.y = 0;
         float distToTower = toTower.magnitude;
-        if (distToTower < 0.1f) return WallManager.Instance.GetNearestWall(pos);
-        toTower /= distToTower;
+        if (distToTower < 0.1f) return null;
+        Vector3 dirToTower = toTower / distToTower;
 
-        Wall bestWall = null;
+        // Raycast from enemy toward tower at mid-wall height to find walls on the direct line
+        Vector3 rayOrigin = new Vector3(pos.x, 1f, pos.z);
+        Vector3 rayTarget = new Vector3(TowerPosition.x, 1f, TowerPosition.z);
+        Vector3 rayDir = (rayTarget - rayOrigin).normalized;
+        float rayDist = Vector3.Distance(rayOrigin, rayTarget);
+
+        RaycastHit[] hits = Physics.RaycastAll(rayOrigin, rayDir, rayDist);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        // Find the first (closest) wall on the direct line
+        Wall directBlocker = null;
+        float directBlockerDist = float.MaxValue;
+        foreach (var hit in hits)
+        {
+            Wall wall = hit.collider.GetComponentInParent<Wall>();
+            if (wall == null || wall.IsDestroyed || wall.IsUnderConstruction) continue;
+            directBlocker = wall;
+            directBlockerDist = hit.distance;
+            break;
+        }
+
+        if (directBlocker != null)
+        {
+            // Check if any nearby wall (within WALL_SPACING) on the same line has lower HP
+            // This lets enemies converge on the weakest wall in the same ring segment
+            Wall bestWall = directBlocker;
+            foreach (var hit in hits)
+            {
+                Wall wall = hit.collider.GetComponentInParent<Wall>();
+                if (wall == null || wall == directBlocker || wall.IsDestroyed || wall.IsUnderConstruction) continue;
+                // Only consider walls close to the first hit (same ring)
+                if (hit.distance > directBlockerDist + WallCorners.WALL_SPACING) break;
+                if (wall.CurrentHP < bestWall.CurrentHP)
+                    bestWall = wall;
+            }
+
+            Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} raycast found blocking wall {bestWall.name} (HP={bestWall.CurrentHP}/{bestWall.MaxHP})");
+            return bestWall;
+        }
+
+        // Raycast didn't hit a wall (indirect blocking — e.g. walls form an L that blocks NavMesh).
+        // Fall back to finding walls in our approach direction, heavily weighted by alignment and HP.
+        Wall fallbackWall = null;
         float bestScore = float.MaxValue;
 
         foreach (var wall in WallManager.Instance.AllWalls)
         {
-            if (wall.IsDestroyed) continue;
+            if (wall.IsDestroyed || wall.IsUnderConstruction) continue;
             Vector3 toWall = wall.transform.position - pos;
             toWall.y = 0;
             float dist = toWall.magnitude;
             if (dist < 0.1f) continue;
             toWall /= dist;
 
-            float alignment = Vector3.Dot(toWall, toTower);
-            // Only consider walls roughly in our approach direction
-            if (alignment < 0.2f) continue;
+            float alignment = Vector3.Dot(toWall, dirToTower);
+            // Only consider walls in our approach direction
+            if (alignment < 0.3f) continue;
 
-            // HP ratio: 0 = nearly dead, 1 = full health
             float hpRatio = (float)wall.CurrentHP / wall.MaxHP;
-
-            // Score: lower is better.
-            // Heavily favor damaged walls (hpRatio) and alignment with approach.
-            // A wall at 10% HP in our direction scores much lower than a full wall.
+            // Score: lower is better — prefer close, aligned, low-HP walls
             float score = dist * (2f - alignment) * (0.2f + hpRatio);
             if (score < bestScore)
             {
                 bestScore = score;
-                bestWall = wall;
+                fallbackWall = wall;
             }
         }
 
-        return bestWall != null ? bestWall : WallManager.Instance.GetNearestWall(pos);
+        if (fallbackWall != null)
+            Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} fallback targeting {fallbackWall.name} (HP={fallbackWall.CurrentHP}/{fallbackWall.MaxHP})");
+
+        return fallbackWall;
     }
 
     private bool IsMeleeType()

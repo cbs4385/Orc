@@ -3,13 +3,39 @@ using UnityEngine.AI;
 
 public class Pikeman : Defender
 {
-    private Enemy lastLoggedTarget;
+    private Enemy pikeLastLoggedTarget;
+    private const float DISMOUNT_RANGE = 3f; // Dismount when enemy within this XZ distance
+
+    protected override void Update()
+    {
+        if (IsDead) return;
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameManager.GameState.Playing) return;
+
+        // If on tower and an enemy is close horizontally, dismount to engage at ground level
+        if (isOnTower)
+        {
+            FindTarget();
+            if (currentTarget != null)
+            {
+                float xzDist = Vector2.Distance(
+                    new Vector2(transform.position.x, transform.position.z),
+                    new Vector2(currentTarget.transform.position.x, currentTarget.transform.position.z));
+                if (xzDist <= DISMOUNT_RANGE)
+                {
+                    Debug.Log($"[Pikeman] Enemy {currentTarget.name} within {xzDist:F1} — dismounting tower to engage!");
+                    DismountTower();
+                }
+            }
+        }
+
+        base.Update();
+    }
 
     protected override void Attack()
     {
         base.Attack();
         if (SoundManager.Instance != null) SoundManager.Instance.PlayPikemanAttack(transform.position);
-        Debug.Log($"[Pikeman] Attacked {currentTarget?.name} at dist={Vector3.Distance(transform.position, currentTarget.transform.position):F1}");
+        Debug.Log($"[Pikeman] Attacked {currentTarget?.name} at dist={GetDistanceToTarget(currentTarget):F1}");
     }
 
     // Pikeman finds any nearby enemy (wide search) and walks to the wall to engage
@@ -20,9 +46,9 @@ public class Pikeman : Defender
         currentTarget = null;
         float bestDist = searchRange;
 
-        foreach (var enemy in FindObjectsByType<Enemy>(FindObjectsSortMode.None))
+        foreach (var enemy in Enemy.ActiveEnemies)
         {
-            if (enemy.IsDead) continue;
+            if (enemy == null || enemy.IsDead) continue;
             // Pikeman engages melee-range threats: grunts, trolls, suicide goblins
             if (enemy.Data.enemyType != EnemyType.Melee &&
                 enemy.Data.enemyType != EnemyType.WallBreaker &&
@@ -31,15 +57,18 @@ public class Pikeman : Defender
             float dist = Vector3.Distance(transform.position, enemy.transform.position);
             if (dist < bestDist)
             {
+                if (!isOnTower && HasWallBetween(transform.position, enemy.transform.position))
+                    continue;
+
                 bestDist = dist;
                 currentTarget = enemy;
             }
         }
 
-        if (currentTarget != null && currentTarget != lastLoggedTarget)
+        if (currentTarget != null && currentTarget != pikeLastLoggedTarget)
         {
-            lastLoggedTarget = currentTarget;
-            float d = Vector3.Distance(transform.position, currentTarget.transform.position);
+            pikeLastLoggedTarget = currentTarget;
+            float d = GetDistanceToTarget(currentTarget);
             float r = data != null ? data.range : 3f;
             Debug.Log($"[Pikeman] Targeting {currentTarget.name} at dist={d:F1}, range={r:F1}, pos={transform.position}, enemyPos={currentTarget.transform.position}");
         }

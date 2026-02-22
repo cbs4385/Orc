@@ -21,7 +21,8 @@ public class Crossbowman : Defender
             return;
         }
 
-        Vector3 spawnPos = new Vector3(transform.position.x, 0.5f, transform.position.z);
+        float spawnY = isOnTower ? transform.position.y + 0.5f : 0.5f;
+        Vector3 spawnPos = new Vector3(transform.position.x, spawnY, transform.position.z);
         Vector3 dir = (currentTarget.transform.position - spawnPos).normalized;
         var go = Instantiate(boltPrefab, spawnPos, Quaternion.LookRotation(dir));
         var proj = go.GetComponent<DefenderProjectile>();

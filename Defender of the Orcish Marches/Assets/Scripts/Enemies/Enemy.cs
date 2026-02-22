@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Enemy : MonoBehaviour
@@ -14,10 +15,24 @@ public class Enemy : MonoBehaviour
     public static event Action<Enemy> OnEnemyDied;
     public static event Action<Enemy> OnEnemySpawned;
 
+    // Static registry of living enemies — avoids FindObjectsByType every frame
+    private static readonly HashSet<Enemy> activeEnemies = new HashSet<Enemy>();
+    public static IReadOnlyCollection<Enemy> ActiveEnemies => activeEnemies;
+
     private Renderer[] bodyRenderers;
     private Color[] originalColors;
     private float damageFlashTimer;
     private Animator animator;
+
+    private void OnEnable()
+    {
+        activeEnemies.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        activeEnemies.Remove(this);
+    }
 
     public void Initialize(EnemyData enemyData)
     {

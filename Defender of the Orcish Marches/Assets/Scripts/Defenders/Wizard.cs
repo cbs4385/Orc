@@ -18,9 +18,9 @@ public class Wizard : Defender
         {
             // Fallback to instant AoE damage if no prefab
             Vector3 center = currentTarget.transform.position;
-            foreach (var enemy in FindObjectsByType<Enemy>(FindObjectsSortMode.None))
+            foreach (var enemy in Enemy.ActiveEnemies)
             {
-                if (enemy.IsDead) continue;
+                if (enemy == null || enemy.IsDead) continue;
                 float dist = Vector3.Distance(center, enemy.transform.position);
                 if (dist <= aoeRadius)
                 {
@@ -30,7 +30,8 @@ public class Wizard : Defender
             return;
         }
 
-        Vector3 spawnPos = new Vector3(transform.position.x, 0.8f, transform.position.z);
+        float spawnY = isOnTower ? transform.position.y + 0.8f : 0.8f;
+        Vector3 spawnPos = new Vector3(transform.position.x, spawnY, transform.position.z);
         Vector3 dir = (currentTarget.transform.position - spawnPos).normalized;
         var go = Instantiate(fireMissilePrefab, spawnPos, Quaternion.LookRotation(dir));
         var proj = go.GetComponent<DefenderProjectile>();

@@ -94,6 +94,7 @@ public class SoundManager : MonoBehaviour
         // Advance to next track when current finishes
         if (musicSource != null && !musicSource.isPlaying && musicTracks != null && musicTracks.Length > 0 && musicSource.clip != null)
         {
+            Debug.Log($"[SoundManager] Track finished: {musicSource.clip.name}. Advancing to next.");
             currentTrackIndex++;
             if (currentTrackIndex >= musicTracks.Length)
             {
@@ -119,12 +120,20 @@ public class SoundManager : MonoBehaviour
 
     public void StartMusic()
     {
-        if (musicTracks == null || musicTracks.Length == 0) return;
-        if (musicSource != null && musicSource.isPlaying) return;
+        if (musicTracks == null || musicTracks.Length == 0)
+        {
+            Debug.LogWarning("[SoundManager] StartMusic called but musicTracks is null or empty.");
+            return;
+        }
+        if (musicSource != null && musicSource.isPlaying)
+        {
+            Debug.Log($"[SoundManager] StartMusic called but music already playing: {musicSource.clip?.name}");
+            return;
+        }
         currentTrackIndex = 0;
         ShuffleOrder();
         PlayMusicTrack(shuffledOrder[currentTrackIndex]);
-        Debug.Log($"[SoundManager] Music started with {musicTracks.Length} tracks (shuffled).");
+        Debug.Log($"[SoundManager] Music started with {musicTracks.Length} tracks (shuffled). First track: {musicTracks[shuffledOrder[currentTrackIndex]].name}");
     }
 
     private void ShuffleOrder()
@@ -149,7 +158,7 @@ public class SoundManager : MonoBehaviour
         // (prevents repeating a song at the boundary between two shuffles or on restart)
         if (musicTracks.Length > 1 && shuffledOrder[0] == lastPlayedTrack)
         {
-            int swapIdx = 1 + Random.Range(1, shuffledOrder.Length);
+            int swapIdx = Random.Range(1, shuffledOrder.Length);
             int tmp = shuffledOrder[0];
             shuffledOrder[0] = shuffledOrder[swapIdx];
             shuffledOrder[swapIdx] = tmp;

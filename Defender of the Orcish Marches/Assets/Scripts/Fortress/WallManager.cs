@@ -148,6 +148,10 @@ public class WallManager : MonoBehaviour
         {
             RegisterWall(wall);
             wall.SetUnderConstruction();
+
+            // Register tower positions for the new wall
+            if (TowerPositionManager.Instance != null)
+                TowerPositionManager.Instance.RegisterNewWall(wall);
         }
         Debug.Log($"[WallManager] Wall placed (under construction) at {position}, rotation={rotation.eulerAngles}.");
         return go;

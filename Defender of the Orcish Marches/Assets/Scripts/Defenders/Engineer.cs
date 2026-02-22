@@ -29,6 +29,19 @@ public class Engineer : Defender
     private const float ENGINEER_CHECK_RADIUS = 0.2f; // overlap sphere size for collision check
     private const float MIN_NAVMESH_CLEARANCE = 0.3f;  // min distance from NavMesh edge
 
+    // Guard tracking
+    private Defender assignedGuard;
+    private bool lastExposedState;
+    private float guardReevalTimer;
+    private const float GUARD_REEVAL_INTERVAL = 3f;
+
+    // Engineers stay on the ground to repair walls
+    protected override bool ShouldUseTower() => false;
+
+    // Enclosure ray check parameters
+    private const int ENCLOSURE_RAY_COUNT = 24;     // 24 directions (15° apart)
+    private const float ENCLOSURE_RAY_DIST = 20f;   // Far enough to escape any wall config
+
     protected override void Update()
     {
         if (IsDead) return;
@@ -53,6 +66,18 @@ public class Engineer : Defender
             standWall = null;
         }
 
+        // Periodically re-evaluate guard need — only when actively repairing
+        if (targetWall != null)
+        {
+            guardReevalTimer -= Time.deltaTime;
+            if (guardReevalTimer <= 0)
+            {
+                guardReevalTimer = GUARD_REEVAL_INTERVAL;
+                Vector3 evalPos = standWall != null ? currentStandPos : transform.position;
+                EvaluateGuardNeed(evalPos);
+            }
+        }
+
         float repairRange = data != null ? data.range : 2f;
 
         if (targetWall != null)
@@ -69,6 +94,7 @@ public class Engineer : Defender
                         agent.isStopped = false;
                         agent.SetDestination(currentStandPos);
                         Debug.Log($"[Engineer] Moving to repair {targetWall.name} at standPos={currentStandPos}");
+                        EvaluateGuardNeed(currentStandPos);
                     }
                     else
                     {
@@ -95,6 +121,132 @@ public class Engineer : Defender
                     Debug.Log($"[Engineer] Repaired {targetWall.name} for {repairAmount} HP (now {targetWall.CurrentHP}/{targetWall.MaxHP})");
                 }
             }
+        }
+        else
+        {
+            // No wall to repair — retreat to courtyard and release guard
+            if (agent != null && agent.isOnNavMesh)
+            {
+                float distFromCenter = Vector3.Distance(transform.position, GameManager.FortressCenter);
+                if (distFromCenter > 2f)
+                {
+                    if (agent.isStopped)
+                        Debug.Log($"[Engineer] Idle — retreating to courtyard from {transform.position} (dist={distFromCenter:F1})");
+                    agent.isStopped = false;
+                    agent.SetDestination(GameManager.FortressCenter);
+                }
+                else
+                {
+                    agent.isStopped = true;
+                }
+            }
+
+            // No repair task means no need for a guard — release unconditionally
+            if (assignedGuard != null && !assignedGuard.IsDead)
+            {
+                Debug.Log($"[Engineer] Idle, no repair task. Releasing guard {assignedGuard.name}.");
+                assignedGuard.ReleaseFromGuardDuty();
+                assignedGuard = null;
+            }
+            lastExposedState = false;
+        }
+    }
+
+    /// <summary>
+    /// Check if the engineer's destination is exposed (outside courtyard or breach exists).
+    /// Request or release guard accordingly.
+    /// </summary>
+    public void EvaluateGuardNeed(Vector3 destination)
+    {
+        bool exposed = IsPositionExposed(destination);
+        bool stateChanged = exposed != lastExposedState;
+        lastExposedState = exposed;
+
+        if (exposed)
+        {
+            // Request guard if we don't have one (or current guard died)
+            // Re-request even without state change — a guard may have become available
+            if (assignedGuard == null || assignedGuard.IsDead)
+            {
+                if (assignedGuard != null && assignedGuard.IsDead) assignedGuard = null;
+                assignedGuard = Defender.FindAndAssignGuard(this);
+                if (assignedGuard != null)
+                {
+                    Debug.Log($"[Engineer] Exposed at {destination}. Guard assigned: {assignedGuard.name}");
+                }
+                else if (stateChanged)
+                {
+                    Debug.Log($"[Engineer] Exposed at {destination}. No guard available.");
+                }
+            }
+        }
+        else
+        {
+            if (assignedGuard != null && !assignedGuard.IsDead)
+            {
+                Debug.Log($"[Engineer] Now inside enclosed area. Releasing guard {assignedGuard.name}.");
+                assignedGuard.ReleaseFromGuardDuty();
+                assignedGuard = null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// A position is exposed if enemies could physically reach it.
+    /// Casts rays outward in all directions — if every ray hits a wall collider
+    /// (including tower capsule colliders), the position is fully enclosed.
+    /// If any ray escapes without hitting a wall, enemies can approach from that direction.
+    /// Works with any wall configuration: standard fortress, custom enclosures, angled walls.
+    /// Destroyed walls (inactive) and under-construction walls (disabled colliders) are
+    /// correctly treated as openings.
+    /// </summary>
+    private bool IsPositionExposed(Vector3 pos)
+    {
+        Vector3 origin = new Vector3(pos.x, 1f, pos.z); // Mid-wall height for raycast
+
+        for (int i = 0; i < ENCLOSURE_RAY_COUNT; i++)
+        {
+            float angle = i * 2f * Mathf.PI / ENCLOSURE_RAY_COUNT;
+            Vector3 dir = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
+
+            bool hitWall = false;
+            if (Physics.Raycast(origin, dir, out RaycastHit hit, ENCLOSURE_RAY_DIST))
+            {
+                if (hit.collider.GetComponentInParent<Wall>() != null)
+                    hitWall = true;
+            }
+
+            if (!hitWall)
+            {
+                Debug.Log($"[Engineer] IsPositionExposed({pos:F1}) = true (ray {i} at {angle * Mathf.Rad2Deg:F0}° escaped)");
+                return true;
+            }
+        }
+
+        // All rays hit walls — position is fully enclosed
+        Debug.Log($"[Engineer] IsPositionExposed({pos:F1}) = false (all {ENCLOSURE_RAY_COUNT} rays hit walls — enclosed)");
+        return false;
+    }
+
+    /// <summary>
+    /// Called by Defender.Die() when our assigned guard dies.
+    /// Clears the reference so we can request a new one.
+    /// </summary>
+    public void OnGuardDied()
+    {
+        Debug.Log($"[Engineer] Guard died — will request a new one.");
+        assignedGuard = null;
+    }
+
+    /// <summary>
+    /// Called when engineer dies — release guard.
+    /// </summary>
+    private void OnDestroy()
+    {
+        if (assignedGuard != null && !assignedGuard.IsDead)
+        {
+            assignedGuard.ReleaseFromGuardDuty();
+            assignedGuard = null;
         }
     }
 
@@ -249,8 +401,7 @@ public class Engineer : Defender
         dangerScanTimer = DANGER_SCAN_INTERVAL;
 
         bool threatFound = false;
-        var enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
-        foreach (var enemy in enemies)
+        foreach (var enemy in Enemy.ActiveEnemies)
         {
             if (enemy == null || enemy.IsDead) continue;
             float dist = Vector3.Distance(transform.position, enemy.transform.position);
@@ -273,6 +424,8 @@ public class Engineer : Defender
                 agent.isStopped = false;
                 agent.SetDestination(GameManager.FortressCenter);
             }
+            // Fleeing to courtyard center — evaluate guard need
+            EvaluateGuardNeed(GameManager.FortressCenter);
         }
         else if (!threatFound && isFleeing)
         {
