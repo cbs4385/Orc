@@ -48,6 +48,7 @@ public class WallManager : MonoBehaviour
         {
             allWalls.Add(wall);
             wall.OnWallDestroyed += HandleWallDestroyed;
+            Debug.Log($"[WallManager] Registered wall {wall.name} at {wall.transform.position}. Total walls: {allWalls.Count}");
         }
     }
 
@@ -62,18 +63,20 @@ public class WallManager : MonoBehaviour
     {
         // Count active walls on each side
         int destroyedCount = 0;
+        int totalCount = allWalls.Count;
         foreach (var wall in allWalls)
         {
             if (wall.IsDestroyed) destroyedCount++;
         }
 
-        // If too many walls breached, game over
-        // A single breach is enough - enemies can walk through
         if (destroyedCount > 0)
         {
-            // Don't immediately game over - enemies still need to reach tower
-            // This is handled by enemy movement checking if they can reach the tower interior
-            Debug.Log($"Wall breached! {destroyedCount} wall(s) destroyed.");
+            Debug.LogWarning($"[WallManager] BREACH DETECTED! {destroyedCount}/{totalCount} wall(s) destroyed. Enemies can path through gaps.");
+            foreach (var wall in allWalls)
+            {
+                if (wall.IsDestroyed)
+                    Debug.Log($"[WallManager] Breached wall: {wall.name} at {wall.transform.position}");
+            }
         }
     }
 

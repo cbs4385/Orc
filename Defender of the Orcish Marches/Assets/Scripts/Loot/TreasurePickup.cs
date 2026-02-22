@@ -83,6 +83,7 @@ public class TreasurePickup : MonoBehaviour
     {
         if (collected) return;
         collected = true;
+        Debug.Log($"[TreasurePickup] Collected! value={value} at {transform.position}");
         Destroy(gameObject);
     }
 }

@@ -126,6 +126,7 @@ public class Menial : MonoBehaviour
     private void Start()
     {
         wanderTimer = Random.Range(1f, WANDER_INTERVAL_MAX);
+        Debug.Log($"[Menial] Spawned at {transform.position}, HP={maxHP}, speed={moveSpeed}, state={CurrentState}");
     }
 
     private System.Action onEnteredTower;
@@ -633,6 +634,7 @@ public class Menial : MonoBehaviour
 
     private void ReturnHome()
     {
+        Debug.Log($"[Menial] Returning home with {carriedTreasure} gold from {transform.position}");
         CurrentState = MenialState.Returning;
         clearingRadius = 0;
 
@@ -691,6 +693,7 @@ public class Menial : MonoBehaviour
     {
         if (IsDead) return;
         currentHP -= damage;
+        Debug.Log($"[Menial] Took {damage} damage at {transform.position}. HP={currentHP}/{maxHP}, state={CurrentState}");
         FloatingDamageNumber.Spawn(transform.position, damage, false);
         if (currentHP <= 0)
         {

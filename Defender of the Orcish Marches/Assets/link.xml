@@ -1,0 +1,15 @@
+<linker>
+  <!-- Preserve System.Net.Mail for bug report SMTP sending -->
+  <assembly fullname="System">
+    <namespace fullname="System.Net" preserve="all"/>
+    <namespace fullname="System.Net.Mail" preserve="all"/>
+    <namespace fullname="System.Net.Mime" preserve="all"/>
+  </assembly>
+  <!-- Preserve System.IO.Compression for log zip creation -->
+  <assembly fullname="System.IO.Compression">
+    <namespace fullname="System.IO.Compression" preserve="all"/>
+  </assembly>
+  <assembly fullname="System.IO.Compression.FileSystem">
+    <namespace fullname="System.IO.Compression" preserve="all"/>
+  </assembly>
+</linker>

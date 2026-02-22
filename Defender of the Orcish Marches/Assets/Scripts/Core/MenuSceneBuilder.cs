@@ -178,6 +178,7 @@ public class MenuSceneBuilder : MonoBehaviour
         var tutorialBtn = CreateMenuButton("TutorialButton", "TUTORIAL", panelObj.transform);
         var optionsBtn = CreateMenuButton("OptionsButton", "OPTIONS", panelObj.transform);
         var exitBtn = CreateMenuButton("ExitButton", "EXIT", panelObj.transform);
+        var bugReportBtn = CreateMenuButton("BugReportButton", "REPORT BUG", panelObj.transform);
 
         // --- Difficulty selector (vertical, right edge) ---
         var diffPanel = new GameObject("DifficultyPanel");
@@ -320,20 +321,37 @@ public class MenuSceneBuilder : MonoBehaviour
         diffValRect.offsetMin = Vector2.zero;
         diffValRect.offsetMax = Vector2.zero;
 
+        // LogCapture (DontDestroyOnLoad singleton — persists across scenes)
+        var logCaptureObj = new GameObject("LogCapture");
+        logCaptureObj.AddComponent<LogCapture>();
+
         // Manager object
         var mgrObj = new GameObject("MenuManager");
         var mainMenu = mgrObj.AddComponent<MainMenuManager>();
         mgrObj.AddComponent<SceneLoader>();
+        var bugReportPanel = mgrObj.AddComponent<BugReportPanel>();
 
-        // Wire buttons + difficulty
+        // Load BugReportConfig asset
+        var bugReportConfig = AssetDatabase.LoadAssetAtPath<BugReportConfig>("Assets/ScriptableObjects/BugReportConfig.asset");
+        if (bugReportConfig == null)
+            Debug.LogWarning("[MenuSceneBuilder] BugReportConfig.asset not found at Assets/ScriptableObjects/. Create it via Create > Game > Bug Report Config.");
+
+        // Wire buttons + difficulty + bug report
         var mmSO = new SerializedObject(mainMenu);
         mmSO.FindProperty("playButton").objectReferenceValue = playBtn;
         mmSO.FindProperty("optionsButton").objectReferenceValue = optionsBtn;
         mmSO.FindProperty("tutorialButton").objectReferenceValue = tutorialBtn;
         mmSO.FindProperty("exitButton").objectReferenceValue = exitBtn;
+        mmSO.FindProperty("bugReportButton").objectReferenceValue = bugReportBtn;
+        mmSO.FindProperty("bugReportPanel").objectReferenceValue = bugReportPanel;
         mmSO.FindProperty("difficultySlider").objectReferenceValue = diffSlider;
         mmSO.FindProperty("difficultyLabel").objectReferenceValue = diffValTmp;
         mmSO.ApplyModifiedProperties();
+
+        // Wire BugReportPanel config
+        var brSO = new SerializedObject(bugReportPanel);
+        brSO.FindProperty("config").objectReferenceValue = bugReportConfig;
+        brSO.ApplyModifiedProperties();
 
         // EventSystem
         var esObj = new GameObject("EventSystem");

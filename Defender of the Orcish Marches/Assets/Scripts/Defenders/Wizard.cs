@@ -39,6 +39,6 @@ public class Wizard : Defender
             proj.Initialize(currentTarget.transform, projectileSpeed, scaledDmg, data.range + 5f, aoeRadius);
         }
         if (SoundManager.Instance != null) SoundManager.Instance.PlayWizardFire(transform.position);
-        Debug.Log($"[Wizard] Fired missile at {currentTarget.name}, aoe={aoeRadius}");
+        Debug.Log($"[Wizard] Fired missile at {currentTarget.name}, damage={scaledDmg}, aoe={aoeRadius}, dist={Vector3.Distance(transform.position, currentTarget.transform.position):F1}");
     }
 }

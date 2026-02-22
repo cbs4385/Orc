@@ -15,6 +15,7 @@ public class Crossbowman : Defender
 
         if (boltPrefab == null)
         {
+            Debug.LogWarning($"[Crossbowman] No bolt prefab! Falling back to instant damage ({scaledDmg}) on {currentTarget.name}");
             // Fallback to instant damage if no prefab
             currentTarget.TakeDamage(scaledDmg);
             return;
@@ -29,6 +30,6 @@ public class Crossbowman : Defender
             proj.Initialize(currentTarget.transform, projectileSpeed, scaledDmg, data.range + 5f);
         }
         if (SoundManager.Instance != null) SoundManager.Instance.PlayCrossbowFire(transform.position);
-        Debug.Log($"[Crossbowman] Fired bolt at {currentTarget.name}");
+        Debug.Log($"[Crossbowman] Fired bolt at {currentTarget.name}, damage={scaledDmg}, dist={Vector3.Distance(transform.position, currentTarget.transform.position):F1}");
     }
 }

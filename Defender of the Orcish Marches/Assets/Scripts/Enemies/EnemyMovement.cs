@@ -46,6 +46,7 @@ public class EnemyMovement : MonoBehaviour
         }
 
         agent.radius = ENEMY_NAV_RADIUS;
+        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} started at {transform.position}, navRadius={ENEMY_NAV_RADIUS}, speed={agent.speed}, stoppingDist={agent.stoppingDistance}");
         FindTarget();
     }
 
@@ -150,6 +151,7 @@ public class EnemyMovement : MonoBehaviour
             {
                 currentTarget = nearby;
                 agent.SetDestination(nearby.position);
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} breach rush — opportunistic target {nearby.name} at dist={Vector3.Distance(transform.position, nearby.position):F1}");
                 return;
             }
 
@@ -158,12 +160,14 @@ public class EnemyMovement : MonoBehaviour
             float distFromCenter = new Vector2(offset.x, offset.z).magnitude;
             if (distFromCenter < 4.5f)
             {
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} INSIDE walls (dist={distFromCenter:F1}), heading to tower at {TowerPosition}");
                 agent.SetDestination(TowerPosition);
             }
             else
             {
                 // Path toward the nearest breach to get inside
                 Vector3 breachPos = FindNearestBreachPosition();
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} heading to breach at {breachPos} (distFromCenter={distFromCenter:F1})");
                 agent.SetDestination(breachPos);
             }
 
@@ -322,6 +326,7 @@ public class EnemyMovement : MonoBehaviour
     {
         Vector3 best = TowerPosition;
         float bestDist = float.MaxValue;
+        string breachWallName = "none";
 
         foreach (var wall in WallManager.Instance.AllWalls)
         {
@@ -331,8 +336,11 @@ public class EnemyMovement : MonoBehaviour
             {
                 bestDist = dist;
                 best = wall.transform.position;
+                breachWallName = wall.name;
             }
         }
+
+        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} nearest breach: {breachWallName} at {best}, dist={bestDist:F1}");
         return best;
     }
 

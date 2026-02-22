@@ -42,6 +42,8 @@ public class Ballista : MonoBehaviour
         if (firePoint == null) firePoint = transform;
         isNightmareMode = NightmareCamera.IsNightmareMode;
 
+        Debug.Log($"[Ballista] Initialized. damage={damage}, fireRate={fireRate}, range={maxRange}, nightmare={isNightmareMode}");
+
         aimLine = CreateAimLine("AimLine");
         aimLineSpread = CreateAimLine("AimLineSpread");
         aimLineSpread.enabled = false;
@@ -154,7 +156,11 @@ public class Ballista : MonoBehaviour
     {
         fireCooldown = 1f / fireRate;
 
-        if (projectilePrefab == null) return;
+        if (projectilePrefab == null)
+        {
+            Debug.LogError("[Ballista] projectilePrefab is null! Cannot fire.");
+            return;
+        }
 
         Vector3 direction;
         Vector3 spawnPos;
@@ -174,6 +180,8 @@ public class Ballista : MonoBehaviour
             direction.Normalize();
             spawnPos = new Vector3(firePoint.position.x, 0.5f, firePoint.position.z);
         }
+
+        Debug.Log($"[Ballista] Firing. dir={direction}, doubleShot={hasDoubleShot}, burstDamage={hasBurstDamage}");
 
         // Fire main projectile
         if (SoundManager.Instance != null) SoundManager.Instance.PlayScorpioFire(spawnPos);
@@ -209,8 +217,27 @@ public class Ballista : MonoBehaviour
         return transform.position + transform.forward * 10f;
     }
 
-    public void UpgradeDamage(int amount) => damage += amount;
-    public void UpgradeFireRate(float amount) => fireRate += amount;
-    public void EnableDoubleShot() => hasDoubleShot = true;
-    public void EnableBurstDamage() => hasBurstDamage = true;
+    public void UpgradeDamage(int amount)
+    {
+        damage += amount;
+        Debug.Log($"[Ballista] Damage upgraded by {amount}. New damage={damage}");
+    }
+
+    public void UpgradeFireRate(float amount)
+    {
+        fireRate += amount;
+        Debug.Log($"[Ballista] Fire rate upgraded by {amount}. New fireRate={fireRate}");
+    }
+
+    public void EnableDoubleShot()
+    {
+        hasDoubleShot = true;
+        Debug.Log("[Ballista] Double shot enabled.");
+    }
+
+    public void EnableBurstDamage()
+    {
+        hasBurstDamage = true;
+        Debug.Log("[Ballista] Burst damage enabled.");
+    }
 }

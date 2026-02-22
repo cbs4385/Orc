@@ -85,13 +85,16 @@ public class Wall : MonoBehaviour
     public void TakeDamage(int damage)
     {
         if (IsDestroyed || IsUnderConstruction) return;
+        int prevHP = CurrentHP;
         CurrentHP = Mathf.Max(0, CurrentHP - damage);
+        Debug.Log($"[Wall] {name} took {damage} damage at {transform.position}. HP: {prevHP} -> {CurrentHP}/{maxHP}");
         FloatingDamageNumber.Spawn(transform.position, damage, false);
         OnWallDamaged?.Invoke(this);
         UpdateVisual();
 
         if (CurrentHP <= 0)
         {
+            Debug.Log($"[Wall] {name} DESTROYED at {transform.position}! Breach created.");
             if (SoundManager.Instance != null) SoundManager.Instance.PlayWallCollapse(transform.position);
             OnWallDestroyed?.Invoke(this);
             gameObject.SetActive(false);

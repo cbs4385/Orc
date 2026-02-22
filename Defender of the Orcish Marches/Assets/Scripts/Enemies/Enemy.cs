@@ -133,6 +133,7 @@ public class Enemy : MonoBehaviour
     {
         if (IsDead) return;
         CurrentHP -= damage;
+        Debug.Log($"[Enemy] {data?.enemyName} took {damage} damage at {transform.position}. HP={CurrentHP}");
 
         FloatingDamageNumber.Spawn(transform.position, damage, true);
         FlashWhite();

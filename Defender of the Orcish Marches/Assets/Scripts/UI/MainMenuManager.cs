@@ -8,6 +8,10 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private Button optionsButton;
     [SerializeField] private Button tutorialButton;
     [SerializeField] private Button exitButton;
+    [SerializeField] private Button bugReportButton;
+
+    [Header("Bug Report")]
+    [SerializeField] private BugReportPanel bugReportPanel;
 
     [Header("Difficulty")]
     [SerializeField] private Slider difficultySlider;
@@ -34,6 +38,8 @@ public class MainMenuManager : MonoBehaviour
             tutorialButton.onClick.AddListener(OnTutorialClicked);
         if (exitButton != null)
             exitButton.onClick.AddListener(OnExitClicked);
+        if (bugReportButton != null)
+            bugReportButton.onClick.AddListener(OnBugReportClicked);
 
         if (difficultySlider != null)
         {
@@ -53,6 +59,8 @@ public class MainMenuManager : MonoBehaviour
             tutorialButton.onClick.RemoveListener(OnTutorialClicked);
         if (exitButton != null)
             exitButton.onClick.RemoveListener(OnExitClicked);
+        if (bugReportButton != null)
+            bugReportButton.onClick.RemoveListener(OnBugReportClicked);
         if (difficultySlider != null)
             difficultySlider.onValueChanged.RemoveListener(OnDifficultyChanged);
     }
@@ -92,5 +100,14 @@ public class MainMenuManager : MonoBehaviour
     {
         Debug.Log("[MainMenuManager] Exit clicked.");
         sceneLoader.QuitGame();
+    }
+
+    private void OnBugReportClicked()
+    {
+        Debug.Log("[MainMenuManager] Bug Report clicked.");
+        if (bugReportPanel != null)
+            bugReportPanel.Show();
+        else
+            Debug.LogWarning("[MainMenuManager] BugReportPanel reference is null.");
     }
 }

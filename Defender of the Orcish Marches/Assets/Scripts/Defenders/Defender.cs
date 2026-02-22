@@ -162,7 +162,9 @@ public class Defender : MonoBehaviour
         float dailyAtkSpd = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderAttackSpeedMultiplier : 1f;
         attackCooldown = (1f / data.attackRate) / dailyAtkSpd;
         float dailyDmg = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderDamageMultiplier : 1f;
-        currentTarget.TakeDamage(Mathf.RoundToInt(data.damage * dailyDmg));
+        int scaledDmg = Mathf.RoundToInt(data.damage * dailyDmg);
+        Debug.Log($"[Defender] {data.defenderName} attacking {currentTarget.name} for {scaledDmg} damage at dist={Vector3.Distance(transform.position, currentTarget.transform.position):F1}");
+        currentTarget.TakeDamage(scaledDmg);
     }
 
     public void TakeDamage(int damage)

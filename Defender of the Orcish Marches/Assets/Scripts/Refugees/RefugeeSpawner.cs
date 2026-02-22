@@ -13,6 +13,7 @@ public class RefugeeSpawner : MonoBehaviour
     private void Start()
     {
         spawnTimer = Random.Range(minSpawnInterval, maxSpawnInterval) * GameSettings.GetRefugeeSpawnMultiplier();
+        Debug.Log($"[RefugeeSpawner] Initialized. interval=[{minSpawnInterval},{maxSpawnInterval}], powerUpChance={powerUpChance}, firstSpawn in {spawnTimer:F1}s");
     }
 
     private void Update()
@@ -32,7 +33,11 @@ public class RefugeeSpawner : MonoBehaviour
 
     private void SpawnRefugee()
     {
-        if (refugeePrefab == null) return;
+        if (refugeePrefab == null)
+        {
+            Debug.LogError("[RefugeeSpawner] refugeePrefab is null! Cannot spawn refugee.");
+            return;
+        }
 
         int side = Random.Range(0, 4);
         float offset = Random.Range(-mapRadius * 0.8f, mapRadius * 0.8f);
@@ -45,6 +50,7 @@ public class RefugeeSpawner : MonoBehaviour
             default: pos = new Vector3(offset, 0, mapRadius); break;
         }
 
+        Debug.Log($"[RefugeeSpawner] Spawning refugee at {pos} (side={side})");
         var go = Instantiate(refugeePrefab, pos, Quaternion.identity);
         var refugee = go.GetComponent<Refugee>();
 
@@ -52,7 +58,9 @@ public class RefugeeSpawner : MonoBehaviour
         if (refugee != null && Random.value < powerUpChance)
         {
             var powerUps = new[] { RefugeePowerUp.DoubleShot, RefugeePowerUp.BurstDamage };
-            refugee.SetPowerUp(powerUps[Random.Range(0, powerUps.Length)]);
+            var chosenPowerUp = powerUps[Random.Range(0, powerUps.Length)];
+            refugee.SetPowerUp(chosenPowerUp);
+            Debug.Log($"[RefugeeSpawner] Refugee assigned power-up: {chosenPowerUp}");
         }
     }
 }
