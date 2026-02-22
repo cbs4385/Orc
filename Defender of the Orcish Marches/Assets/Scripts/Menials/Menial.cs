@@ -511,8 +511,8 @@ public class Menial : MonoBehaviour
     /// </summary>
     private bool CheckForDanger()
     {
-        // Already fleeing — handled by UpdateFleeing
-        if (CurrentState == MenialState.Fleeing) return true;
+        // Already fleeing — let the switch dispatch to UpdateFleeing
+        if (CurrentState == MenialState.Fleeing) return false;
 
         // Don't interrupt tower entry
         if (CurrentState == MenialState.EnteringTower) return false;

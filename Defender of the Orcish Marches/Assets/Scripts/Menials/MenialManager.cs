@@ -15,6 +15,10 @@ public class MenialManager : MonoBehaviour
     private UnityEngine.Camera mainCam;
     private List<GameObject> activeBanners = new List<GameObject>();
 
+    // Menial count audit
+    private float auditTimer;
+    private const float AUDIT_INTERVAL = 5f;
+
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -76,6 +80,59 @@ public class MenialManager : MonoBehaviour
         // Clean up dead menials and expired banners
         allMenials.RemoveAll(m => m == null || m.IsDead);
         activeBanners.RemoveAll(b => b == null);
+
+        // Periodic audit: compare tracked count vs actual scene objects
+        auditTimer -= Time.deltaTime;
+        if (auditTimer <= 0f)
+        {
+            auditTimer = AUDIT_INTERVAL;
+            AuditMenialCount();
+        }
+    }
+
+    private void AuditMenialCount()
+    {
+        if (GameManager.Instance == null) return;
+
+        var sceneMenials = FindObjectsByType<Menial>(FindObjectsSortMode.None);
+        int aliveInScene = 0;
+        int idleInScene = 0;
+        int collectingInScene = 0;
+        int returningInScene = 0;
+        int fleeingInScene = 0;
+        int enteringTowerInScene = 0;
+        int otherInScene = 0;
+
+        foreach (var m in sceneMenials)
+        {
+            if (m == null || m.IsDead) continue;
+            aliveInScene++;
+            switch (m.CurrentState)
+            {
+                case MenialState.Idle: idleInScene++; break;
+                case MenialState.Collecting: collectingInScene++; break;
+                case MenialState.Returning: returningInScene++; break;
+                case MenialState.Fleeing: fleeingInScene++; break;
+                case MenialState.EnteringTower: enteringTowerInScene++; break;
+                default: otherInScene++; break;
+            }
+        }
+
+        int trackedCount = GameManager.Instance.MenialCount;
+        int trackedIdle = GameManager.Instance.IdleMenialCount;
+        int listCount = allMenials.Count;
+
+        bool mismatch = aliveInScene != trackedCount || idleInScene != trackedIdle;
+
+        if (mismatch)
+        {
+            Debug.LogWarning($"[MenialManager] AUDIT MISMATCH! " +
+                $"Tracked={trackedCount} (idle={trackedIdle}), " +
+                $"Scene={aliveInScene} (idle={idleInScene}), " +
+                $"List={listCount}. " +
+                $"States: collect={collectingInScene} return={returningInScene} " +
+                $"flee={fleeingInScene} tower={enteringTowerInScene} other={otherInScene}");
+        }
     }
 
     private void TrySendMenialToLoot()

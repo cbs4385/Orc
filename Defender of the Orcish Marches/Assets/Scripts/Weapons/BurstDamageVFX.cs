@@ -24,6 +24,10 @@ public class BurstDamageVFX : MonoBehaviour
         CreateShockwaveRing(radius);
         CreateFlash();
 
+        // Start all particle systems now that configuration is complete
+        foreach (var ps in GetComponentsInChildren<ParticleSystem>())
+            ps.Play();
+
         // Auto-destroy after effects finish
         Destroy(gameObject, 2f);
     }
@@ -97,7 +101,9 @@ public class BurstDamageVFX : MonoBehaviour
         go.transform.SetParent(transform, false);
 
         var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var main = ps.main;
+        main.playOnAwake = false;
         main.duration = 0.3f;
         main.loop = false;
         main.startLifetime = new ParticleSystem.MinMaxCurve(0.3f, 0.6f);
@@ -160,7 +166,9 @@ public class BurstDamageVFX : MonoBehaviour
         go.transform.SetParent(transform, false);
 
         var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var main = ps.main;
+        main.playOnAwake = false;
         main.duration = 0.1f;
         main.loop = false;
         main.startLifetime = 0.5f;
@@ -225,7 +233,9 @@ public class BurstDamageVFX : MonoBehaviour
         go.transform.SetParent(transform, false);
 
         var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var main = ps.main;
+        main.playOnAwake = false;
         main.duration = 0.05f;
         main.loop = false;
         main.startLifetime = 0.2f;

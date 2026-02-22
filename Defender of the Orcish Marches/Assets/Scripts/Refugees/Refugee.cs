@@ -109,6 +109,7 @@ public class Refugee : MonoBehaviour
         if (!agent.pathPending && agent.remainingDistance < 2f)
         {
             arrived = true;
+            Debug.Log($"[Refugee] Arrived at fortress center. Position={transform.position}");
 
             // Apply power-up to the active ballista
             if (carriedPowerUp != RefugeePowerUp.None && BallistaManager.Instance != null)
@@ -127,7 +128,13 @@ public class Refugee : MonoBehaviour
             }
             if (MenialManager.Instance != null)
             {
-                MenialManager.Instance.SpawnMenial();
+                var newMenial = MenialManager.Instance.SpawnMenial();
+                if (newMenial == null)
+                    Debug.LogError("[Refugee] SpawnMenial returned null! Count incremented but no menial created.");
+            }
+            else
+            {
+                Debug.LogError("[Refugee] MenialManager.Instance is null! Count incremented but no menial spawned.");
             }
 
             Destroy(gameObject);
