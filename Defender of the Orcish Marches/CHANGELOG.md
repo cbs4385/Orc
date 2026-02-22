@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.11.1
+
+### Audio
+- Music tracks now loaded dynamically from Resources/Music/ at launch — no manual inspector assignment needed
+- Moved music files from Audio/Music to Resources/Music for runtime loading
+- Added diagnostic logging to StartMusic early-return paths (null tracks, already playing)
+
+## 0.11.0
+
+### Defender AI
+- Added static enemy registry (Enemy.ActiveEnemies) replacing per-frame FindObjectsByType calls across all defender scripts
+- Ground-level defenders now check line-of-sight before targeting — no more shooting through walls
+- Tower defenders remain exempt from LOS checks (they shoot over walls)
+- Guard system: guards now interpose between nearest enemy and the guarded engineer
+- Guard positioning validates NavMesh, wall geometry clearance, and LOS to engineer
+- Guards detect stuck state (distance-based, 5s timeout) and release guard duty if unreachable
+- Engineers retreat to courtyard when idle and unconditionally release their guard
+- Guard re-evaluation only runs while engineer is actively repairing (prevents assign/release cycle)
+- ReleaseFromGuardDuty resets tower seek timer for immediate tower remounting
+- Guard death notifies engineer (OnGuardDied) so a replacement can be requested
+- Pikeman walks to inner wall face nearest enemy instead of staying clamped at courtyard center
+
+### Tower System
+- Added TowerPositionManager for centralized tower position tracking and assignment
+- Towers deduplicated by XZ proximity from wall endpoint positions
+- Best tower selection considers enemy proximity (when enemies present) or spread coverage (when idle)
+- Tower clipping prevention: adjacent occupied towers within 1.0 unit are skipped during assignment
+- MountTower safety check prevents mounting a tower already occupied by another defender
+- Domain reload re-links defenders to rebuilt tower positions
+- Extension walls built by engineers now register tower positions via TowerPositionManager
+
+### Performance
+- Replaced FindObjectsByType<Enemy> with static HashSet registry in Defender, Pikeman, Wizard, TowerPositionManager
+- Replaced Physics.OverlapSphere with OverlapSphereNonAlloc using shared buffer for wall geometry checks
+
+### Bug Fixes
+- Fixed defenders standing in narrow NavMesh strip between tower colliders (added manual wall bounds check)
+- Fixed guard positioned behind wall with no LOS to engineer
+- Fixed mount/dismount cycle caused by guard evaluation running during idle state
+- Fixed guard not returning to tower after release (towerSeekTimer not reset)
+- Fixed two defenders occupying same tower after domain reload
+- Fixed Pikeman serialization warning (renamed shadowed lastLoggedTarget field)
+
+### Diagnostics
+- Added comprehensive logging to FindTarget (target acquisition/loss, LOS skip counts)
+- Added logging to guard lifecycle (start, release, stuck, position computation)
+- Added logging to tower mount/dismount, tower switching, wall geometry escape
+- Added track advancement logging to SoundManager
+
 ## 0.10.4
 
 ### Bug Fixes
