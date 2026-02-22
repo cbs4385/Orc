@@ -26,18 +26,36 @@ public class Ballista : MonoBehaviour
     private LineRenderer aimLine;
     private LineRenderer aimLineSpread;
 
+    // Nightmare FPS mode
+    private bool isNightmareMode;
+    private float yaw;
+
     public int Damage => damage;
     public float FireRate => fireRate;
     public bool HasDoubleShot => hasDoubleShot;
     public bool HasBurstDamage => hasBurstDamage;
+    public bool IsNightmareMode => isNightmareMode;
 
     private void Start()
     {
         mainCam = UnityEngine.Camera.main;
         if (firePoint == null) firePoint = transform;
+        isNightmareMode = NightmareCamera.IsNightmareMode;
+
         aimLine = CreateAimLine("AimLine");
         aimLineSpread = CreateAimLine("AimLineSpread");
         aimLineSpread.enabled = false;
+
+        if (isNightmareMode)
+        {
+            // Face west (-X direction) initially
+            yaw = 270f;
+            transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            // Disable aim lines in FPS mode
+            if (aimLine != null) aimLine.enabled = false;
+            if (aimLineSpread != null) aimLineSpread.enabled = false;
+            Debug.Log($"[Ballista] Nightmare FPS mode enabled. Initial yaw={yaw}");
+        }
     }
 
     private LineRenderer CreateAimLine(string name)
@@ -60,12 +78,16 @@ public class Ballista : MonoBehaviour
     private void Update()
     {
         if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameManager.GameState.Playing) return;
-        if (mainCam == null) { mainCam = UnityEngine.Camera.main; return; }
+
+        // In nightmare + build mode, skip all input (don't rotate/fire while placing walls)
+        if (isNightmareMode && BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildMode) return;
+
+        if (!isNightmareMode && mainCam == null) { mainCam = UnityEngine.Camera.main; return; }
 
         fireCooldown -= Time.deltaTime;
 
         RotateTowardsMouse();
-        UpdateAimLines();
+        if (!isNightmareMode) UpdateAimLines();
 
         if (Mouse.current != null && Mouse.current.leftButton.isPressed && fireCooldown <= 0f)
         {
@@ -102,6 +124,12 @@ public class Ballista : MonoBehaviour
 
     private void RotateTowardsMouse()
     {
+        if (isNightmareMode)
+        {
+            RotateFPS();
+            return;
+        }
+
         Vector3 mouseWorld = GetMouseWorldPosition();
         Vector3 direction = mouseWorld - transform.position;
         direction.y = 0;
@@ -112,18 +140,38 @@ public class Ballista : MonoBehaviour
         }
     }
 
+    private void RotateFPS()
+    {
+        if (Mouse.current == null) return;
+        Vector2 delta = Mouse.current.delta.ReadValue();
+        yaw += delta.x * 0.2f;
+        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+    }
+
     private void Fire()
     {
         fireCooldown = 1f / fireRate;
 
         if (projectilePrefab == null) return;
 
-        Vector3 mouseWorld = GetMouseWorldPosition();
-        Vector3 direction = (mouseWorld - firePoint.position);
-        direction.y = 0;
-        direction.Normalize();
+        Vector3 direction;
+        Vector3 spawnPos;
 
-        Vector3 spawnPos = new Vector3(firePoint.position.x, 0.5f, firePoint.position.z);
+        if (isNightmareMode)
+        {
+            // Use FPS camera forward for 3D direction (includes pitch)
+            var cam = UnityEngine.Camera.main;
+            direction = cam != null ? cam.transform.forward : transform.forward;
+            spawnPos = firePoint.position;
+        }
+        else
+        {
+            Vector3 mouseWorld = GetMouseWorldPosition();
+            direction = (mouseWorld - firePoint.position);
+            direction.y = 0;
+            direction.Normalize();
+            spawnPos = new Vector3(firePoint.position.x, 0.5f, firePoint.position.z);
+        }
 
         // Fire main projectile
         if (SoundManager.Instance != null) SoundManager.Instance.PlayScorpioFire(spawnPos);
@@ -143,7 +191,7 @@ public class Ballista : MonoBehaviour
         var projectile = proj.GetComponent<BallistaProjectile>();
         if (projectile != null)
         {
-            projectile.Initialize(direction, projectileSpeed, damage, maxRange, hasBurstDamage, burstDamageRadius);
+            projectile.Initialize(direction, projectileSpeed, damage, maxRange, hasBurstDamage, burstDamageRadius, isNightmareMode);
         }
     }
 

@@ -90,8 +90,9 @@ public class DayNightCycle : MonoBehaviour
         if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameManager.GameState.Playing)
             return;
 
+        // Use unscaledDeltaTime so build mode timeScale doesn't double-apply with TimeMultiplier
         float timeMult = BuildModeManager.Instance != null ? BuildModeManager.Instance.TimeMultiplier : 1f;
-        phaseTimer += Time.deltaTime * timeMult;
+        phaseTimer += Time.unscaledDeltaTime * timeMult;
 
         if (phaseTimer >= CurrentPhaseDuration)
         {

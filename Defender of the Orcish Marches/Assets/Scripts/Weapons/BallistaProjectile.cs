@@ -13,7 +13,13 @@ public class BallistaProjectile : MonoBehaviour
     private bool burstDamage;
     private float burstRadius;
 
-    public void Initialize(Vector3 dir, float spd, int dmg, float range, bool burst = false, float burstRad = 0f)
+    // Gravity (Nightmare FPS mode)
+    private bool useGravity;
+    private float gravityStrength = 15f;
+    private Vector3 velocity;
+    private float totalDistanceTraveled;
+
+    public void Initialize(Vector3 dir, float spd, int dmg, float range, bool burst = false, float burstRad = 0f, bool gravity = false)
     {
         direction = dir.normalized;
         speed = spd;
@@ -22,6 +28,8 @@ public class BallistaProjectile : MonoBehaviour
         startPosition = transform.position;
         burstDamage = burst;
         burstRadius = burstRad;
+        useGravity = gravity;
+        velocity = direction * speed;
         initialized = true;
     }
 
@@ -29,8 +37,24 @@ public class BallistaProjectile : MonoBehaviour
     {
         if (!initialized) return;
 
-        float step = speed * Time.deltaTime;
+        float step;
         Vector3 oldPos = transform.position;
+
+        if (useGravity)
+        {
+            // Apply gravity to velocity
+            velocity += Vector3.down * gravityStrength * Time.deltaTime;
+            direction = velocity.normalized;
+            step = velocity.magnitude * Time.deltaTime;
+
+            // Orient projectile along velocity
+            if (velocity.sqrMagnitude > 0.01f)
+                transform.rotation = Quaternion.LookRotation(velocity);
+        }
+        else
+        {
+            step = speed * Time.deltaTime;
+        }
 
         // Raycast along travel path to catch fast-moving hits
         if (Physics.Raycast(oldPos, direction, out RaycastHit hit, step))
@@ -72,9 +96,45 @@ public class BallistaProjectile : MonoBehaviour
 
         transform.position = oldPos + direction * step;
 
-        if (Vector3.Distance(startPosition, transform.position) >= maxRange)
+        if (useGravity)
         {
-            Destroy(gameObject);
+            totalDistanceTraveled += step;
+
+            // Destroy if hit ground
+            if (transform.position.y < 0.05f)
+            {
+                Debug.Log($"[BallistaProjectile] Hit ground at {transform.position}");
+                if (burstDamage && burstRadius > 0)
+                {
+                    BurstDamageVFX.Spawn(transform.position, burstRadius);
+                    var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+                    foreach (var nearby in allEnemies)
+                    {
+                        if (nearby.IsDead) continue;
+                        float dist = Vector3.Distance(transform.position, nearby.transform.position);
+                        if (dist <= burstRadius)
+                        {
+                            nearby.TakeDamage(damage / 2);
+                        }
+                    }
+                }
+                Destroy(gameObject);
+                return;
+            }
+
+            // Range limit based on total distance traveled
+            if (totalDistanceTraveled >= maxRange)
+            {
+                Destroy(gameObject);
+                return;
+            }
+        }
+        else
+        {
+            if (Vector3.Distance(startPosition, transform.position) >= maxRange)
+            {
+                Destroy(gameObject);
+            }
         }
     }
 

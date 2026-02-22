@@ -208,9 +208,10 @@ public class BuildModeManager : MonoBehaviour
     {
         if (IsBuildMode)
         {
-            Debug.Log("[BuildModeManager] Dawn arrived — auto-exiting build mode.");
+            Debug.Log("[BuildModeManager] Dawn arrived — auto-exiting build mode. timeScale=1.");
             // Direct exit without banner — dawn is the signal
             IsBuildMode = false;
+            Time.timeScale = 1f;
             OnBuildModeEnded?.Invoke();
         }
         buildPhaseReady = false;
@@ -229,7 +230,8 @@ public class BuildModeManager : MonoBehaviour
 
         IsBuildMode = true;
         IsIdleSpeedup = false;
-        Debug.Log($"[BuildModeManager] Build mode STARTED. Wall cost={WallCost}g. Time x0.1. Press B to exit.");
+        Time.timeScale = 0.1f;
+        Debug.Log($"[BuildModeManager] Build mode STARTED. Wall cost={WallCost}g. timeScale=0.1. Press B to exit.");
         OnBuildModeStarted?.Invoke();
 
         // Auto-start ghost placement
@@ -247,7 +249,8 @@ public class BuildModeManager : MonoBehaviour
         IsBuildMode = false;
         buildPhaseReady = false;
         buildPhaseActive = false;
-        Debug.Log("[BuildModeManager] Build mode ENDED.");
+        Time.timeScale = 1f;
+        Debug.Log("[BuildModeManager] Build mode ENDED. timeScale=1.");
         GameHUD.ShowBanner("BUILD COMPLETE", EXIT_BANNER_DURATION);
         OnBuildModeEnded?.Invoke();
     }

@@ -91,8 +91,9 @@ public class GameManager : MonoBehaviour
     {
         if (CurrentState == GameState.Playing)
         {
+            // Use unscaledDeltaTime so build mode timeScale doesn't double-apply with TimeMultiplier
             float timeMult = BuildModeManager.Instance != null ? BuildModeManager.Instance.TimeMultiplier : 1f;
-            GameTime += Time.deltaTime * timeMult;
+            GameTime += Time.unscaledDeltaTime * timeMult;
         }
 
         // ESC is handled by PauseMenu overlay
@@ -150,8 +151,9 @@ public class GameManager : MonoBehaviour
         if (CurrentState == GameState.Paused)
         {
             CurrentState = GameState.Playing;
-            Time.timeScale = 1f;
-            Debug.Log("[GameManager] Unpaused.");
+            // Restore correct timeScale: 0.1 if in build mode, 1.0 otherwise
+            Time.timeScale = (BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildMode) ? 0.1f : 1f;
+            Debug.Log($"[GameManager] Unpaused. timeScale={Time.timeScale}");
         }
         else
         {
