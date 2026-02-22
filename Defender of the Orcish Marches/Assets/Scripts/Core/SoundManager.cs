@@ -26,7 +26,7 @@ public class SoundManager : MonoBehaviour
     [SerializeField] private AudioClip attackStart;
 
     [Header("Music")]
-    [SerializeField] private AudioClip[] musicTracks;
+    private AudioClip[] musicTracks;
 
     [Header("Volume")]
     [SerializeField] [Range(0f, 1f)] private float sfxVolume = 0.5f;
@@ -52,7 +52,10 @@ public class SoundManager : MonoBehaviour
         musicSource.loop = false; // We handle track advancement manually
         musicSource.volume = musicVolume;
 
-        Debug.Log("[SoundManager] Instance set in Awake.");
+        // Load all music tracks from Resources/Music/
+        musicTracks = Resources.LoadAll<AudioClip>("Music");
+        System.Array.Sort(musicTracks, (a, b) => string.Compare(a.name, b.name, System.StringComparison.Ordinal));
+        Debug.Log($"[SoundManager] Instance set in Awake. Loaded {musicTracks.Length} music tracks from Resources/Music: [{string.Join(", ", System.Array.ConvertAll(musicTracks, t => t.name))}]");
     }
 
     private void OnEnable()
