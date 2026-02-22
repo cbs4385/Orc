@@ -186,6 +186,8 @@ public class TutorialManager : MonoBehaviour
                 spriteName = "tut_wallgate",
                 body = "When the <b>Build Phase</b> begins at sunset, wall placement starts automatically " +
                        "(if you have an engineer and enough gold).\n\n" +
+                       "Time slows to <b>10%</b> during build mode — all units and timers run at reduced speed " +
+                       "while you plan your defenses.\n\n" +
                        "A green <b>ghost wall</b> follows your cursor. " +
                        "It snaps to existing walls when close enough.\n\n" +
                        "  <b>Left Click</b> — place a wall (costs gold)\n" +
@@ -313,6 +315,19 @@ public class TutorialManager : MonoBehaviour
                        "and use the ballista to thin enemy ranks before they arrive.\n\n" +
                        "When the enemy path is blocked by walls, they will focus their attacks " +
                        "on the weakest wall to try to break through."
+            },
+            new TutorialPage
+            {
+                title = "Nightmare Difficulty",
+                spriteName = "tut_ballista",
+                body = "On <b>Nightmare</b> difficulty, you experience the battle from the scorpio itself.\n\n" +
+                       "The camera switches to a <b>first-person view</b> mounted on the ballista. " +
+                       "Move the mouse to aim — the scorpio rotates and tilts to follow your aim.\n\n" +
+                       "Bolts fire in a <b>gravity arc</b>, so aim above distant targets.\n\n" +
+                       "During <b>Build Mode</b>, the camera switches back to the overhead view " +
+                       "for wall placement, then returns to FPS when building ends.\n\n" +
+                       "You start with fewer resources but more menials to compensate. " +
+                       "Press <b>Tab</b> to switch between ballistas."
             },
             new TutorialPage
             {
