@@ -1,6 +1,43 @@
 # Changelog
 
-##0.10.2
+## 0.10.4
+
+### Bug Fixes
+- Fixed enemies squeezing through gaps between intact wall segments by adding runtime gap detection in EnemyMovement that redirects enemies to attack the nearest wall instead
+- Fixed Build Phase banner appearing when no living engineer is available or player can't afford walls
+
+## 0.10.3
+
+### Bug Reporting
+- Added in-game bug report system accessible from the main menu ("REPORT BUG" button)
+- Bug reports are emailed via SMTP with user comments and attached game logs
+- BugReportPanel builds its own UI overlay with comments input, submit/cancel buttons, and sending status
+- BugReportConfig ScriptableObject stores SMTP credentials and recipient settings
+- Sending runs on a background thread to avoid freezing the UI
+
+### Log Capture
+- Added LogCapture singleton that persists across scenes (DontDestroyOnLoad)
+- Captures all Debug.Log/Warning/Error messages to a persistent `game_log.txt` file
+- Logs session header with version, platform, OS, GPU, RAM, and difficulty
+- Auto-flushes every 5 seconds; truncates at 5MB to prevent unbounded growth
+- Log file is zipped and attached to bug reports
+
+### Diagnostics
+- Added detailed combat logging to Defender, Crossbowman, and Wizard (damage values, distances)
+- Added damage-taken logging to Enemy, Wall, and Menial (HP before/after, position)
+- Added initialization and movement logging to EnemyAttack and EnemyMovement (targets, breach pathing, distances)
+- Added logging to all EnemyAttack paths: melee, ranged, suicide (per-target-type breakdown)
+- Added logging to Ballista (init stats, firing events, upgrades applied)
+- Added logging to WallManager (wall registration, breach detection with wall names/positions)
+- Added logging to RefugeeSpawner (init params, spawn positions, power-up assignments)
+- Added logging to TreasurePickup (collection value and position)
+- Added logging to Menial (spawn stats, return-home events, damage taken)
+- Added null-guard error logs for missing prefabs in Crossbowman, Ballista, and RefugeeSpawner
+
+### Build System
+- Added link.xml to preserve assemblies needed for SMTP/email in IL2CPP builds
+
+## 0.10.2
 
 ### Tutorial
 - Added Nightmare Difficulty page explaining FPS camera, scorpio aiming, and gravity arc projectiles

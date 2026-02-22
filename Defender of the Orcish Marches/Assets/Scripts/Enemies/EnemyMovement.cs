@@ -22,6 +22,9 @@ public class EnemyMovement : MonoBehaviour
     public bool IsRetreating { get; private set; }
     private float retreatMapRadius;
 
+    // Gap blocking — prevents enemies from squeezing through wall gaps
+    private bool gapBlocked;
+
     /// <summary>Fired when a retreating enemy reaches the west map edge.</summary>
     public Action<Enemy> OnReachedRetreatEdge;
 
@@ -31,9 +34,9 @@ public class EnemyMovement : MonoBehaviour
         enemy = GetComponent<Enemy>();
     }
 
-    // Enemies use a larger NavMesh radius so they cannot squeeze through the small
-    // gaps between adjacent wall towers. Menials/defenders keep default radius (0.5)
-    // and CAN pass through, allowing them to exit/enter the courtyard.
+    // Larger avoidance radius for enemies. Note: NavMeshAgent.radius only affects
+    // local avoidance (steering), NOT pathfinding clearance. Wall gaps are blocked
+    // by the gap-detection logic in Update() which redirects enemies to attack walls.
     private const float ENEMY_NAV_RADIUS = 0.65f;
 
     private void Start()
@@ -66,10 +69,41 @@ public class EnemyMovement : MonoBehaviour
             return;
         }
 
+        // Prevent enemies from squeezing through gaps between intact wall segments.
+        // NavMeshAgent.radius only controls avoidance, NOT pathfinding clearance, so
+        // the pathfinder routes enemies through gaps that are physically too narrow.
+        // If the enemy is close to an intact wall and NOT near any breach, redirect.
+        if (agent.isOnNavMesh && WallManager.Instance != null && !gapBlocked)
+        {
+            Wall nearestIntactWall = WallManager.Instance.GetNearestWall(transform.position);
+            if (nearestIntactWall != null)
+            {
+                float distToWall = Vector3.Distance(transform.position, nearestIntactWall.transform.position);
+                if (distToWall < WallCorners.WALL_SPACING)
+                {
+                    // Near an intact wall — check if there's a breach nearby (destroyed wall).
+                    // If there IS a nearby breach, the enemy is legitimately pathing through it.
+                    bool nearBreach = IsNearDestroyedWall(transform.position);
+                    if (!nearBreach)
+                    {
+                        gapBlocked = true;
+                        currentTarget = nearestIntactWall.transform;
+                        Vector3 wallPos = nearestIntactWall.transform.position;
+                        Vector3 outward = (wallPos - TowerPosition).normalized;
+                        Vector3 exteriorPoint = wallPos + outward * 1f;
+                        exteriorPoint.y = 0;
+                        agent.SetDestination(exteriorPoint);
+                        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} blocked from wall gap near {nearestIntactWall.name} — attacking wall instead");
+                    }
+                }
+            }
+        }
+
         retargetTimer -= Time.deltaTime;
         if (retargetTimer <= 0)
         {
             retargetTimer = RETARGET_INTERVAL;
+            gapBlocked = false; // Re-evaluate on next retarget cycle
 
             // If the agent has a partial path (walls blocking), attack the nearest wall
             if (agent.isOnNavMesh && !agent.pathPending && agent.pathStatus == NavMeshPathStatus.PathPartial)
@@ -342,6 +376,22 @@ public class EnemyMovement : MonoBehaviour
 
         Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} nearest breach: {breachWallName} at {best}, dist={bestDist:F1}");
         return best;
+    }
+
+    /// <summary>
+    /// Returns true if there is a destroyed wall within WALL_SPACING distance of pos.
+    /// Used to distinguish wall gaps (no breach nearby) from breach areas.
+    /// </summary>
+    private bool IsNearDestroyedWall(Vector3 pos)
+    {
+        if (WallManager.Instance == null) return false;
+        foreach (var wall in WallManager.Instance.AllWalls)
+        {
+            if (!wall.IsDestroyed) continue;
+            if (Vector3.Distance(pos, wall.transform.position) < WallCorners.WALL_SPACING * 1.5f)
+                return true;
+        }
+        return false;
     }
 
     public void Stop()

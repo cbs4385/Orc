@@ -197,6 +197,21 @@ public class BuildModeManager : MonoBehaviour
     private void StartBuildPhase()
     {
         if (buildPhaseActive) return;
+
+        // Don't show the build phase banner if there's no engineer or no gold
+        if (!HasLivingEngineer())
+        {
+            Debug.Log("[BuildModeManager] Build phase skipped — no living engineer.");
+            buildPhaseReady = false;
+            return;
+        }
+        if (!CanAffordWall())
+        {
+            Debug.Log("[BuildModeManager] Build phase skipped — can't afford walls.");
+            buildPhaseReady = false;
+            return;
+        }
+
         buildPhaseActive = true;
         IsIdleSpeedup = false;
         buildPhaseBannerTimer = BUILD_PHASE_BANNER_DURATION;
