@@ -136,14 +136,10 @@ public class SoundManager : MonoBehaviour
                 shuffledOrder[i] = i;
         }
 
-        // Use System.Random for guaranteed per-shuffle entropy — separate from
-        // UnityEngine.Random so gameplay randomness isn't affected
-        var rng = new System.Random();
-
-        // Fisher-Yates shuffle
+        // Fisher-Yates shuffle using UnityEngine.Random (properly seeded per play session)
         for (int i = shuffledOrder.Length - 1; i > 0; i--)
         {
-            int j = rng.Next(0, i + 1);
+            int j = Random.Range(0, i + 1);
             int tmp = shuffledOrder[i];
             shuffledOrder[i] = shuffledOrder[j];
             shuffledOrder[j] = tmp;
@@ -153,7 +149,7 @@ public class SoundManager : MonoBehaviour
         // (prevents repeating a song at the boundary between two shuffles or on restart)
         if (musicTracks.Length > 1 && shuffledOrder[0] == lastPlayedTrack)
         {
-            int swapIdx = 1 + rng.Next(shuffledOrder.Length - 1);
+            int swapIdx = 1 + Random.Range(1, shuffledOrder.Length);
             int tmp = shuffledOrder[0];
             shuffledOrder[0] = shuffledOrder[swapIdx];
             shuffledOrder[swapIdx] = tmp;

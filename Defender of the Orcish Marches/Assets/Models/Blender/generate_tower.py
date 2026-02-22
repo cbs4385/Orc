@@ -11,8 +11,6 @@ The tower is the central keep of the orcish fortress:
   - Overhanging corbel ledge with crenellated parapet
   - Raised corner turret posts
   - Entrance doorway on -Y face (south in Blender = -Z in Unity)
-  - Flagpole with banner at the top
-
 In-game, the ScorpioBase (ballista) sits at Y=3.2 on top of this tower.
 Courtyard radius ~3.5, so the ~1.6 footprint leaves ample room.
 
@@ -119,11 +117,11 @@ def join_objects(objects, name):
 #  Materials
 # ──────────────────────────────────────────────
 
-MAT_STONE = MAT_STONE_DK = MAT_STONE_LT = MAT_IRON = MAT_WOOD = MAT_BANNER = None
+MAT_STONE = MAT_STONE_DK = MAT_STONE_LT = MAT_IRON = MAT_WOOD = None
 
 
 def create_materials():
-    global MAT_STONE, MAT_STONE_DK, MAT_STONE_LT, MAT_IRON, MAT_WOOD, MAT_BANNER
+    global MAT_STONE, MAT_STONE_DK, MAT_STONE_LT, MAT_IRON, MAT_WOOD
     # Warm grey stone (main body) -- matches wall palette
     MAT_STONE    = make_material("TowerStone",   (0.50, 0.45, 0.38, 1.0), roughness=0.95)
     # Darker stone for foundation, buttresses, recessed areas
@@ -135,8 +133,6 @@ def create_materials():
                                   roughness=0.4, metallic=0.7)
     # Dark wood for entrance door
     MAT_WOOD     = make_material("TowerWood",    (0.30, 0.18, 0.08, 1.0), roughness=0.85)
-    # Dark red banner
-    MAT_BANNER   = make_material("TowerBanner",  (0.60, 0.10, 0.08, 1.0), roughness=0.80)
 
 
 # ──────────────────────────────────────────────
@@ -356,18 +352,6 @@ def build_tower():
     parts.append(add_cube("DoorRing", (0, -HB - 0.035, FOUND_TOP + 0.30),
                           (0.06, 0.02, 0.06), MAT_IRON))
 
-    # ── FLAGPOLE + BANNER ──
-    pole_h = 0.50
-    pole_z = MERLON_TOP + 0.05 + pole_h / 2
-    parts.append(add_cylinder("FlagPole", (0, 0, pole_z),
-                               (0.025, 0.025, pole_h), MAT_IRON, vertices=8))
-    # Banner hanging from pole top
-    flag_w = 0.28
-    flag_h = 0.18
-    flag_z = pole_z + pole_h / 2 - flag_h / 2 - 0.04
-    parts.append(add_cube("Banner", (flag_w / 2 + 0.025, 0, flag_z),
-                          (flag_w, 0.015, flag_h), MAT_BANNER))
-
     # ── APPLY AND JOIN ──
     for p in parts:
         apply_modifiers(p)
@@ -419,7 +403,7 @@ def main():
     print("  Origin at base center (ground level)")
     print("  Stone body, corner buttresses, arrow slits")
     print("  Overhanging corbel, crenellated parapet")
-    print("  Entrance door, iron bands, flagpole + banner")
+    print("  Entrance door, iron bands")
     print("  Static mesh -- no armature or animations")
     print("")
     print("  To export for Unity, run export_tower.py")

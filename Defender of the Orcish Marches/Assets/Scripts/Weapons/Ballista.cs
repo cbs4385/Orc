@@ -145,7 +145,9 @@ public class Ballista : MonoBehaviour
         if (Mouse.current == null) return;
         Vector2 delta = Mouse.current.delta.ReadValue();
         yaw += delta.x * 0.2f;
-        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        // Read pitch from NightmareCamera so the ballista model visually tilts
+        float pitch = NightmareCamera.Instance != null ? NightmareCamera.Instance.Pitch : 0f;
+        transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
     }
 
     private void Fire()

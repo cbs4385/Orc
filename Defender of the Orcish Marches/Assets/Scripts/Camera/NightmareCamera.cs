@@ -152,11 +152,9 @@ public class NightmareCamera : MonoBehaviour
         pitch -= delta.y * sensitivity * 0.1f;
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
-        // Apply pitch as local X rotation on camera transform
-        if (fpsCameraObj != null)
-        {
-            fpsCameraObj.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
-        }
+        // Pitch is applied by Ballista.RotateFPS() on the ballista root transform.
+        // Camera inherits pitch from parent chain (Ballista → NightmareCamera → FPS Camera),
+        // so no local rotation needed here.
     }
 
     /// <summary>Reparent camera to a ballista's firePoint.</summary>
@@ -175,8 +173,6 @@ public class NightmareCamera : MonoBehaviour
         transform.localRotation = Quaternion.identity;
 
         pitch = 0f;
-        if (fpsCameraObj != null)
-            fpsCameraObj.transform.localRotation = Quaternion.identity;
 
         Debug.Log($"[NightmareCamera] Attached to ballista: {ballista.name} at {ballista.transform.position}");
     }

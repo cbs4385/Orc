@@ -47,7 +47,7 @@ public static class GameSettings
             case Difficulty.Easy:      return 4;
             case Difficulty.Normal:    return 3;
             case Difficulty.Hard:      return 2;
-            case Difficulty.Nightmare: return 1;
+            case Difficulty.Nightmare: return 3;
             default:                   return 3;
         }
     }
