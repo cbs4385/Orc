@@ -126,6 +126,7 @@ public class Menial : MonoBehaviour
     private void Start()
     {
         wanderTimer = Random.Range(1f, WANDER_INTERVAL_MAX);
+        FriendlyIndicator.Create(transform, new Color(0.2f, 0.9f, 0.2f)); // Green
         Debug.Log($"[Menial] Spawned at {transform.position}, HP={maxHP}, speed={moveSpeed}, state={CurrentState}");
     }
 

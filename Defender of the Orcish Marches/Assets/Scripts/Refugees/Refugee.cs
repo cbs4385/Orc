@@ -72,6 +72,7 @@ public class Refugee : MonoBehaviour
 
     private void Start()
     {
+        FriendlyIndicator.Create(transform, new Color(0.9f, 0.9f, 0.2f)); // Yellow
         // Navigate to tower center
         if (agent.isOnNavMesh)
             agent.SetDestination(GameManager.FortressCenter);

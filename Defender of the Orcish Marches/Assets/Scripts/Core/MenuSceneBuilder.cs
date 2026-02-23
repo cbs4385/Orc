@@ -122,7 +122,7 @@ public class MenuSceneBuilder : MonoBehaviour
         if (splashSprite != null)
         {
             bgImage.sprite = splashSprite;
-            bgImage.preserveAspect = false;
+            bgImage.preserveAspect = true;
             Debug.Log("[MenuSceneBuilder] Splash image loaded successfully.");
         }
         else
@@ -157,28 +157,37 @@ public class MenuSceneBuilder : MonoBehaviour
         titleRect.sizeDelta = new Vector2(1200, 200);
         titleRect.anchoredPosition = Vector2.zero;
 
-        // Button panel (horizontal bar across the top)
+        // Button panel (vertical column on the left side)
         var panelObj = new GameObject("ButtonPanel");
         panelObj.transform.SetParent(canvasObj.transform, false);
         var panelRect = panelObj.AddComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.1f, 0.92f);
-        panelRect.anchorMax = new Vector2(0.9f, 0.98f);
-        panelRect.offsetMin = Vector2.zero;
-        panelRect.offsetMax = Vector2.zero;
-        var hlg = panelObj.AddComponent<HorizontalLayoutGroup>();
-        hlg.spacing = 5;
-        hlg.childAlignment = TextAnchor.MiddleCenter;
-        hlg.childControlWidth = true;
-        hlg.childControlHeight = true;
-        hlg.childForceExpandWidth = true;
-        hlg.childForceExpandHeight = true;
+        panelRect.anchorMin = new Vector2(0f, 0.08f);
+        panelRect.anchorMax = new Vector2(0f, 0.88f);
+        panelRect.pivot = new Vector2(0f, 0.5f);
+        panelRect.sizeDelta = new Vector2(220, 0);
+        panelRect.anchoredPosition = new Vector2(20, 0);
+        var vlg = panelObj.AddComponent<VerticalLayoutGroup>();
+        vlg.spacing = 10;
+        vlg.childAlignment = TextAnchor.MiddleCenter;
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = true;
+        vlg.childForceExpandWidth = true;
+        vlg.childForceExpandHeight = true;
 
-        // Buttons
+        // Main buttons on left
         var playBtn = CreateMenuButton("PlayButton", "PLAY", panelObj.transform);
         var tutorialBtn = CreateMenuButton("TutorialButton", "TUTORIAL", panelObj.transform);
         var optionsBtn = CreateMenuButton("OptionsButton", "OPTIONS", panelObj.transform);
         var exitBtn = CreateMenuButton("ExitButton", "EXIT", panelObj.transform);
-        var bugReportBtn = CreateMenuButton("BugReportButton", "REPORT BUG", panelObj.transform);
+
+        // Bug report button (top-right corner)
+        var bugReportBtn = CreateMenuButton("BugReportButton", "REPORT BUG", canvasObj.transform);
+        var bugRect = bugReportBtn.GetComponent<RectTransform>();
+        bugRect.anchorMin = new Vector2(1f, 1f);
+        bugRect.anchorMax = new Vector2(1f, 1f);
+        bugRect.pivot = new Vector2(1f, 1f);
+        bugRect.sizeDelta = new Vector2(200, 50);
+        bugRect.anchoredPosition = new Vector2(-20, -10);
 
         // --- Difficulty selector (vertical, right edge) ---
         var diffPanel = new GameObject("DifficultyPanel");

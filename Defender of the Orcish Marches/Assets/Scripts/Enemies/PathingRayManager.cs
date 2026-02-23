@@ -193,6 +193,11 @@ public class PathingRayManager : MonoBehaviour
     /// Scans ±CHEAPEST_SEARCH_ANGLE from the direct approach ray and picks the
     /// cheapest direction. Among equal-cost rays the closest to direct wins.
     /// The returned wall is the INNERMOST wall on that ray (first barrier to break).
+    ///
+    /// IMPORTANT: Wall crossings are filtered by the enemy's distance from the fortress
+    /// center — walls that are further out than the enemy (i.e. behind it) are NOT counted.
+    /// This prevents enemies that have already rounded outer walls from detouring sideways
+    /// to avoid wall crossings that are no longer relevant.
     /// </summary>
     public (int rayIndex, int cost, Wall firstWall) GetBestRay(Vector3 enemyPos)
     {
@@ -202,17 +207,23 @@ public class PathingRayManager : MonoBehaviour
 
         int directRay = Mathf.RoundToInt(enemyAngle) % RAY_COUNT;
 
-        // Start with the direct approach ray
+        // Enemy distance from fortress center — only count walls closer than this
+        float enemyDist = new Vector2(toEnemy.x, toEnemy.z).magnitude;
+        Vector2 origin2D = new Vector2(GameManager.FortressCenter.x, GameManager.FortressCenter.z);
+
         int bestRay = directRay;
-        int bestCost = rayCosts[directRay];
+        int bestCost = int.MaxValue;
+        Wall bestWall = null;
         float bestAngleDiff = 0f;
 
-        // Scan ±CHEAPEST_SEARCH_ANGLE for a cheaper ray
+        // Scan ±CHEAPEST_SEARCH_ANGLE for a cheaper ray (per-enemy filtered costs)
         for (int offset = -CHEAPEST_SEARCH_ANGLE; offset <= CHEAPEST_SEARCH_ANGLE; offset++)
         {
             int i = ((directRay + offset) % RAY_COUNT + RAY_COUNT) % RAY_COUNT;
-            int cost = rayCosts[i];
             float angleDiff = Mathf.Abs(offset);
+
+            // Count wall crossings on this ray, only walls between center and enemy
+            var (cost, wall) = CountWallsOnRayFiltered(i, origin2D, enemyDist);
 
             // Better if cheaper, or same cost but closer to direct approach
             if (cost < bestCost || (cost == bestCost && angleDiff < bestAngleDiff))
@@ -220,32 +231,87 @@ public class PathingRayManager : MonoBehaviour
                 bestCost = cost;
                 bestRay = i;
                 bestAngleDiff = angleDiff;
+                bestWall = wall;
             }
         }
 
-        Wall bestWall = bestRay >= 0 ? rayTargetWall[bestRay] : null;
-
         // Diagnostic logging
-        int directCost = rayCosts[directRay];
-        string directWallName = rayTargetWall[directRay] != null ? rayTargetWall[directRay].name : "none";
+        var (directCost, directWall) = CountWallsOnRayFiltered(directRay, origin2D, enemyDist);
+        string directWallName = directWall != null ? directWall.name : "none";
         string bestWallName = bestWall != null ? $"{bestWall.name} at {bestWall.transform.position}" : "none";
+        int precomputedDirectCost = rayCosts[directRay];
 
         string neighborhood = "";
         for (int offset = -5; offset <= 5; offset++)
         {
             int ri = ((directRay + offset) % RAY_COUNT + RAY_COUNT) % RAY_COUNT;
-            neighborhood += $"{ri}°={rayCosts[ri]} ";
+            var (nc, _) = CountWallsOnRayFiltered(ri, origin2D, enemyDist);
+            neighborhood += $"{ri}°={nc}({rayCosts[ri]}) ";
         }
 
         string decision = bestRay == directRay
             ? "DIRECT"
             : $"DETOUR to {bestRay}° (offset={bestAngleDiff:F0}°, cost {directCost}→{bestCost})";
-        Debug.Log($"[PathingRayManager] GetBestRay: enemyPos={enemyPos}, enemyAngle={enemyAngle:F1}°. " +
-            $"Direct ray {directRay}°: cost={directCost} wall={directWallName}. " +
+        Debug.Log($"[PathingRayManager] GetBestRay: enemyPos={enemyPos}, enemyAngle={enemyAngle:F1}°, enemyDist={enemyDist:F1}. " +
+            $"Direct ray {directRay}°: filteredCost={directCost} (precomputed={precomputedDirectCost}) wall={directWallName}. " +
             $"Decision: {decision}, cost={bestCost} wall={bestWallName}. " +
-            $"Nearby costs: [{neighborhood.TrimEnd()}]");
+            $"Nearby filtered(precomputed) costs: [{neighborhood.TrimEnd()}]");
 
         return (bestRay, bestCost, bestWall);
+    }
+
+    /// <summary>
+    /// Count wall crossings on a ray, only including walls whose center is closer
+    /// to the fortress than maxDistFromCenter. This filters out walls the enemy
+    /// has already passed (outer wall layers behind it).
+    /// Returns the count and the innermost wall (closest to fortress center).
+    /// </summary>
+    private (int count, Wall innermost) CountWallsOnRayFiltered(int rayIndex, Vector2 origin2D, float maxDistFromCenter)
+    {
+        Vector2 dir2D = new Vector2(rayDirections[rayIndex].x, rayDirections[rayIndex].z);
+
+        int wallCount = 0;
+        Wall innermost = null;
+        float innermostDist = float.MaxValue;
+
+        if (WallManager.Instance == null) return (0, null);
+
+        foreach (var wall in WallManager.Instance.AllWalls)
+        {
+            if (wall.IsDestroyed || wall.IsUnderConstruction) continue;
+            if (!wall.gameObject.activeInHierarchy) continue;
+
+            Vector2 wallCenter = new Vector2(wall.transform.position.x, wall.transform.position.z);
+            float wallDistFromCenter = Vector2.Distance(wallCenter, origin2D);
+
+            // Skip walls at or beyond the enemy's distance from center (behind the enemy)
+            if (wallDistFromCenter >= maxDistFromCenter) continue;
+
+            Vector3 wallRight3D = wall.transform.right;
+            float offset = WallCorners.TOWER_OFFSET;
+            Vector2 P = wallCenter - new Vector2(wallRight3D.x, wallRight3D.z) * offset;
+            Vector2 Q = wallCenter + new Vector2(wallRight3D.x, wallRight3D.z) * offset;
+
+            Vector2 S = Q - P;
+            float denom = dir2D.x * S.y - dir2D.y * S.x;
+            if (Mathf.Abs(denom) < 1e-6f) continue;
+
+            Vector2 OP = P - origin2D;
+            float t = (OP.x * S.y - OP.y * S.x) / denom;
+            float u = (OP.x * dir2D.y - OP.y * dir2D.x) / denom;
+
+            if (t > 0f && u >= 0f && u < 1f)
+            {
+                wallCount++;
+                if (wallDistFromCenter < innermostDist)
+                {
+                    innermostDist = wallDistFromCenter;
+                    innermost = wall;
+                }
+            }
+        }
+
+        return (wallCount, innermost);
     }
 
     /// <summary>Get the world-space direction of a ray by index.</summary>

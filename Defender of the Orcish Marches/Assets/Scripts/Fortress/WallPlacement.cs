@@ -13,6 +13,8 @@ public class WallPlacement : MonoBehaviour
     private float ghostRotationY;
     private bool subscribedToBuildMode;
     private bool ghostIsRed; // tracks current ghost tint to avoid per-frame material writes
+    private float defaultGhostScaleX = 1f;
+    private float currentSnapScaleX = 1f; // scaleX from latest snap result
 
     public bool IsPlacing => isPlacing;
 
@@ -98,6 +100,7 @@ public class WallPlacement : MonoBehaviour
         Quaternion finalRot = Quaternion.Euler(0, ghostRotationY, 0);
 
         // Use corner snap solver for wall-to-wall alignment
+        currentSnapScaleX = defaultGhostScaleX;
         if (WallManager.Instance != null && ghostWall != null)
         {
             Vector3 ghostScale = ghostWall.transform.localScale;
@@ -107,6 +110,8 @@ public class WallPlacement : MonoBehaviour
             {
                 finalPos = snap.position;
                 finalRot = snap.rotation;
+                if (snap.isRingClose)
+                    currentSnapScaleX = snap.scaleX;
             }
         }
 
@@ -115,6 +120,9 @@ public class WallPlacement : MonoBehaviour
         {
             ghostWall.transform.position = new Vector3(finalPos.x, 1f, finalPos.z);
             ghostWall.transform.rotation = finalRot;
+            // Stretch ghost for diagonal ring-close, reset otherwise
+            var gs = ghostWall.transform.localScale;
+            ghostWall.transform.localScale = new Vector3(currentSnapScaleX, gs.y, gs.z);
 
             // Refresh ghost's WallCorners so gizmos draw correctly
             var ghostCorners = ghostWall.GetComponent<WallCorners>();
@@ -134,7 +142,7 @@ public class WallPlacement : MonoBehaviour
         // Left-click to purchase and place wall
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            TryPurchaseAndPlace(new Vector3(finalPos.x, 1f, finalPos.z), finalRot);
+            TryPurchaseAndPlace(new Vector3(finalPos.x, 1f, finalPos.z), finalRot, currentSnapScaleX);
         }
     }
 
@@ -187,6 +195,8 @@ public class WallPlacement : MonoBehaviour
                     mats[i].SetColor("_BaseColor", ghostColor);
                 rend.materials = mats;
             }
+            defaultGhostScaleX = ghostWall.transform.localScale.x;
+            currentSnapScaleX = defaultGhostScaleX;
             Debug.Log($"[WallPlacement] Ghost spawned at {initialPos}.");
         }
         else
@@ -195,7 +205,7 @@ public class WallPlacement : MonoBehaviour
         }
     }
 
-    private void TryPurchaseAndPlace(Vector3 position, Quaternion rotation)
+    private void TryPurchaseAndPlace(Vector3 position, Quaternion rotation, float scaleX = 1f)
     {
         if (BuildModeManager.Instance == null || !BuildModeManager.Instance.CanAffordWall())
         {
@@ -215,8 +225,8 @@ public class WallPlacement : MonoBehaviour
         // Place the wall
         if (WallManager.Instance != null)
         {
-            WallManager.Instance.PlaceWall(position, rotation);
-            Debug.Log($"[WallPlacement] Wall purchased ({cost}g) and placed at {position}, rotation={rotation.eulerAngles}.");
+            WallManager.Instance.PlaceWall(position, rotation, scaleX);
+            Debug.Log($"[WallPlacement] Wall purchased ({cost}g) and placed at {position}, rotation={rotation.eulerAngles}, scaleX={scaleX:F3}.");
         }
 
         // Notify BuildModeManager (increments purchase count for cost scaling)

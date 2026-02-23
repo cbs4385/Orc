@@ -318,6 +318,34 @@ public class MenialManager : MonoBehaviour
         return menial;
     }
 
+    /// <summary>
+    /// Logs full menial state for game state snapshot.
+    /// </summary>
+    public void LogMenialState()
+    {
+        allMenials.RemoveAll(m => m == null || m.IsDead);
+        int idle = 0, collecting = 0, returning = 0, fleeing = 0, enteringTower = 0, pickingUp = 0, clearing = 0;
+        Debug.Log($"[MenialManager] === MENIAL STATE ({allMenials.Count} alive) ===");
+        foreach (var m in allMenials)
+        {
+            if (m == null) continue;
+            var t = m.transform;
+            Debug.Log($"[MenialManager] MENIAL: state={m.CurrentState} hp={m.gameObject.name} pos=({t.position.x:F2},{t.position.y:F2},{t.position.z:F2}) outsideWalls={m.IsOutsideWalls}");
+            switch (m.CurrentState)
+            {
+                case MenialState.Idle: idle++; break;
+                case MenialState.Collecting: collecting++; break;
+                case MenialState.Returning: returning++; break;
+                case MenialState.Fleeing: fleeing++; break;
+                case MenialState.EnteringTower: enteringTower++; break;
+                case MenialState.PickingUp: pickingUp++; break;
+                case MenialState.ClearingVegetation: clearing++; break;
+            }
+        }
+        Debug.Log($"[MenialManager] SUMMARY: idle={idle} collecting={collecting} returning={returning} fleeing={fleeing} tower={enteringTower} pickingUp={pickingUp} clearing={clearing}");
+        Debug.Log("[MenialManager] === END MENIAL STATE ===");
+    }
+
     public int GetIdleMenialCount()
     {
         int count = 0;

@@ -176,6 +176,9 @@ public class GameHUD : MonoBehaviour
 
         bannerText.alignment = TextAlignmentOptions.Center;
         bannerText.fontSize = 42;
+        bannerText.enableAutoSizing = true;
+        bannerText.fontSizeMin = 20;
+        bannerText.fontSizeMax = 42;
         bannerText.color = new Color(1f, 0.85f, 0.2f);
         bannerText.fontStyle = FontStyles.Bold;
         bannerText.raycastTarget = false;

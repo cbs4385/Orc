@@ -15,6 +15,7 @@ public static class CornerSnapSolver
         public Quaternion rotation;
         public float score;
         public bool isRingClose;
+        public float scaleX;
     }
 
     // Search radius for candidate wall ends near the mouse
@@ -22,7 +23,8 @@ public static class CornerSnapSolver
     // Max distance from mouse to accept a snap candidate
     private const float MOUSE_ACCEPT_RADIUS = 2.0f;
     // Distance threshold for ring-close detection on the far end
-    private const float RING_CLOSE_RADIUS = 1.0f;
+    // 1.5 to reliably detect diagonal targets (far-end estimate from non-scaled ghost can be off ~0.9 units)
+    private const float RING_CLOSE_RADIUS = 1.5f;
 
     /// <summary>
     /// Main entry point. Finds the best snap position for a new wall segment by aligning
@@ -87,6 +89,7 @@ public static class CornerSnapSolver
                 bool ringClose = false;
                 Vector3 finalPos = candidateCenter;
                 Quaternion finalRot = newRot;
+                float finalScaleX = ghostScale.x;
 
                 int farEndSign = -newEndSign;
                 Vector3 farEndCenter = candidateCenter + newRight * (farEndSign * newHW);
@@ -99,6 +102,7 @@ public static class CornerSnapSolver
                     ringClose = true;
                     finalPos = ringResult.Value.position;
                     finalRot = ringResult.Value.rotation;
+                    finalScaleX = ringResult.Value.scaleX;
                     score += 15f; // Ring-close bonus
                 }
 
@@ -110,7 +114,8 @@ public static class CornerSnapSolver
                         position = ringClose ? finalPos : candidateCenter,
                         rotation = ringClose ? finalRot : newRot,
                         score = score,
-                        isRingClose = ringClose
+                        isRingClose = ringClose,
+                        scaleX = finalScaleX
                     };
                 }
             }
@@ -122,8 +127,9 @@ public static class CornerSnapSolver
     /// <summary>
     /// Try to close a ring by connecting the far end of the new wall to another existing wall's end center.
     /// Computes a bridge rotation from the two target end centers and re-solves position.
+    /// Returns scaleX needed to span the actual distance between the two target centers.
     /// </summary>
-    private static (Vector3 position, Quaternion rotation)? TryRingClose(
+    private static (Vector3 position, Quaternion rotation, float scaleX)? TryRingClose(
         Vector3 farEndCenter, Vector3 nearTargetCenter,
         float newHW, int nearEndSign,
         Wall nearWall, IReadOnlyList<Wall> allWalls)
@@ -160,16 +166,22 @@ public static class CornerSnapSolver
         dir.y = 0;
         if (dir.sqrMagnitude < 0.001f) return null;
 
+        // Compute actual distance and required scaleX to span it
+        float actualDist = dir.magnitude;
+        float requiredScaleX = actualDist / (2f * WallCorners.TOWER_OFFSET);
+
         // Compute rotation so that transform.right = dir.normalized
         Vector3 dirNorm = dir.normalized;
         Vector3 perpForward = new Vector3(-dirNorm.z, 0, dirNorm.x);
         Quaternion bridgeRot = Quaternion.LookRotation(perpForward, Vector3.up);
 
         // Position: near end center of new wall sits on nearTargetCenter
+        // Use half the actual distance (not the default newHW) so both ends align
+        float newHW_ring = actualDist / 2f;
         Vector3 bridgeRight = bridgeRot * Vector3.right;
-        Vector3 bridgeCenter = nearTargetCenter - bridgeRight * (nearEndSign * newHW);
+        Vector3 bridgeCenter = nearTargetCenter - bridgeRight * (nearEndSign * newHW_ring);
 
-        return (bridgeCenter, bridgeRot);
+        return (bridgeCenter, bridgeRot, requiredScaleX);
     }
 
     private static float Dist2D(Vector3 a, Vector3 b)

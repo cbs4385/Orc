@@ -89,6 +89,7 @@ public class Defender : MonoBehaviour
             agent.stoppingDistance = 0.3f;
         }
 
+        FriendlyIndicator.Create(transform, new Color(0.3f, 0.5f, 1f)); // Blue
         Debug.Log($"[Defender] {data.defenderName} initialized, HP={currentHP}");
     }
 

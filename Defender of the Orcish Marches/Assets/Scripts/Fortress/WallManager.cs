@@ -9,6 +9,8 @@ public class WallManager : MonoBehaviour
 
     [Header("Debug — pre-built extension walls for testing")]
     [SerializeField] private bool debugPrebuiltWestWalls;
+    [Tooltip("Recreates the issue 6 layout: 8 extension walls on west side with NW/SW corner angles")]
+    [SerializeField] private bool debugIssue6WestExtensions;
 
     private List<Wall> allWalls = new List<Wall>();
 
@@ -46,6 +48,8 @@ public class WallManager : MonoBehaviour
 
         if (debugPrebuiltWestWalls)
             PlaceDebugWestExtensions();
+        if (debugIssue6WestExtensions)
+            PlaceDebugIssue6Extensions();
 
         // Ensure PathingRayManager exists and compute initial ray costs
         if (PathingRayManager.Instance == null)
@@ -58,6 +62,9 @@ public class WallManager : MonoBehaviour
         {
             PathingRayManager.Instance.Recalculate();
         }
+
+        // Log initial wall state for bug report reproduction
+        LogAllWallState();
     }
 
     /// <summary>
@@ -85,6 +92,40 @@ public class WallManager : MonoBehaviour
             }
         }
         Debug.Log($"[WallManager] Debug: placed {positions.Length} pre-built west extension walls");
+    }
+
+    /// <summary>
+    /// Debug helper: recreates the issue 6 wall layout — 8 extension walls on the west side
+    /// with NW and SW corner angles. Positions captured from tester's scene.
+    /// </summary>
+    private void PlaceDebugIssue6Extensions()
+    {
+        var positions = new (Vector3 pos, float yRot)[]
+        {
+            // 4 vertical west extension walls at x≈-8.1
+            (new Vector3(-8.12f, 1f, -3.63f),  89f),   // West south
+            (new Vector3(-8.12f, 1f, -1.31f),  89f),   // West south-center
+            (new Vector3(-8.27f, 1f,  0.89f),  87f),   // West center
+            (new Vector3(-8.19f, 1f,  3.14f),  90f),   // West north
+            // 2 SW corner angles
+            (new Vector3(-5.37f, 1f, -5.41f), 315f),   // SW inner corner
+            (new Vector3(-7.11f, 1f, -5.44f),  38f),   // SW outer corner
+            // 2 NW corner angles
+            (new Vector3(-7.43f, 1f,  5.26f), 129f),   // NW outer corner
+            (new Vector3(-5.87f, 1f,  7.00f), 313f),   // NW inner corner
+        };
+
+        foreach (var (pos, yRot) in positions)
+        {
+            var go = PlaceWall(pos, Quaternion.Euler(0, yRot, 0));
+            if (go != null)
+            {
+                var wall = go.GetComponent<Wall>();
+                if (wall != null)
+                    wall.Repair(wall.MaxHP); // Instantly complete construction
+            }
+        }
+        Debug.Log($"[WallManager] Debug: placed {positions.Length} issue 6 west extension walls");
     }
 
     public void RegisterWall(Wall wall)
@@ -183,11 +224,30 @@ public class WallManager : MonoBehaviour
         return false;
     }
 
-    public GameObject PlaceWall(Vector3 position, Quaternion rotation = default)
+    /// <summary>
+    /// Logs positions, rotations, scale, and HP of all walls. Output is parseable for game state recreation.
+    /// </summary>
+    public void LogAllWallState()
+    {
+        Debug.Log($"[WallManager] === WALL STATE ({allWalls.Count} walls) ===");
+        foreach (var wall in allWalls)
+        {
+            if (wall == null) continue;
+            var t = wall.transform;
+            var rot = t.rotation.eulerAngles;
+            var scale = t.localScale;
+            Debug.Log($"[WallManager] WALL: name={wall.name} pos=({t.position.x:F4},{t.position.y:F4},{t.position.z:F4}) rot=({rot.x:F1},{rot.y:F1},{rot.z:F1}) scaleX={scale.x:F3} hp={wall.CurrentHP}/{wall.MaxHP} destroyed={wall.IsDestroyed}");
+        }
+        Debug.Log("[WallManager] === END WALL STATE ===");
+    }
+
+    public GameObject PlaceWall(Vector3 position, Quaternion rotation = default, float scaleX = 1f)
     {
         if (wallPrefab == null) return null;
         if (rotation == default) rotation = Quaternion.identity;
         var go = Instantiate(wallPrefab, position, rotation, transform);
+        if (scaleX != 1f)
+            go.transform.localScale = new Vector3(scaleX, 1f, 1f);
         var wall = go.GetComponent<Wall>();
         if (wall != null)
         {
@@ -198,7 +258,7 @@ public class WallManager : MonoBehaviour
             if (TowerPositionManager.Instance != null)
                 TowerPositionManager.Instance.RegisterNewWall(wall);
         }
-        Debug.Log($"[WallManager] Wall placed (under construction) at {position}, rotation={rotation.eulerAngles}.");
+        Debug.Log($"[WallManager] Wall placed (under construction) at {position}, rotation={rotation.eulerAngles}, scaleX={scaleX:F3}.");
         return go;
     }
 }

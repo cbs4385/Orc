@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.12.1
+
+### Bug Fixes — Issue 6: Enemies Walk Through Extension Walls
+- Fixed Enemy NavMesh agent radius stuck at 0.5 instead of intended 0.7 — `NavMesh.CreateSettings()` returns a struct copy so property assignments never persisted; `NavMeshSetup.cs` now uses `SerializedObject` to write directly to `NavMeshAreas.asset`
+- Renamed Enemy agent type from "New Agent 1" to "Enemy" in NavMesh project settings
+- Widened wall NavMeshObstacle to cover full tower-to-tower span (`2×TOWER_OFFSET` width, `2×OCT_APOTHEM` depth) so enemies can't path through exposed tower geometry at unattached wall endpoints
+- Fixed melee enemies detouring sideways after rounding extension walls — `PathingRayManager.GetBestRay()` now filters wall crossings by enemy distance from fortress center, ignoring walls the enemy has already passed; prevents inflated ray costs from outer wall layers causing unnecessary detours
+
+### Diagnostics
+- Added comprehensive game state snapshot system (`GameManager.LogGameSnapshot()`) that dumps all manager states for bug reproduction
+- `EnemySpawnManager.LogSpawnState()` — active enemies, remnants, spawn counts
+- `MenialManager.LogMenialState()` — per-menial state, position, task summary
+- `UpgradeManager.LogUpgradeState()` — all purchase counts
+- Snapshots fire automatically at day start, bug report submit, and scene init
+- Added debug toggle `debugIssue6WestExtensions` on WallManager to reproduce the issue 6 wall layout (8 extension walls on west side with NW/SW corner angles)
+
 ## 0.12.0
 
 ### Recall System

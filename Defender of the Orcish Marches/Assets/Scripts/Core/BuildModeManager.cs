@@ -112,10 +112,11 @@ public class BuildModeManager : MonoBehaviour
                 }
                 else
                 {
-                    if (!HasLivingEngineer())
-                        Debug.Log("[BuildModeManager] Build phase — no living engineer, skipping build mode.");
-                    else
-                        Debug.Log("[BuildModeManager] Build phase — can't afford walls, skipping build mode.");
+                    string reason = !HasLivingEngineer()
+                        ? "No engineer — hire one from Upgrades (U)"
+                        : $"Not enough gold for walls (need {GetWallCost()}g)";
+                    GameHUD.ShowBanner(reason, 4f);
+                    Debug.Log($"[BuildModeManager] Build phase — conditions no longer met: {reason}");
                 }
             }
             return; // don't process build mode inputs during banner
@@ -198,16 +199,18 @@ public class BuildModeManager : MonoBehaviour
     {
         if (buildPhaseActive) return;
 
-        // Don't show the build phase banner if there's no engineer or no gold
-        if (!HasLivingEngineer())
+        WallCost = GetWallCost();
+        bool hasEngineer = HasLivingEngineer();
+        bool canAfford = CanAffordWall();
+
+        if (!hasEngineer || !canAfford)
         {
-            Debug.Log("[BuildModeManager] Build phase skipped — no living engineer.");
-            buildPhaseReady = false;
-            return;
-        }
-        if (!CanAffordWall())
-        {
-            Debug.Log("[BuildModeManager] Build phase skipped — can't afford walls.");
+            // Show skip reason to the player
+            string reason = !hasEngineer
+                ? "No engineer — hire one from Upgrades (U)"
+                : $"Not enough gold for walls (need {WallCost}g)";
+            GameHUD.ShowBanner(reason, 4f);
+            Debug.Log($"[BuildModeManager] Build phase skipped — {reason}");
             buildPhaseReady = false;
             return;
         }

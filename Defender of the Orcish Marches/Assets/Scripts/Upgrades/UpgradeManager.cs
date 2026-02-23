@@ -246,4 +246,17 @@ public class UpgradeManager : MonoBehaviour
         if (!purchaseCounts.ContainsKey(type)) purchaseCounts[type] = 0;
         purchaseCounts[type]++;
     }
+
+    /// <summary>
+    /// Logs all purchase counts for game state snapshot.
+    /// </summary>
+    public void LogUpgradeState()
+    {
+        Debug.Log($"[UpgradeManager] === UPGRADE STATE ({purchaseCounts.Count} types purchased) ===");
+        foreach (var kvp in purchaseCounts)
+        {
+            Debug.Log($"[UpgradeManager] UPGRADE: type={kvp.Key} count={kvp.Value}");
+        }
+        Debug.Log("[UpgradeManager] === END UPGRADE STATE ===");
+    }
 }

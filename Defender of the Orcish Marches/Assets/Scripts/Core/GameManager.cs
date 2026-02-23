@@ -177,4 +177,126 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
     }
+
+    /// <summary>
+    /// Logs a comprehensive game state snapshot for bug report reproduction.
+    /// Call at day start, on bug report submit, and after initial scene setup.
+    /// </summary>
+    public void LogGameSnapshot()
+    {
+        Debug.Log("============================================================");
+        Debug.Log("[GameManager] ========== GAME STATE SNAPSHOT ==========");
+
+        // Core state
+        Debug.Log($"[GameManager] SNAPSHOT: state={CurrentState} gameTime={GameTime:F1} treasure={Treasure} menials={MenialCount} idleMenials={IdleMenialCount} kills={EnemyKills} difficulty={GameSettings.GetDifficultyName()}");
+
+        // Day/Night cycle
+        if (DayNightCycle.Instance != null)
+        {
+            var dnc = DayNightCycle.Instance;
+            Debug.Log($"[GameManager] SNAPSHOT_DNC: day={dnc.DayNumber} phase={dnc.CurrentPhase} progress={dnc.PhaseProgress:F2} remaining={dnc.PhaseTimeRemaining:F1}s phaseDuration={dnc.CurrentPhaseDuration:F1}s");
+        }
+
+        // Daily event
+        if (DailyEventManager.Instance != null && DailyEventManager.Instance.HasActiveEvent)
+        {
+            var evt = DailyEventManager.Instance;
+            Debug.Log($"[GameManager] SNAPSHOT_EVENT: name={evt.CurrentEventName} category={evt.CurrentEventCategory}");
+        }
+
+        // Build mode
+        if (BuildModeManager.Instance != null)
+        {
+            var bm = BuildModeManager.Instance;
+            Debug.Log($"[GameManager] SNAPSHOT_BUILD: isBuildMode={bm.IsBuildMode} isIdleSpeedup={bm.IsIdleSpeedup} wallCost={bm.WallCost} timeScale={Time.timeScale}");
+        }
+
+        // Run stats
+        if (RunStatsTracker.Instance != null)
+        {
+            var rs = RunStatsTracker.Instance;
+            Debug.Log($"[GameManager] SNAPSHOT_STATS: days={rs.Days} kills={rs.Kills} bossKills={rs.BossKills} goldEarned={rs.GoldEarned} hires={rs.Hires} menialsLost={rs.MenialsLost} score={rs.ComputeScore()}");
+        }
+
+        // Walls
+        if (WallManager.Instance != null)
+            WallManager.Instance.LogAllWallState();
+
+        // Defenders
+        LogDefenderState();
+
+        // Enemies / spawn state
+        if (EnemySpawnManager.Instance != null)
+            EnemySpawnManager.Instance.LogSpawnState();
+
+        // Menials
+        if (MenialManager.Instance != null)
+            MenialManager.Instance.LogMenialState();
+
+        // Upgrades
+        if (UpgradeManager.Instance != null)
+            UpgradeManager.Instance.LogUpgradeState();
+
+        // Ballistas
+        LogBallistaState();
+
+        // Loot on ground
+        LogLootState();
+
+        Debug.Log("[GameManager] ========== END GAME STATE SNAPSHOT ==========");
+        Debug.Log("============================================================");
+    }
+
+    private void LogDefenderState()
+    {
+        var defenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
+        int engineers = 0, pikemen = 0, crossbowmen = 0, wizards = 0;
+
+        Debug.Log($"[GameManager] === DEFENDER STATE ({defenders.Length} total) ===");
+        foreach (var d in defenders)
+        {
+            if (d == null || d.IsDead) continue;
+            var t = d.transform;
+            string typeName = d.Data != null ? d.Data.defenderName : d.GetType().Name;
+            Debug.Log($"[GameManager] DEFENDER: type={typeName} pos=({t.position.x:F2},{t.position.y:F2},{t.position.z:F2}) onTower={d.IsOnTower} guarding={d.IsGuarding}");
+
+            if (d is Engineer) engineers++;
+            else if (d is Pikeman) pikemen++;
+            else if (d is Crossbowman) crossbowmen++;
+            else if (d is Wizard) wizards++;
+        }
+        Debug.Log($"[GameManager] DEFENDER_SUMMARY: engineers={engineers} pikemen={pikemen} crossbowmen={crossbowmen} wizards={wizards}");
+        Debug.Log("[GameManager] === END DEFENDER STATE ===");
+    }
+
+    private void LogBallistaState()
+    {
+        if (BallistaManager.Instance == null) return;
+        var ballista = BallistaManager.Instance.ActiveBallista;
+        if (ballista == null) return;
+        Debug.Log($"[GameManager] SNAPSHOT_BALLISTA: active={ballista.name} pos=({ballista.transform.position.x:F2},{ballista.transform.position.y:F2},{ballista.transform.position.z:F2})");
+    }
+
+    private void LogLootState()
+    {
+        var pickups = FindObjectsByType<TreasurePickup>(FindObjectsSortMode.None);
+        int uncollected = 0;
+        int totalValue = 0;
+        foreach (var p in pickups)
+        {
+            if (p == null || p.IsCollected) continue;
+            uncollected++;
+            totalValue += p.Value;
+        }
+        Debug.Log($"[GameManager] SNAPSHOT_LOOT: uncollected={uncollected} totalValue={totalValue}");
+        if (uncollected > 0 && uncollected <= 20)
+        {
+            foreach (var p in pickups)
+            {
+                if (p == null || p.IsCollected) continue;
+                var t = p.transform;
+                Debug.Log($"[GameManager] LOOT: value={p.Value} pos=({t.position.x:F2},{t.position.y:F2},{t.position.z:F2})");
+            }
+        }
+    }
 }

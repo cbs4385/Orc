@@ -120,6 +120,10 @@ public class BugReportPanel : MonoBehaviour
             statusText.color = Color.white;
         }
 
+        // Dump full game state snapshot into the log before flushing
+        if (GameManager.Instance != null)
+            GameManager.Instance.LogGameSnapshot();
+
         // Capture values on main thread (PlayerPrefs not thread-safe)
         string logPath = LogCapture.Instance != null ? LogCapture.Instance.FlushAndGetPath() : null;
         string comments = commentsInput != null ? commentsInput.text : "";

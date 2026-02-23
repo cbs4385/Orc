@@ -32,6 +32,19 @@ public class Wall : MonoBehaviour
             boxCol.size = new Vector3(1f, 2f, 0.5f);
         }
 
+        // Widen NavMeshObstacle to cover the full tower-to-tower span.
+        // The wall body BoxCollider is only 1 unit wide, but towers extend to
+        // ±TOWER_OFFSET. Without this, enemies path through exposed tower geometry
+        // at unattached wall endpoints. The dual NavMesh enemy radius (0.7) seals
+        // gaps between connected wall segments; this covers the tower bodies themselves.
+        var navObstacle = GetComponent<UnityEngine.AI.NavMeshObstacle>();
+        if (navObstacle != null)
+        {
+            navObstacle.center = new Vector3(0, 1f, 0);
+            navObstacle.size = new Vector3(2f * WallCorners.TOWER_OFFSET, 2f, 2f * WallCorners.OCT_APOTHEM);
+            Debug.Log($"[Wall] NavMeshObstacle sized to tower span: {navObstacle.size}");
+        }
+
         // Add capsule colliders for the octagonal towers at each end
         AddTowerColliders();
 

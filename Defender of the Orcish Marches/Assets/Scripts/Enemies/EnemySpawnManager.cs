@@ -112,6 +112,7 @@ public class EnemySpawnManager : MonoBehaviour
         bossSpawnedThisDay = false;
         clearedFiredThisDay = false;
         dayKills = 0;
+        nightHarassTimer = NIGHT_HARASS_INTERVAL; // Prevent stale timer from spawning at dawn
         int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
         float halfSpread = 5f + 10f * (dayNumber - 1);
 
@@ -122,6 +123,10 @@ public class EnemySpawnManager : MonoBehaviour
         dayTotalEnemies = remnantCount + regularSpawnsRemaining + (willSpawnBoss ? 1 : 0);
 
         Debug.Log($"[EnemySpawnManager] Day {dayNumber}: remnants={remnantCount}, spawns={regularSpawnsRemaining}, boss={willSpawnBoss}, total={dayTotalEnemies}");
+
+        // Dump full game state at start of each day for bug reproduction
+        if (GameManager.Instance != null)
+            GameManager.Instance.LogGameSnapshot();
 
         // Spawn remnants from previous night — all at once, spread along the spawn arc
         if (remnantEnemies.Count > 0)
@@ -427,6 +432,35 @@ public class EnemySpawnManager : MonoBehaviour
     }
 
     public int GetActiveEnemyCount() => activeEnemies.Count;
+
+    /// <summary>
+    /// Logs full spawn state: active enemies, remnants, spawn budget, per-enemy details.
+    /// </summary>
+    public void LogSpawnState()
+    {
+        int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 0;
+        Debug.Log($"[EnemySpawnManager] === SPAWN STATE (day {dayNumber}) ===");
+        Debug.Log($"[EnemySpawnManager] regularSpawnsRemaining={regularSpawnsRemaining} dayTotalEnemies={dayTotalEnemies} dayKills={dayKills} clearedFired={clearedFiredThisDay} bossSpawned={bossSpawnedThisDay}");
+        Debug.Log($"[EnemySpawnManager] remnantEnemies={remnantEnemies.Count}");
+        foreach (var rd in remnantEnemies)
+        {
+            if (rd != null)
+                Debug.Log($"[EnemySpawnManager] REMNANT: type={rd.enemyName}");
+        }
+
+        // Active enemies
+        activeEnemies.RemoveAll(e => e == null || e.IsDead);
+        Debug.Log($"[EnemySpawnManager] activeEnemies={activeEnemies.Count}");
+        foreach (var enemy in activeEnemies)
+        {
+            if (enemy == null) continue;
+            var t = enemy.transform;
+            var movement = enemy.GetComponent<EnemyMovement>();
+            bool retreating = movement != null && movement.IsRetreating;
+            Debug.Log($"[EnemySpawnManager] ENEMY: type={enemy.Data?.enemyName} hp={enemy.CurrentHP} pos=({t.position.x:F2},{t.position.y:F2},{t.position.z:F2}) retreating={retreating}");
+        }
+        Debug.Log("[EnemySpawnManager] === END SPAWN STATE ===");
+    }
 
     /// <summary>
     /// Returns a preview of the wave for the given day number.

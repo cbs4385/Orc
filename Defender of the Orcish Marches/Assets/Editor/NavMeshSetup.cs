@@ -20,26 +20,20 @@ public static class NavMeshSetup
 
         if (enemyAgentTypeID == -1)
         {
+            // NavMesh.CreateSettings() returns a struct copy — property assignments
+            // on the returned struct do NOT persist to the project settings.
+            // We create the entry to get an ID, then fix properties via SerializedObject.
             var settings = NavMesh.CreateSettings();
-            settings.agentRadius = ENEMY_RADIUS;
-            settings.agentHeight = ENEMY_HEIGHT;
-            settings.agentSlope = ENEMY_SLOPE;
-            settings.agentClimb = ENEMY_CLIMB;
             enemyAgentTypeID = settings.agentTypeID;
-            Debug.Log($"[NavMeshSetup] Created '{ENEMY_AGENT_NAME}' agent type: ID={enemyAgentTypeID}, radius={ENEMY_RADIUS}");
+            Debug.Log($"[NavMeshSetup] Created '{ENEMY_AGENT_NAME}' agent type: ID={enemyAgentTypeID}");
         }
         else
         {
             Debug.Log($"[NavMeshSetup] '{ENEMY_AGENT_NAME}' agent type already exists: ID={enemyAgentTypeID}");
         }
 
-        // Also verify the settings match what we expect
-        var existingSettings = NavMesh.GetSettingsByID(enemyAgentTypeID);
-        if (!Mathf.Approximately(existingSettings.agentRadius, ENEMY_RADIUS))
-        {
-            Debug.LogWarning($"[NavMeshSetup] Enemy agent radius is {existingSettings.agentRadius}, expected {ENEMY_RADIUS}. Updating.");
-            existingSettings.agentRadius = ENEMY_RADIUS;
-        }
+        // Persist radius/height/slope/climb via SerializedObject (struct copies don't stick)
+        UpdateAgentSettingsViaSerializedObject(enemyAgentTypeID);
 
         // --- 2. Find or create NavMeshSurfaces GameObject ---
         GameObject surfacesGO = GameObject.Find("[NavMeshSurfaces]");
@@ -138,6 +132,58 @@ public static class NavMeshSetup
             UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 
         Debug.Log("[NavMeshSetup] Dual NavMesh setup complete!");
+    }
+
+    /// <summary>
+    /// Updates agent type properties via the serialized NavMeshProjectSettings asset.
+    /// NavMesh.CreateSettings()/GetSettingsByID() return struct copies — modifying their
+    /// fields does NOT persist. This method edits the YAML asset directly.
+    /// </summary>
+    private static void UpdateAgentSettingsViaSerializedObject(int agentTypeID)
+    {
+        var navMeshAssets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/NavMeshAreas.asset");
+        if (navMeshAssets.Length == 0)
+        {
+            Debug.LogError("[NavMeshSetup] Could not load NavMeshAreas.asset!");
+            return;
+        }
+
+        var so = new SerializedObject(navMeshAssets[0]);
+        var settingsArray = so.FindProperty("m_Settings");
+        var namesArray = so.FindProperty("m_SettingNames");
+
+        // m_Settings[0] is always the built-in Humanoid (agentTypeID=0).
+        // Custom agent types start at index 1.
+        // m_SettingNames maps 1:1 with m_Settings (including index 0 = "Humanoid").
+        for (int i = 0; i < settingsArray.arraySize; i++)
+        {
+            var element = settingsArray.GetArrayElementAtIndex(i);
+            if (element.FindPropertyRelative("agentTypeID").intValue == agentTypeID)
+            {
+                float oldRadius = element.FindPropertyRelative("agentRadius").floatValue;
+                element.FindPropertyRelative("agentRadius").floatValue = ENEMY_RADIUS;
+                element.FindPropertyRelative("agentHeight").floatValue = ENEMY_HEIGHT;
+                element.FindPropertyRelative("agentSlope").floatValue = ENEMY_SLOPE;
+                element.FindPropertyRelative("agentClimb").floatValue = ENEMY_CLIMB;
+
+                // Rename to "Enemy" if it has a generic name
+                if (i < namesArray.arraySize)
+                {
+                    string currentName = namesArray.GetArrayElementAtIndex(i).stringValue;
+                    if (currentName != ENEMY_AGENT_NAME)
+                    {
+                        namesArray.GetArrayElementAtIndex(i).stringValue = ENEMY_AGENT_NAME;
+                        Debug.Log($"[NavMeshSetup] Renamed agent type from '{currentName}' to '{ENEMY_AGENT_NAME}'");
+                    }
+                }
+
+                so.ApplyModifiedProperties();
+                Debug.Log($"[NavMeshSetup] Updated agent settings via SerializedObject: radius {oldRadius} -> {ENEMY_RADIUS}, height={ENEMY_HEIGHT}, slope={ENEMY_SLOPE}, climb={ENEMY_CLIMB}");
+                return;
+            }
+        }
+
+        Debug.LogError($"[NavMeshSetup] Could not find agentTypeID={agentTypeID} in NavMeshAreas.asset!");
     }
 
     private static int FindAgentTypeByName(string name)
