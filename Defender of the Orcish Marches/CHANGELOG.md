@@ -1,14 +1,41 @@
 # Changelog
 
+## 0.12.0
+
+### Recall System
+- Press **R** or **Middle Mouse** to recall all defenders and menials to the courtyard
+- Defenders dismount towers, cancel guard duty, and walk to the courtyard; resume normal behavior after arriving
+- Menials drop their current task (collecting, clearing vegetation) and return home with any carried treasure
+- Plays a recall horn sound effect on activation
+- Recall is disabled during build mode
+
+### Balance
+- Hireling costs now scale on **living defender count** instead of cumulative purchases — replacing a fallen engineer costs the same as when you first had that many, not the total you ever bought
+
+### Dual NavMesh — Enemies Can't Path Through Wall Gaps
+- Added separate "Enemy" NavMesh agent type with radius 0.7 (vs 0.5 for friendlies), sealing gaps between wall segments at the pathfinding level
+- Created `NavMeshSetup.cs` editor script (`Tools/Setup Dual NavMesh`) that creates the Enemy agent type, adds two NavMeshSurface components, bakes both, and assigns the Enemy agent type to the Enemy prefab
+- Added "Walls" layer — wall meshes are excluded from the NavMesh bake so only NavMeshObstacle carving controls wall blocking; breaches now properly open when walls are destroyed
+- Removed gap-blocking hack from `EnemyMovement.cs` (~35 lines): `gapBlocked` field, `ENEMY_NAV_RADIUS` override, gap-detection logic in `Update()`, and `IsNearDestroyedWall()` method
+- Updated `NavMeshRebaker.cs` to mark all NavMeshSurface GameObjects dirty (was only marking the first)
+- Friendlies (menials, defenders, refugees) use the default Humanoid NavMesh and can still pass through wall gaps
+
 ## 0.11.2
 
-### Enemy Targeting
-- Replaced fan-raycast wall detection with approach-direction scanning — melee enemies now evaluate 24 directions from the tower to find the path crossing the fewest wall "rings" (depth layers)
-- Open approach directions (no walls) are detected automatically, letting melee enemies path straight to the tower via NavMesh
-- Switched FindWallBetween from thin raycasts to SphereCast (radius 0.75) so rays can't slip through gaps between wall segments
-- Goblins now target the globally most-damaged wall (lowest HP, closest as tiebreaker) instead of raycasting for the blocking wall
-- Ranged enemies (bow orcs) fall back to the closest wall when no units are found, instead of delegating to goblin targeting logic
-- Removed obsolete methods: CheckWallOnDirectLine, FindMinimalCrossingWall, FindBlockingWall, IsMeleeType
+### Enemy Targeting — Ray-Based Pathing
+- Added PathingRayManager: casts 360 rays (one per degree) from the central tower outward, counting wall crossings per direction
+- Melee enemies pick the ray with fewest wall crossings (closest angle as tiebreaker) and attack the outermost wall on that ray
+- Clear rays (0 crossings) route enemies directly to the tower — breaches are exploited automatically
+- Wall destruction and repair trigger full ray recalculation + enemy retarget
+- New wall construction completion triggers ray recalculation so freshly built walls are accounted for
+- Added gizmo visualization: 360 pathing rays colored by cost (green=clear, yellow=1 wall, red=2+ walls)
+- Removed per-wall cost evaluation, NavMesh.CalculatePath-based approach scoring, and detour ratio heuristic
+- Removed obsolete methods: CountBlockingWalls, CountPathWallCrossings, PathLength, FindNearestIntactWall
+
+### Enemy Targeting — Unchanged
+- Enemies retarget every 1 unit of movement instead of on a fixed timer
+- Goblins target the globally most-damaged wall (lowest HP, closest as tiebreaker)
+- Ranged enemies (bow orcs) fall back to the closest wall when no units are found
 
 ## 0.11.1
 

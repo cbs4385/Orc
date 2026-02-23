@@ -834,6 +834,53 @@ public class Defender : MonoBehaviour
         return false;
     }
 
+    // --- Recall ---
+
+    /// <summary>
+    /// Called by RecallManager. Dismounts tower, cancels guard duty, and navigates to courtyard.
+    /// </summary>
+    public void Recall()
+    {
+        if (IsDead) return;
+
+        // Dismount tower if on one
+        if (isOnTower)
+            DismountTower();
+
+        // Cancel tower walk
+        if (isWalkingToTower && assignedTower != null)
+        {
+            if (TowerPositionManager.Instance != null)
+                TowerPositionManager.Instance.Release(assignedTower);
+            assignedTower = null;
+            isWalkingToTower = false;
+        }
+
+        // Release guard duty
+        if (isGuarding)
+        {
+            guardTarget = null;
+            isGuarding = false;
+            hasGuardStandPos = false;
+        }
+
+        // Navigate to courtyard
+        if (agent != null && agent.isOnNavMesh)
+        {
+            Vector3 fc = GameManager.FortressCenter;
+            float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            float dist = Random.Range(2f, 3f);
+            Vector3 courtyard = fc + new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
+            agent.isStopped = false;
+            agent.SetDestination(courtyard);
+        }
+
+        // Suppress tower seeking so they actually walk to courtyard first
+        towerSeekTimer = 5f;
+
+        Debug.Log($"[Defender] {(data != null ? data.defenderName : name)} recalled to courtyard");
+    }
+
     // --- Damage & Death ---
 
     public void TakeDamage(int damage)

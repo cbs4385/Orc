@@ -42,7 +42,7 @@ public class UpgradeManager : MonoBehaviour
     public bool CanPurchase(UpgradeData upgrade)
     {
         if (GameManager.Instance == null) return false;
-        int count = GetPurchaseCount(upgrade.upgradeType);
+        int count = GetScalingCount(upgrade);
         if (!upgrade.repeatable && count > 0) return false;
 
         // Walls are purchased via build mode, not the upgrade panel
@@ -59,14 +59,14 @@ public class UpgradeManager : MonoBehaviour
     /// </summary>
     public (int treasure, int menial) GetCurrentCost(UpgradeData upgrade)
     {
-        int count = GetPurchaseCount(upgrade.upgradeType);
+        int count = GetScalingCount(upgrade);
         return (upgrade.GetTreasureCost(count), upgrade.GetMenialCost(count));
     }
 
     public bool Purchase(UpgradeData upgrade)
     {
         var (scaledTreasure, scaledMenial) = GetCurrentCost(upgrade);
-        Debug.Log($"[UpgradeManager] Purchase called: {upgrade.upgradeName} (type={upgrade.upgradeType}, scaledCost={scaledTreasure}g {scaledMenial}m, purchases={GetPurchaseCount(upgrade.upgradeType)})");
+        Debug.Log($"[UpgradeManager] Purchase called: {upgrade.upgradeName} (type={upgrade.upgradeType}, scaledCost={scaledTreasure}g {scaledMenial}m, scalingCount={GetScalingCount(upgrade)}, purchases={GetPurchaseCount(upgrade.upgradeType)})");
 
         if (!CanPurchase(upgrade))
         {
@@ -192,6 +192,43 @@ public class UpgradeManager : MonoBehaviour
         {
             Debug.LogWarning($"[UpgradeManager] Spawned defender at tower but no DefenderData assigned!");
         }
+    }
+
+    /// <summary>
+    /// Returns the count used for cost scaling. Hire upgrades use living defender count;
+    /// non-hire upgrades use cumulative purchase count.
+    /// </summary>
+    private int GetScalingCount(UpgradeData upgrade)
+    {
+        int livingCount = GetLivingDefenderCount(upgrade.upgradeType);
+        if (livingCount >= 0) return livingCount;
+        return GetPurchaseCount(upgrade.upgradeType);
+    }
+
+    /// <summary>
+    /// Counts currently living defenders of the type matching this hire upgrade.
+    /// Returns -1 for non-hire upgrade types.
+    /// </summary>
+    private int GetLivingDefenderCount(UpgradeType type)
+    {
+        DefenderType defenderType;
+        switch (type)
+        {
+            case UpgradeType.SpawnEngineer: defenderType = DefenderType.Engineer; break;
+            case UpgradeType.SpawnPikeman: defenderType = DefenderType.Pikeman; break;
+            case UpgradeType.SpawnCrossbowman: defenderType = DefenderType.Crossbowman; break;
+            case UpgradeType.SpawnWizard: defenderType = DefenderType.Wizard; break;
+            default: return -1;
+        }
+
+        var defenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
+        int count = 0;
+        foreach (var d in defenders)
+        {
+            if (d.Data != null && d.Data.defenderType == defenderType)
+                count++;
+        }
+        return count;
     }
 
     private int GetPurchaseCount(UpgradeType type)

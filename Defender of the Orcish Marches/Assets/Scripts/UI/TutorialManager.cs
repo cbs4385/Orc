@@ -268,8 +268,9 @@ public class TutorialManager : MonoBehaviour
                        "  <b>Pikeman</b> (40g, 2m) — melee fighter, engages enemies up close\n" +
                        "  <b>Crossbowman</b> (50g, 2m) — ranged attacker, fires from a distance\n" +
                        "  <b>Wizard</b> (100g, 3m) — powerful AoE magic, longest range\n\n" +
-                       "Recruit them from the upgrade panel. Costs increase with each purchase. " +
-                       "You need at least one <b>Engineer</b> to enter Build Mode."
+                       "Recruit them from the upgrade panel. Costs scale with how many are currently alive. " +
+                       "You need at least one <b>Engineer</b> to enter Build Mode.\n\n" +
+                       "Press <b>R</b> or <b>Middle Click</b> to <b>Recall</b> all defenders and menials to the courtyard."
             },
             new TutorialPage
             {
@@ -337,6 +338,7 @@ public class TutorialManager : MonoBehaviour
                        "  <b>Scroll Wheel</b> — Zoom in/out\n" +
                        "  <b>Left Click</b> — Fire ballista (or place wall in build mode)\n" +
                        "  <b>Right Click</b> — Send menial to collect loot\n" +
+                       "  <b>R / Middle Click</b> — Recall all defenders and menials\n" +
                        "  <b>Tab</b> — Switch active ballista\n" +
                        "  <b>U</b> — Open/close upgrade panel\n" +
                        "  <b>1-9</b> — Upgrade hotkeys\n" +

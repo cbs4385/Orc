@@ -35,6 +35,9 @@ public class Wall : MonoBehaviour
         // Add capsule colliders for the octagonal towers at each end
         AddTowerColliders();
 
+        // Add invisible pathing cube for PathingRayManager ray detection
+        AddPathingCube();
+
         // Gather ALL renderers (FBX model has one renderer with 4 material sub-meshes)
         renderers = GetComponentsInChildren<Renderer>();
 
@@ -82,6 +85,47 @@ public class Wall : MonoBehaviour
         rightCap.direction = 1; // Y-axis
     }
 
+    /// <summary>
+    /// Creates an invisible trigger plane on the PathingRay layer running along the
+    /// wall's center axis. The plane extends from tower CENTER to tower CENTER (not
+    /// edge-to-edge), so adjacent wall segments' planes meet at the shared tower
+    /// center without overlapping. This prevents double-counting when PathingRayManager
+    /// SphereCasts count wall crossings per direction.
+    /// </summary>
+    private void AddPathingCube()
+    {
+        var corners = GetComponent<WallCorners>();
+        if (corners != null && corners.isGhost) return;
+
+        var cubeGO = new GameObject("PathingCube");
+        cubeGO.transform.SetParent(transform, false);
+        cubeGO.layer = LayerMask.NameToLayer("PathingRay");
+
+        var box = cubeGO.AddComponent<BoxCollider>();
+        box.isTrigger = true;
+        box.center = new Vector3(0f, 1f, 0f);
+        // Width (local X): tower-center to tower-center (no overlap with neighbors).
+        // Height (local Y): wall height.
+        // Depth (local Z): thin plane (0.1) — just thick enough for SphereCast detection.
+        box.size = new Vector3(
+            2f * WallCorners.TOWER_OFFSET,
+            2f,
+            0.1f
+        );
+
+        int layerIdx = cubeGO.layer;
+        Vector3 worldCenter = cubeGO.transform.TransformPoint(box.center);
+        // Compute world-space size accounting for wall rotation
+        Vector3 halfExtents = box.size * 0.5f;
+        Vector3 worldRight = cubeGO.transform.right * halfExtents.x;
+        Vector3 worldUp = cubeGO.transform.up * halfExtents.y;
+        Vector3 worldFwd = cubeGO.transform.forward * halfExtents.z;
+        Debug.Log($"[Wall] PathingCube for {name}: layer={layerIdx} ({LayerMask.LayerToName(layerIdx)}), " +
+            $"localSize={box.size}, worldCenter={worldCenter}, " +
+            $"wallRot={transform.eulerAngles.y:F0}°, " +
+            $"worldRight={worldRight} (width axis), worldFwd={worldFwd} (depth axis)");
+    }
+
     public void TakeDamage(int damage)
     {
         if (IsDestroyed || IsUnderConstruction) return;
@@ -98,6 +142,8 @@ public class Wall : MonoBehaviour
             if (SoundManager.Instance != null) SoundManager.Instance.PlayWallCollapse(transform.position);
             OnWallDestroyed?.Invoke(this);
             gameObject.SetActive(false);
+            // Force all enemies to recalculate paths so they can exploit the breach
+            EnemyMovement.ForceAllRetarget();
         }
     }
 
@@ -143,6 +189,9 @@ public class Wall : MonoBehaviour
             if (obstacle != null) obstacle.enabled = true;
 
             Debug.Log($"[Wall] {name} construction complete at {transform.position}, HP={CurrentHP}/{maxHP}");
+
+            // New wall changes pathing — recalculate rays and retarget enemies
+            EnemyMovement.ForceAllRetarget();
         }
 
         UpdateVisual();

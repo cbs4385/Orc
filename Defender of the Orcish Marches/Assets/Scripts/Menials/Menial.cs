@@ -650,6 +650,31 @@ public class Menial : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Called by RecallManager. Drops current task and returns to courtyard.
+    /// </summary>
+    public void Recall()
+    {
+        if (IsDead) return;
+        if (CurrentState == MenialState.EnteringTower) return; // Don't interrupt conversion
+
+        // Restore normal speed if fleeing
+        if (CurrentState == MenialState.Fleeing && agent != null)
+            agent.speed = normalSpeed;
+
+        // Track idle count properly
+        if (CurrentState == MenialState.Idle && GameManager.Instance != null)
+            GameManager.Instance.IdleMenialCount--;
+
+        // Clear task assignments
+        targetLoot = null;
+        targetVegetation = null;
+        clearingRadius = 0;
+
+        ReturnHome();
+        Debug.Log($"[Menial] Recalled to courtyard from {transform.position}");
+    }
+
     public void SendToTower(System.Action callback)
     {
         if (IsDead) return;

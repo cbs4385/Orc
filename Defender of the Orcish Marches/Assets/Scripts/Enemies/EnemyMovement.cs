@@ -8,8 +8,8 @@ public class EnemyMovement : MonoBehaviour
     private NavMeshAgent agent;
     private Enemy enemy;
     private Transform currentTarget;
-    private float retargetTimer;
-    private const float RETARGET_INTERVAL = 1f;
+    private Vector3 lastRetargetPos;
+    private const float RETARGET_DISTANCE = 1f;
 
     // Tower position - enemies walk here when walls are breached
     private static Vector3 TowerPosition => GameManager.FortressCenter;
@@ -22,9 +22,6 @@ public class EnemyMovement : MonoBehaviour
     public bool IsRetreating { get; private set; }
     private float retreatMapRadius;
 
-    // Gap blocking — prevents enemies from squeezing through wall gaps
-    private bool gapBlocked;
-
     /// <summary>Fired when a retreating enemy reaches the west map edge.</summary>
     public Action<Enemy> OnReachedRetreatEdge;
 
@@ -33,11 +30,6 @@ public class EnemyMovement : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         enemy = GetComponent<Enemy>();
     }
-
-    // Larger avoidance radius for enemies. Note: NavMeshAgent.radius only affects
-    // local avoidance (steering), NOT pathfinding clearance. Wall gaps are blocked
-    // by the gap-detection logic in Update() which redirects enemies to attack walls.
-    private const float ENEMY_NAV_RADIUS = 0.65f;
 
     private void Start()
     {
@@ -48,8 +40,8 @@ public class EnemyMovement : MonoBehaviour
             agent.stoppingDistance = enemy.Data.attackRange * 0.9f;
         }
 
-        agent.radius = ENEMY_NAV_RADIUS;
-        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} started at {transform.position}, navRadius={ENEMY_NAV_RADIUS}, speed={agent.speed}, stoppingDist={agent.stoppingDistance}");
+        lastRetargetPos = transform.position;
+        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} started at {transform.position}, speed={agent.speed}, stoppingDist={agent.stoppingDistance}");
         FindTarget();
     }
 
@@ -69,41 +61,10 @@ public class EnemyMovement : MonoBehaviour
             return;
         }
 
-        // Prevent enemies from squeezing through gaps between intact wall segments.
-        // NavMeshAgent.radius only controls avoidance, NOT pathfinding clearance, so
-        // the pathfinder routes enemies through gaps that are physically too narrow.
-        // If the enemy is close to an intact wall and NOT near any breach, redirect.
-        if (agent.isOnNavMesh && WallManager.Instance != null && !gapBlocked)
+        float distMoved = Vector3.Distance(transform.position, lastRetargetPos);
+        if (distMoved >= RETARGET_DISTANCE)
         {
-            Wall nearestIntactWall = WallManager.Instance.GetNearestWall(transform.position);
-            if (nearestIntactWall != null)
-            {
-                float distToWall = Vector3.Distance(transform.position, nearestIntactWall.transform.position);
-                if (distToWall < WallCorners.WALL_SPACING)
-                {
-                    // Near an intact wall — check if there's a breach nearby (destroyed wall).
-                    // If there IS a nearby breach, the enemy is legitimately pathing through it.
-                    bool nearBreach = IsNearDestroyedWall(transform.position);
-                    if (!nearBreach)
-                    {
-                        gapBlocked = true;
-                        currentTarget = nearestIntactWall.transform;
-                        Vector3 wallPos = nearestIntactWall.transform.position;
-                        Vector3 outward = (wallPos - TowerPosition).normalized;
-                        Vector3 exteriorPoint = wallPos + outward * 1f;
-                        exteriorPoint.y = 0;
-                        agent.SetDestination(exteriorPoint);
-                        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} blocked from wall gap near {nearestIntactWall.name} — attacking wall instead");
-                    }
-                }
-            }
-        }
-
-        retargetTimer -= Time.deltaTime;
-        if (retargetTimer <= 0)
-        {
-            retargetTimer = RETARGET_INTERVAL;
-            gapBlocked = false; // Re-evaluate on next retarget cycle
+            lastRetargetPos = transform.position;
             FindTarget();
         }
 
@@ -153,7 +114,7 @@ public class EnemyMovement : MonoBehaviour
 
     /// <summary>
     /// Dispatch targeting to type-specific logic.
-    /// Melee/WallBreaker: shortest path with minimal wall crossings, opportunistic unit kills.
+    /// Melee/WallBreaker: use ray-based pathing — pick cheapest direction, attack blocking wall or walk to tower.
     /// Ranged (Bow Orcs): prioritize hirelings/menials, fall back to walls.
     /// Suicide/Artillery (Goblins): target walls directly.
     /// </summary>
@@ -178,25 +139,24 @@ public class EnemyMovement : MonoBehaviour
     }
 
     // ====================================================================
-    //  MELEE / WALLBREAKER — shortest path through fewest walls to tower
+    //  MELEE / WALLBREAKER — always path to tower, attack blocking walls
     // ====================================================================
 
     /// <summary>
-    /// Melee enemies path toward the tower via the route that crosses the fewest wall
-    /// segments. They attack walls blocking their path and opportunistically strike
-    /// nearby hirelings/menials/refugees.
+    /// Melee enemies always want to reach the central tower. PathingRayManager casts
+    /// 360 rays from the tower outward and counts wall crossings per direction. The
+    /// enemy picks the cheapest ray within ±60° of its direct approach (closest angle
+    /// as tiebreaker). If the ray is clear, walk to tower. If a wall blocks it, attack
+    /// the innermost wall on that ray. Nearby units are attacked opportunistically.
     /// </summary>
     private void FindTarget_Melee()
     {
-        bool hasBreach = WallManager.Instance != null && WallManager.Instance.HasBreach();
-
         // --- Opportunistic targeting: attack nearby hirelings/menials ---
         Transform nearby = FindNearbyOpportunisticTarget();
         if (nearby != null)
         {
             float distToNearby = Vector3.Distance(transform.position, nearby.position);
 
-            // If we have no wall target, or the unit is very close, divert to it
             bool hasWallTarget = currentTarget != null &&
                 currentTarget.GetComponent<Wall>() != null &&
                 !currentTarget.GetComponent<Wall>().IsDestroyed;
@@ -205,66 +165,51 @@ public class EnemyMovement : MonoBehaviour
             {
                 currentTarget = nearby;
                 agent.SetDestination(nearby.position);
-                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} melee opportunistic target {nearby.name} at dist={distToNearby:F1}");
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} melee opportunistic → {nearby.name} dist={distToNearby:F1}");
                 return;
             }
         }
 
-        // --- Breach exists: rush through to tower ---
-        if (hasBreach)
+        // --- Ray-based targeting via PathingRayManager ---
+        if (PathingRayManager.Instance == null)
         {
-            Vector3 offset = transform.position - TowerPosition;
-            float distFromCenter = new Vector2(offset.x, offset.z).magnitude;
-
-            if (distFromCenter < 4.5f)
-            {
-                // Already inside walls — head to tower
-                currentTarget = null;
-                agent.SetDestination(TowerPosition);
-                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} INSIDE walls (dist={distFromCenter:F1}), heading to tower");
-                return;
-            }
-
-            // Path to nearest breach
-            Vector3 breachPos = FindNearestBreachPosition();
             currentTarget = null;
-            agent.SetDestination(breachPos);
-            Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} heading to breach at {breachPos} (distFromCenter={distFromCenter:F1})");
+            agent.SetDestination(TowerPosition);
+            Debug.LogWarning($"[EnemyMovement] {enemy.Data?.enemyName} PathingRayManager missing — heading to tower");
             return;
         }
 
-        // --- Evaluate all approach directions to find fewest wall rings ---
-        // Stick with current wall target if alive
-        if (currentTarget != null)
-        {
-            var curWall = currentTarget.GetComponent<Wall>();
-            if (curWall != null && !curWall.IsDestroyed)
-                return; // keep attacking the same wall
-        }
+        Vector3 toCenter = TowerPosition - transform.position;
+        float directAngle = Mathf.Atan2(toCenter.z, toCenter.x) * Mathf.Rad2Deg;
+        if (directAngle < 0f) directAngle += 360f;
 
-        if (WallManager.Instance != null)
-        {
-            Wall bestWall = FindBestApproachWall(out bool hasOpenPath);
-            if (hasOpenPath)
-            {
-                currentTarget = null;
-                agent.SetDestination(TowerPosition);
-                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} open approach found — pathing to tower (NavMesh routes through gap)");
-                return;
-            }
-            if (bestWall != null)
-            {
-                currentTarget = bestWall.transform;
-                NavigateToWallExterior(bestWall);
-                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} targeting wall {bestWall.name} (HP={bestWall.CurrentHP}/{bestWall.MaxHP}) at {bestWall.transform.position}");
-                return;
-            }
-        }
+        var (rayIndex, cost, firstWall) = PathingRayManager.Instance.GetBestRay(transform.position);
 
-        // Fallback: head to tower
-        currentTarget = null;
-        agent.SetDestination(TowerPosition);
-        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} no blocking wall found, heading to tower");
+        float angleDiff = Mathf.Abs(Mathf.DeltaAngle(directAngle, rayIndex));
+
+        if (cost == 0 || firstWall == null)
+        {
+            // Clear path along cheapest ray — walk to tower
+            currentTarget = null;
+            agent.SetDestination(TowerPosition);
+            Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} MELEE DECISION: pos={transform.position}, " +
+                $"directAngle={directAngle:F1}°, chosenRay={rayIndex}° (angleDiff={angleDiff:F1}°), cost={cost}. " +
+                $"ACTION: walk to tower (clear path)");
+        }
+        else
+        {
+            // Wall blocking on cheapest ray — attack the innermost wall
+            currentTarget = firstWall.transform;
+            NavigateToWallExterior(firstWall);
+            Vector3 wallPos = firstWall.transform.position;
+            Vector3 outward = (wallPos - TowerPosition).normalized;
+            Vector3 exteriorPoint = wallPos + outward * 1f;
+            Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} MELEE DECISION: pos={transform.position}, " +
+                $"directAngle={directAngle:F1}°, chosenRay={rayIndex}° (angleDiff={angleDiff:F1}°), cost={cost}. " +
+                $"ACTION: attack {firstWall.name} HP={firstWall.CurrentHP}/{firstWall.MaxHP} " +
+                $"wallPos={wallPos}, wallRot={firstWall.transform.eulerAngles.y:F0}°, " +
+                $"navigateTo={exteriorPoint}");
+        }
     }
 
     // ====================================================================
@@ -407,110 +352,6 @@ public class EnemyMovement : MonoBehaviour
     //  SHARED HELPERS
     // ====================================================================
 
-    // Number of approach directions to evaluate from the tower
-    private const int APPROACH_DIR_COUNT = 24;
-    private const float WALL_PERP_TOLERANCE = 1.2f;
-    private const float RING_GROUP_TOLERANCE = 2.0f;
-    private const float APPROACH_SCAN_DIST = 15f;
-    private static readonly float[] dirWallDists = new float[16];
-    private static readonly Wall[] dirWallRefs = new Wall[16];
-
-    /// <summary>
-    /// Scan all approach directions from the tower outward and find the direction
-    /// with the fewest wall "rings" (depth layers). If any direction is completely
-    /// open (0 rings), returns null and sets hasOpenPath=true so the enemy paths
-    /// directly to the tower via NavMesh.
-    /// Otherwise returns the outermost wall on the best approach direction.
-    /// Ties broken by distance to the enemy (closer approach wins).
-    /// </summary>
-    private Wall FindBestApproachWall(out bool hasOpenPath)
-    {
-        hasOpenPath = false;
-        if (WallManager.Instance == null) { hasOpenPath = true; return null; }
-
-        Vector3 enemyPos = transform.position;
-        enemyPos.y = 0;
-
-        int bestRings = int.MaxValue;
-        float bestEnemyDist = float.MaxValue;
-        Wall bestWall = null;
-
-        for (int i = 0; i < APPROACH_DIR_COUNT; i++)
-        {
-            float angle = i * 2f * Mathf.PI / APPROACH_DIR_COUNT;
-            Vector3 dir = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
-
-            // Collect walls near this approach direction
-            int wallCount = 0;
-            foreach (var wall in WallManager.Instance.AllWalls)
-            {
-                if (wall.IsDestroyed || wall.IsUnderConstruction) continue;
-
-                Vector3 toWall = wall.transform.position - TowerPosition;
-                toWall.y = 0;
-
-                float proj = Vector3.Dot(toWall, dir);
-                if (proj < 0 || proj > APPROACH_SCAN_DIST) continue;
-
-                float perp = Vector3.Cross(dir, toWall).magnitude;
-                if (perp > WALL_PERP_TOLERANCE) continue;
-
-                if (wallCount < dirWallDists.Length)
-                {
-                    dirWallDists[wallCount] = proj;
-                    dirWallRefs[wallCount] = wall;
-                    wallCount++;
-                }
-            }
-
-            // Sort by distance from tower
-            for (int a = 0; a < wallCount - 1; a++)
-                for (int b = a + 1; b < wallCount; b++)
-                    if (dirWallDists[b] < dirWallDists[a])
-                    {
-                        float td = dirWallDists[a]; dirWallDists[a] = dirWallDists[b]; dirWallDists[b] = td;
-                        Wall tw = dirWallRefs[a]; dirWallRefs[a] = dirWallRefs[b]; dirWallRefs[b] = tw;
-                    }
-
-            // Count distinct rings (walls at similar distances = same ring)
-            int rings = 0;
-            float lastRingDist = -999f;
-            Wall outermost = null;
-            for (int w = 0; w < wallCount; w++)
-            {
-                if (dirWallDists[w] - lastRingDist > RING_GROUP_TOLERANCE)
-                {
-                    rings++;
-                    lastRingDist = dirWallDists[w];
-                }
-                outermost = dirWallRefs[w];
-            }
-
-            if (rings == 0)
-            {
-                hasOpenPath = true;
-                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} open approach at {angle * Mathf.Rad2Deg:F0}° (no walls)");
-                return null;
-            }
-
-            // Distance from enemy to the outer edge of this approach corridor
-            float approachDist = wallCount > 0 ? dirWallDists[wallCount - 1] : 5f;
-            Vector3 approachPoint = TowerPosition + dir * (approachDist + 1f);
-            float enemyDist = Vector3.Distance(enemyPos, approachPoint);
-
-            if (rings < bestRings || (rings == bestRings && enemyDist < bestEnemyDist))
-            {
-                bestRings = rings;
-                bestEnemyDist = enemyDist;
-                bestWall = outermost;
-            }
-        }
-
-        if (bestWall != null)
-            Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} best approach: rings={bestRings}, wall={bestWall.name} (HP={bestWall.CurrentHP}/{bestWall.MaxHP}, enemyDist={bestEnemyDist:F1})");
-
-        return bestWall;
-    }
 
     /// <summary>
     /// Navigate the agent to the exterior side of a wall (attack position).
@@ -522,6 +363,8 @@ public class EnemyMovement : MonoBehaviour
         Vector3 exteriorPoint = wallPos + outward * 1f;
         exteriorPoint.y = 0;
         agent.SetDestination(exteriorPoint);
+        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} NavigateToWallExterior: wall={wall.name} at {wallPos}, " +
+            $"outwardDir={outward}, exteriorPoint={exteriorPoint}, distFromEnemy={Vector3.Distance(transform.position, exteriorPoint):F1}");
     }
 
     /// <summary>
@@ -624,44 +467,32 @@ public class EnemyMovement : MonoBehaviour
     }
 
     /// <summary>
-    /// Returns the position of the nearest destroyed wall (breach point).
+    /// Called when a wall is destroyed — forces every living enemy to recalculate
+    /// its route immediately so they can exploit the new breach.
     /// </summary>
-    private Vector3 FindNearestBreachPosition()
+    public static void ForceAllRetarget()
     {
-        Vector3 best = TowerPosition;
-        float bestDist = float.MaxValue;
-        string breachWallName = "none";
+        Debug.Log($"[EnemyMovement] ForceAllRetarget TRIGGERED (callstack follows)");
 
-        foreach (var wall in WallManager.Instance.AllWalls)
+        // Recalculate ray costs before retargeting so enemies use fresh data
+        if (PathingRayManager.Instance != null)
+            PathingRayManager.Instance.Recalculate();
+        else
+            Debug.LogWarning("[EnemyMovement] ForceAllRetarget — PathingRayManager.Instance is NULL, cannot recalculate rays");
+
+        var all = FindObjectsByType<EnemyMovement>(FindObjectsSortMode.None);
+        int count = 0;
+        foreach (var em in all)
         {
-            if (!wall.IsDestroyed) continue;
-            float dist = Vector3.Distance(transform.position, wall.transform.position);
-            if (dist < bestDist)
-            {
-                bestDist = dist;
-                best = wall.transform.position;
-                breachWallName = wall.name;
-            }
+            if (em.enemy.IsDead || em.IsRetreating) continue;
+            string prevTarget = em.currentTarget != null ? em.currentTarget.name : "tower";
+            em.FindTarget();
+            string newTarget = em.currentTarget != null ? em.currentTarget.name : "tower";
+            if (prevTarget != newTarget)
+                Debug.Log($"[EnemyMovement] ForceAllRetarget: {em.enemy.Data?.enemyName} target changed {prevTarget} → {newTarget}");
+            count++;
         }
-
-        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} nearest breach: {breachWallName} at {best}, dist={bestDist:F1}");
-        return best;
-    }
-
-    /// <summary>
-    /// Returns true if there is a destroyed wall within WALL_SPACING distance of pos.
-    /// Used to distinguish wall gaps (no breach nearby) from breach areas.
-    /// </summary>
-    private bool IsNearDestroyedWall(Vector3 pos)
-    {
-        if (WallManager.Instance == null) return false;
-        foreach (var wall in WallManager.Instance.AllWalls)
-        {
-            if (!wall.IsDestroyed) continue;
-            if (Vector3.Distance(pos, wall.transform.position) < WallCorners.WALL_SPACING * 1.5f)
-                return true;
-        }
-        return false;
+        Debug.Log($"[EnemyMovement] ForceAllRetarget — {count} enemies retargeted");
     }
 
     public void Stop()

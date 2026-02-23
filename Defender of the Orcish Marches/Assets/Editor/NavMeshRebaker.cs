@@ -20,6 +20,7 @@ public static class NavMeshRebaker
             Debug.Log($"[NavMeshRebaker] Rebaked NavMesh on '{surface.gameObject.name}'.");
         }
 
-        EditorUtility.SetDirty(surfaces[0].gameObject);
+        foreach (var surface in surfaces)
+            EditorUtility.SetDirty(surface.gameObject);
     }
 }

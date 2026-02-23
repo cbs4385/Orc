@@ -24,6 +24,7 @@ public class SoundManager : MonoBehaviour
 
     [Header("Events")]
     [SerializeField] private AudioClip attackStart;
+    [SerializeField] private AudioClip recall;
 
     [Header("Music")]
     private AudioClip[] musicTracks;
@@ -207,4 +208,5 @@ public class SoundManager : MonoBehaviour
 
     // --- Events ---
     public void PlayAttackStart(Vector3 pos) => Play(attackStart);
+    public void PlayRecall() => Play(recall);
 }

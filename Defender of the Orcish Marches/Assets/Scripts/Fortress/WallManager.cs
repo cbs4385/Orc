@@ -7,6 +7,9 @@ public class WallManager : MonoBehaviour
 
     [SerializeField] private GameObject wallPrefab;
 
+    [Header("Debug — pre-built extension walls for testing")]
+    [SerializeField] private bool debugPrebuiltWestWalls;
+
     private List<Wall> allWalls = new List<Wall>();
 
     public IReadOnlyList<Wall> AllWalls => allWalls;
@@ -40,6 +43,48 @@ public class WallManager : MonoBehaviour
         {
             RegisterWall(wall);
         }
+
+        if (debugPrebuiltWestWalls)
+            PlaceDebugWestExtensions();
+
+        // Ensure PathingRayManager exists and compute initial ray costs
+        if (PathingRayManager.Instance == null)
+        {
+            var go = new GameObject("[PathingRayManager]");
+            go.AddComponent<PathingRayManager>();
+            Debug.Log("[WallManager] Auto-created PathingRayManager.");
+        }
+        else
+        {
+            PathingRayManager.Instance.Recalculate();
+        }
+    }
+
+    /// <summary>
+    /// Debug helper: places 4 extension walls forming a second layer on the west side,
+    /// instantly completed (full HP, colliders enabled). Toggle via inspector checkbox.
+    /// </summary>
+    private void PlaceDebugWestExtensions()
+    {
+        var positions = new (Vector3 pos, float yRot)[]
+        {
+            (new Vector3(-5.52f, 1f, 2.21f),  180f),
+            (new Vector3(-5.52f, 1f, -2.21f), 180f),
+            (new Vector3(-6.62f, 1f, -1.10f), 270f),
+            (new Vector3(-6.62f, 1f, 1.10f),  270f),
+        };
+
+        foreach (var (pos, yRot) in positions)
+        {
+            var go = PlaceWall(pos, Quaternion.Euler(0, yRot, 0));
+            if (go != null)
+            {
+                var wall = go.GetComponent<Wall>();
+                if (wall != null)
+                    wall.Repair(wall.MaxHP); // Instantly complete construction
+            }
+        }
+        Debug.Log($"[WallManager] Debug: placed {positions.Length} pre-built west extension walls");
     }
 
     public void RegisterWall(Wall wall)
