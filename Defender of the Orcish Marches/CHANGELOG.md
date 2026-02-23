@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.2
+
+### Enemy Targeting
+- Replaced fan-raycast wall detection with approach-direction scanning — melee enemies now evaluate 24 directions from the tower to find the path crossing the fewest wall "rings" (depth layers)
+- Open approach directions (no walls) are detected automatically, letting melee enemies path straight to the tower via NavMesh
+- Switched FindWallBetween from thin raycasts to SphereCast (radius 0.75) so rays can't slip through gaps between wall segments
+- Goblins now target the globally most-damaged wall (lowest HP, closest as tiebreaker) instead of raycasting for the blocking wall
+- Ranged enemies (bow orcs) fall back to the closest wall when no units are found, instead of delegating to goblin targeting logic
+- Removed obsolete methods: CheckWallOnDirectLine, FindMinimalCrossingWall, FindBlockingWall, IsMeleeType
+
 ## 0.11.1
 
 ### Audio
