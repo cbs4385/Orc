@@ -18,6 +18,7 @@ public class Wall : MonoBehaviour
     private Color[][] originalColors; // Per-renderer, per-material original colors
     private static readonly Color damagedColor = new Color(0.6f, 0.2f, 0.2f);
     private static readonly Color constructionColor = new Color(0.5f, 0.4f, 0.3f);
+    private bool torchesAdded;
 
     private void Awake()
     {
@@ -30,19 +31,6 @@ public class Wall : MonoBehaviour
         {
             boxCol.center = new Vector3(0, 1f, 0);
             boxCol.size = new Vector3(1f, 2f, 0.5f);
-        }
-
-        // Widen NavMeshObstacle to cover the full tower-to-tower span.
-        // The wall body BoxCollider is only 1 unit wide, but towers extend to
-        // ±TOWER_OFFSET. Without this, enemies path through exposed tower geometry
-        // at unattached wall endpoints. The dual NavMesh enemy radius (0.7) seals
-        // gaps between connected wall segments; this covers the tower bodies themselves.
-        var navObstacle = GetComponent<UnityEngine.AI.NavMeshObstacle>();
-        if (navObstacle != null)
-        {
-            navObstacle.center = new Vector3(0, 1f, 0);
-            navObstacle.size = new Vector3(2f * WallCorners.TOWER_OFFSET, 2f, 2f * WallCorners.OCT_APOTHEM);
-            Debug.Log($"[Wall] NavMeshObstacle sized to tower span: {navObstacle.size}");
         }
 
         // Add capsule colliders for the octagonal towers at each end
@@ -79,11 +67,17 @@ public class Wall : MonoBehaviour
         float towerOffset = WallCorners.TOWER_OFFSET;
         float towerRadius = WallCorners.OCT_APOTHEM;
 
+        // "EnemyBlock" layer: included in enemy NavMesh bake but excluded from humanoid.
+        // Tower colliders on this layer bake as static obstacles into the enemy NavMesh,
+        // blocking enemies at tower endpoints without sealing humanoid passage gaps.
+        int enemyBlockLayer = LayerMask.NameToLayer("EnemyBlock");
+
         // Solid (non-trigger) colliders so Physics.OverlapSphere can detect them
         // for engineer stand position validation.
         var leftTower = new GameObject("TowerCollider_L");
         leftTower.transform.SetParent(transform, false);
         leftTower.transform.localPosition = new Vector3(-towerOffset, 1f, 0);
+        if (enemyBlockLayer >= 0) leftTower.layer = enemyBlockLayer;
         var leftCap = leftTower.AddComponent<CapsuleCollider>();
         leftCap.radius = towerRadius;
         leftCap.height = 2f;
@@ -92,6 +86,7 @@ public class Wall : MonoBehaviour
         var rightTower = new GameObject("TowerCollider_R");
         rightTower.transform.SetParent(transform, false);
         rightTower.transform.localPosition = new Vector3(towerOffset, 1f, 0);
+        if (enemyBlockLayer >= 0) rightTower.layer = enemyBlockLayer;
         var rightCap = rightTower.AddComponent<CapsuleCollider>();
         rightCap.radius = towerRadius;
         rightCap.height = 2f;
@@ -155,7 +150,8 @@ public class Wall : MonoBehaviour
             if (SoundManager.Instance != null) SoundManager.Instance.PlayWallCollapse(transform.position);
             OnWallDestroyed?.Invoke(this);
             gameObject.SetActive(false);
-            // Force all enemies to recalculate paths so they can exploit the breach
+            // Rebake enemy NavMesh so tower geometry is updated, then retarget
+            if (WallManager.Instance != null) WallManager.Instance.RebakeEnemyNavMesh();
             EnemyMovement.ForceAllRetarget();
         }
     }
@@ -203,7 +199,16 @@ public class Wall : MonoBehaviour
 
             Debug.Log($"[Wall] {name} construction complete at {transform.position}, HP={CurrentHP}/{maxHP}");
 
-            // New wall changes pathing — recalculate rays and retarget enemies
+            // Add torches to completed wall
+            if (!torchesAdded)
+            {
+                torchesAdded = true;
+                if (TorchManager.Instance != null)
+                    TorchManager.Instance.AddWallTorches(this);
+            }
+
+            // Rebake enemy NavMesh to include new tower geometry, then retarget
+            if (WallManager.Instance != null) WallManager.Instance.RebakeEnemyNavMesh();
             EnemyMovement.ForceAllRetarget();
         }
 

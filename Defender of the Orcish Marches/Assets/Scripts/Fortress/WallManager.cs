@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
+using Unity.AI.Navigation;
 
 public class WallManager : MonoBehaviour
 {
@@ -13,6 +15,7 @@ public class WallManager : MonoBehaviour
     [SerializeField] private bool debugIssue6WestExtensions;
 
     private List<Wall> allWalls = new List<Wall>();
+    private bool enemyNavMeshDirty;
 
     public IReadOnlyList<Wall> AllWalls => allWalls;
     public GameObject WallPrefab => wallPrefab;
@@ -36,6 +39,15 @@ public class WallManager : MonoBehaviour
     private void OnDisable()
     {
         if (Instance == this) Instance = null;
+    }
+
+    private void LateUpdate()
+    {
+        if (enemyNavMeshDirty)
+        {
+            enemyNavMeshDirty = false;
+            DoRebakeEnemyNavMesh();
+        }
     }
 
     private void Start()
@@ -62,6 +74,9 @@ public class WallManager : MonoBehaviour
         {
             PathingRayManager.Instance.Recalculate();
         }
+
+        // Rebake enemy NavMesh to include tower colliders created at runtime in Wall.Awake()
+        RebakeEnemyNavMesh();
 
         // Log initial wall state for bug report reproduction
         LogAllWallState();
@@ -239,6 +254,37 @@ public class WallManager : MonoBehaviour
             Debug.Log($"[WallManager] WALL: name={wall.name} pos=({t.position.x:F4},{t.position.y:F4},{t.position.z:F4}) rot=({rot.x:F1},{rot.y:F1},{rot.z:F1}) scaleX={scale.x:F3} hp={wall.CurrentHP}/{wall.MaxHP} destroyed={wall.IsDestroyed}");
         }
         Debug.Log("[WallManager] === END WALL STATE ===");
+    }
+
+    /// <summary>
+    /// Marks the enemy NavMesh as dirty. The actual rebuild runs once in LateUpdate,
+    /// batching multiple wall changes into a single NavMesh rebuild per frame.
+    /// </summary>
+    public void RebakeEnemyNavMesh()
+    {
+        enemyNavMeshDirty = true;
+    }
+
+    private void DoRebakeEnemyNavMesh()
+    {
+        var surfaces = FindObjectsByType<NavMeshSurface>(FindObjectsSortMode.None);
+        foreach (var surface in surfaces)
+        {
+            if (surface.agentTypeID == -334000983) // Enemy agent type
+            {
+                // Ensure PhysicsColliders mode — RenderMeshes fails at runtime
+                // ("Source mesh does not allow read access")
+                if (surface.useGeometry != NavMeshCollectGeometry.PhysicsColliders)
+                {
+                    Debug.LogWarning("[WallManager] Enemy NavMeshSurface was using RenderMeshes — switching to PhysicsColliders for runtime safety.");
+                    surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+                }
+                surface.BuildNavMesh();
+                Debug.Log($"[WallManager] Rebaked enemy NavMesh (agentTypeID={surface.agentTypeID})");
+                return;
+            }
+        }
+        Debug.LogWarning("[WallManager] No enemy NavMeshSurface found for rebake");
     }
 
     public GameObject PlaceWall(Vector3 position, Quaternion rotation = default, float scaleX = 1f)

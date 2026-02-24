@@ -11,6 +11,7 @@ public static class NavMeshSetup
     private const float ENEMY_SLOPE = 45f;
     private const float ENEMY_CLIMB = 0.75f;
     private const string WALLS_LAYER_NAME = "Walls";
+    private const string ENEMY_BLOCK_LAYER_NAME = "EnemyBlock";
 
     [MenuItem("Tools/Setup Dual NavMesh")]
     public static void SetupDualNavMesh()
@@ -71,18 +72,36 @@ public static class NavMeshSetup
             Debug.Log($"[NavMeshSetup] Added Enemy NavMeshSurface (agentTypeID={enemyAgentTypeID})");
         }
 
-        // --- 4. Set up Walls layer and exclude from NavMesh bake ---
-        // Walls must NOT be baked as static geometry — only NavMeshObstacle carving
-        // should control wall blocking, so breaches open up when walls are destroyed.
+        // Use PhysicsColliders for enemy surface so runtime BuildNavMesh() works
+        // (RenderMeshes requires mesh Read/Write enabled, which fails at runtime)
+        enemySurface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+        Debug.Log("[NavMeshSetup] Enemy surface useGeometry set to PhysicsColliders (runtime-safe).");
+
+        // --- 4. Set up layers and configure NavMesh bake masks ---
+        // "Walls" layer: wall meshes excluded from BOTH bakes. NavMeshObstacle carving
+        // controls wall body blocking at runtime, so breaches open when walls are destroyed.
+        // "EnemyBlock" layer: tower colliders included in enemy bake ONLY. This blocks
+        // enemies at tower endpoints without sealing the humanoid passage gaps.
         int wallsLayer = EnsureLayerExists(WALLS_LAYER_NAME);
+        int enemyBlockLayer = EnsureLayerExists(ENEMY_BLOCK_LAYER_NAME);
         if (wallsLayer >= 0)
         {
-            int excludeWallsMask = ~(1 << wallsLayer);
-            friendlySurface.layerMask = excludeWallsMask;
-            enemySurface.layerMask = excludeWallsMask;
-            Debug.Log($"[NavMeshSetup] Excluding '{WALLS_LAYER_NAME}' layer ({wallsLayer}) from NavMesh bake. layerMask={excludeWallsMask}");
+            // Humanoid: exclude Walls AND EnemyBlock (preserves gaps for friendlies)
+            int humanoidExcludeMask = ~(1 << wallsLayer);
+            if (enemyBlockLayer >= 0)
+                humanoidExcludeMask &= ~(1 << enemyBlockLayer);
+            friendlySurface.layerMask = humanoidExcludeMask;
+
+            // Enemy: exclude Walls only — EnemyBlock is INCLUDED so tower geometry
+            // bakes as obstacles in the enemy NavMesh
+            int enemyExcludeMask = ~(1 << wallsLayer);
+            enemySurface.layerMask = enemyExcludeMask;
+
+            Debug.Log($"[NavMeshSetup] Layers: Walls={wallsLayer}, EnemyBlock={enemyBlockLayer}. " +
+                $"Humanoid layerMask={humanoidExcludeMask}, Enemy layerMask={enemyExcludeMask}");
 
             // Move all Wall objects in the scene to the Walls layer
+            // (tower collider children created at runtime will be set to EnemyBlock in Wall.Awake)
             var walls = Object.FindObjectsByType<Wall>(FindObjectsSortMode.None);
             foreach (var wall in walls)
                 SetLayerRecursive(wall.gameObject, wallsLayer);

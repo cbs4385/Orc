@@ -143,10 +143,83 @@ public class TorchManager : MonoBehaviour
 
     private void SetTorchesActive(bool active)
     {
+        // Remove destroyed torches (e.g. from walls that were destroyed)
+        torches.RemoveAll(t => t == null);
+
         foreach (var torch in torches)
         {
-            if (torch != null)
-                torch.SetActive(active);
+            torch.SetActive(active);
         }
+    }
+
+    /// <summary>
+    /// Creates torches at both tower endpoints of a dynamically placed wall.
+    /// Torches are parented to the wall so they auto-destroy when the wall is removed.
+    /// </summary>
+    public void AddWallTorches(Wall wall)
+    {
+        if (wall == null) return;
+
+        var corners = wall.GetComponent<WallCorners>();
+        if (corners == null)
+        {
+            Debug.LogWarning($"[TorchManager] Wall {wall.name} has no WallCorners — skipping torches.");
+            return;
+        }
+
+        // Create flame material if not yet initialized (possible if called before Start)
+        if (flameMaterial == null) CreateFlameMaterial();
+
+        Vector3 nearEnd = corners.GetEndCenter(-1);
+        Vector3 farEnd = corners.GetEndCenter(1);
+
+        var torchNear = CreateTorchOnWall($"WallTorch_{wall.name}_Near",
+            nearEnd + Vector3.up * TOWER_TORCH_HEIGHT, 6f, 1.5f, wall.transform);
+        var torchFar = CreateTorchOnWall($"WallTorch_{wall.name}_Far",
+            farEnd + Vector3.up * TOWER_TORCH_HEIGHT, 6f, 1.5f, wall.transform);
+
+        torches.Add(torchNear);
+        torches.Add(torchFar);
+
+        // Match current day/night state
+        bool isNight = DayNightCycle.Instance != null && DayNightCycle.Instance.IsNight;
+        torchNear.SetActive(isNight);
+        torchFar.SetActive(isNight);
+
+        Debug.Log($"[TorchManager] Added 2 torches to wall {wall.name} at {nearEnd}, {farEnd}. Night={isNight}.");
+    }
+
+    private GameObject CreateTorchOnWall(string torchName, Vector3 worldPosition, float lightRange, float lightIntensity, Transform parent)
+    {
+        var torchGO = new GameObject(torchName);
+        torchGO.transform.SetParent(parent);
+        torchGO.transform.position = worldPosition;
+
+        // Point light
+        var light = torchGO.AddComponent<Light>();
+        light.type = LightType.Point;
+        light.color = new Color(1f, 0.6f, 0.2f);
+        light.range = lightRange;
+        light.intensity = lightIntensity;
+        light.shadows = LightShadows.None;
+
+        // Flame sphere (small emissive orb)
+        var flameGO = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        flameGO.name = "Flame";
+        flameGO.transform.SetParent(torchGO.transform, false);
+        flameGO.transform.localPosition = Vector3.zero;
+        flameGO.transform.localScale = new Vector3(0.15f, 0.25f, 0.15f);
+
+        // Remove collider — flame shouldn't block anything
+        var col = flameGO.GetComponent<Collider>();
+        if (col != null) Destroy(col);
+
+        var rend = flameGO.GetComponent<Renderer>();
+        if (rend != null && flameMaterial != null)
+        {
+            rend.material = flameMaterial;
+        }
+
+        return torchGO;
     }
 }

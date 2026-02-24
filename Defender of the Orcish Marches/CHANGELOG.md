@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.12.2
+
+### Manual Build Mode
+- Build mode no longer auto-starts at nightfall — press **B** during night to enter build mode manually
+- Shows "Press B to build walls" hint banner when night falls and enemies are cleared
+- Pressing B when conditions aren't met shows the specific reason (no engineer, not enough gold, not night)
+- Build mode still auto-exits at dawn
+
+### Hover Magnification
+- Hovering the cursor over enemies, defenders, menials, or refugees scales them 4x for easy identification
+- Scale restores immediately when cursor moves away or the unit is destroyed
+
+### Wall Torches
+- Dynamically placed walls now receive torches at both tower endpoints when construction completes
+- Torches match existing tower torch settings (range 6, intensity 1.5, warm color)
+- Torches respect day/night cycle and are destroyed automatically when their wall is removed
+
+### Bug Reports
+- Large bug report zip attachments are now split into 24MB chunks to stay under Gmail's 25MB attachment limit
+- Each chunk is sent as a separate email with "Part X/Y" in the subject line
+- Status text shows per-part sending progress during multi-part submissions
+
 ## 0.12.1
 
 ### Bug Fixes — Issue 6: Enemies Walk Through Extension Walls

@@ -30,12 +30,10 @@ public class BuildModeManager : MonoBehaviour
     /// <summary>Wall cost used by the continuous placement system.</summary>
     public int WallCost { get; private set; }
 
-    // Build phase scheduling — defer to sunset
-    private bool buildPhaseReady;   // enemies cleared, waiting for sunset
-    private bool buildPhaseActive;  // build phase banner showing or build mode active
-    private float buildPhaseBannerTimer;
-    private const float BUILD_PHASE_BANNER_DURATION = 3f;
+    // Track whether enemies have been cleared this night (for hint banner at nightfall)
+    private bool enemiesCleared;
     private const float EXIT_BANNER_DURATION = 3f;
+    private const float HINT_BANNER_DURATION = 4f;
 
     // Idle speedup tracking (periodic to avoid per-frame FindObjectsByType)
     private float lootCheckTimer;
@@ -99,38 +97,22 @@ public class BuildModeManager : MonoBehaviour
         // Update idle speedup check periodically
         UpdateIdleSpeedup();
 
-        // Build phase banner countdown — enter build mode when banner expires
-        if (buildPhaseBannerTimer > 0f)
+        // B key — toggle build mode
+        if (Keyboard.current != null && Keyboard.current.bKey.wasPressedThisFrame)
         {
-            buildPhaseBannerTimer -= Time.deltaTime;
-            if (buildPhaseBannerTimer <= 0f)
+            if (IsBuildMode)
             {
-                GameHUD.HideBanner();
-                if (HasLivingEngineer() && CanAffordWall())
-                {
-                    EnterBuildMode();
-                }
-                else
-                {
-                    string reason = !HasLivingEngineer()
-                        ? "No engineer — hire one from Upgrades (U)"
-                        : $"Not enough gold for walls (need {GetWallCost()}g)";
-                    GameHUD.ShowBanner(reason, 4f);
-                    Debug.Log($"[BuildModeManager] Build phase — conditions no longer met: {reason}");
-                }
+                Debug.Log("[BuildModeManager] B key pressed — exiting build mode.");
+                ExitBuildMode();
             }
-            return; // don't process build mode inputs during banner
+            else
+            {
+                TryEnterBuildMode();
+            }
+            return;
         }
 
         if (!IsBuildMode) return;
-
-        // B key to exit build mode
-        if (Keyboard.current != null && Keyboard.current.bKey.wasPressedThisFrame)
-        {
-            Debug.Log("[BuildModeManager] B key pressed — exiting build mode.");
-            ExitBuildMode();
-            return;
-        }
 
         // Keep cached wall cost up to date each frame (for HUD display)
         WallCost = GetWallCost();
@@ -141,6 +123,38 @@ public class BuildModeManager : MonoBehaviour
             Debug.Log("[BuildModeManager] Player can no longer afford walls — auto-exiting build mode.");
             ExitBuildMode();
         }
+    }
+
+    private void TryEnterBuildMode()
+    {
+        // Must be night
+        if (DayNightCycle.Instance == null || !DayNightCycle.Instance.IsNight)
+        {
+            GameHUD.ShowBanner("Can only build at night", HINT_BANNER_DURATION);
+            Debug.Log("[BuildModeManager] B key pressed — not night, cannot enter build mode.");
+            return;
+        }
+
+        WallCost = GetWallCost();
+        bool hasEngineer = HasLivingEngineer();
+        bool canAfford = CanAffordWall();
+        int currentGold = GameManager.Instance != null ? GameManager.Instance.Treasure : -1;
+
+        if (!hasEngineer)
+        {
+            GameHUD.ShowBanner("No engineer — hire one from Upgrades (U)", HINT_BANNER_DURATION);
+            Debug.Log("[BuildModeManager] B key pressed — no engineer.");
+            return;
+        }
+
+        if (!canAfford)
+        {
+            GameHUD.ShowBanner($"Not enough gold for walls (need {WallCost}g, have {currentGold}g)", HINT_BANNER_DURATION);
+            Debug.Log($"[BuildModeManager] B key pressed — can't afford walls. Need {WallCost}g, have {currentGold}g.");
+            return;
+        }
+
+        EnterBuildMode();
     }
 
     private void UpdateIdleSpeedup()
@@ -154,7 +168,7 @@ public class BuildModeManager : MonoBehaviour
             && EnemySpawnManager.Instance.DayTotalEnemies > 0
             && EnemySpawnManager.Instance.DayEnemiesRemaining == 0;
         bool noLoot = !HasUncollectedLoot();
-        bool canSpeedup = noEnemies && noLoot && !IsBuildMode && buildPhaseBannerTimer <= 0f;
+        bool canSpeedup = noEnemies && noLoot && !IsBuildMode;
 
         bool wasIdle = IsIdleSpeedup;
         IsIdleSpeedup = canSpeedup;
@@ -177,49 +191,32 @@ public class BuildModeManager : MonoBehaviour
 
     private void HandleAllEnemiesCleared()
     {
-        buildPhaseReady = true;
-        Debug.Log("[BuildModeManager] All enemies cleared — build phase ready, waiting for sunset.");
+        enemiesCleared = true;
+        Debug.Log("[BuildModeManager] All enemies cleared — press B to enter build mode.");
 
-        // If already night, start build phase now (enemies retreated during night)
+        // If already night, show hint banner immediately
         if (DayNightCycle.Instance != null && DayNightCycle.Instance.IsNight)
         {
-            StartBuildPhase();
+            ShowBuildHint();
         }
     }
 
     private void HandleNightStarted()
     {
-        if (buildPhaseReady)
+        if (enemiesCleared)
         {
-            StartBuildPhase();
+            ShowBuildHint();
         }
     }
 
-    private void StartBuildPhase()
+    private void ShowBuildHint()
     {
-        if (buildPhaseActive) return;
-
         WallCost = GetWallCost();
-        bool hasEngineer = HasLivingEngineer();
-        bool canAfford = CanAffordWall();
-
-        if (!hasEngineer || !canAfford)
+        if (HasLivingEngineer() && CanAffordWall())
         {
-            // Show skip reason to the player
-            string reason = !hasEngineer
-                ? "No engineer — hire one from Upgrades (U)"
-                : $"Not enough gold for walls (need {WallCost}g)";
-            GameHUD.ShowBanner(reason, 4f);
-            Debug.Log($"[BuildModeManager] Build phase skipped — {reason}");
-            buildPhaseReady = false;
-            return;
+            GameHUD.ShowBanner("Press B to build walls", HINT_BANNER_DURATION);
+            Debug.Log("[BuildModeManager] Night hint: Press B to build walls.");
         }
-
-        buildPhaseActive = true;
-        IsIdleSpeedup = false;
-        buildPhaseBannerTimer = BUILD_PHASE_BANNER_DURATION;
-        GameHUD.ShowBanner("BUILD PHASE");
-        Debug.Log($"[BuildModeManager] Build phase banner shown — build mode starts in {BUILD_PHASE_BANNER_DURATION}s.");
     }
 
     private void HandleDayStarted()
@@ -232,9 +229,7 @@ public class BuildModeManager : MonoBehaviour
             Time.timeScale = 1f;
             OnBuildModeEnded?.Invoke();
         }
-        buildPhaseReady = false;
-        buildPhaseActive = false;
-        buildPhaseBannerTimer = 0f;
+        enemiesCleared = false;
         IsIdleSpeedup = false;
         GameHUD.HideBanner();
     }
@@ -265,8 +260,6 @@ public class BuildModeManager : MonoBehaviour
     {
         if (!IsBuildMode) return;
         IsBuildMode = false;
-        buildPhaseReady = false;
-        buildPhaseActive = false;
         Time.timeScale = 1f;
         Debug.Log("[BuildModeManager] Build mode ENDED. timeScale=1.");
         GameHUD.ShowBanner("BUILD COMPLETE", EXIT_BANNER_DURATION);

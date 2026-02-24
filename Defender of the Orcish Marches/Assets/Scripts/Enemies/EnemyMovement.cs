@@ -10,13 +10,15 @@ public class EnemyMovement : MonoBehaviour
     private Transform currentTarget;
     private Vector3 lastRetargetPos;
     private const float RETARGET_DISTANCE = 1f;
+    private float stuckTimer;
 
     // Tower position - enemies walk here when walls are breached
     private static Vector3 TowerPosition => GameManager.FortressCenter;
 
     public Transform CurrentTarget => currentTarget;
     public bool HasReachedTarget => agent != null && !agent.pathPending &&
-        agent.remainingDistance <= agent.stoppingDistance + 0.1f;
+        agent.remainingDistance <= agent.stoppingDistance + 0.1f &&
+        agent.pathStatus == UnityEngine.AI.NavMeshPathStatus.PathComplete;
 
     // Retreat state
     public bool IsRetreating { get; private set; }
@@ -65,7 +67,28 @@ public class EnemyMovement : MonoBehaviour
         if (distMoved >= RETARGET_DISTANCE)
         {
             lastRetargetPos = transform.position;
+            stuckTimer = 0f;
             FindTarget();
+        }
+
+        // Detect partial path (enemy can't reach destination) — retarget to find an alternative
+        if (!agent.pathPending && agent.pathStatus != NavMeshPathStatus.PathComplete &&
+            agent.remainingDistance <= agent.stoppingDistance + 0.1f)
+        {
+            stuckTimer += Time.deltaTime;
+            if (stuckTimer >= 1f)
+            {
+                Debug.LogWarning($"[EnemyMovement] {enemy.Data?.enemyName} stuck on partial path to {(currentTarget != null ? currentTarget.name : "tower")} — retargeting");
+                stuckTimer = 0f;
+                lastRetargetPos = transform.position;
+                // Clear current target so FindTarget picks fresh
+                currentTarget = null;
+                FindTarget();
+            }
+        }
+        else
+        {
+            stuckTimer = 0f;
         }
 
         // If any enemy reaches the tower area after a breach, game over

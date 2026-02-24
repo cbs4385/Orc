@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -22,9 +23,13 @@ public class BugReportPanel : MonoBehaviour
     private GameObject dialogPanel;
 
     private enum SendState { Idle, Sending, Success, Failed }
+    // Note: Sending state is used for progress display during multi-part sends
     private volatile SendState sendState = SendState.Idle;
     private volatile string errorMessage;
+    private volatile string progressMessage;
     private float autoCloseTimer;
+
+    private const long MAX_ATTACHMENT_BYTES = 24 * 1024 * 1024; // 24MB, safe margin under Gmail's 25MB limit
 
     public void Show()
     {
@@ -50,6 +55,17 @@ public class BugReportPanel : MonoBehaviour
 
     private void Update()
     {
+        // Show progress updates from background thread
+        string progress = progressMessage;
+        if (progress != null && sendState == SendState.Sending)
+        {
+            if (statusText != null)
+            {
+                statusText.text = progress;
+                statusText.color = Color.white;
+            }
+        }
+
         switch (sendState)
         {
             case SendState.Success:
@@ -140,33 +156,57 @@ public class BugReportPanel : MonoBehaviour
         string recipientEmail = config.recipientEmail;
 
         // Create zip on main thread
-        string zipPath = null;
+        var attachmentPaths = new List<string>();
         if (!string.IsNullOrEmpty(logPath) && File.Exists(logPath))
         {
             try
             {
-                zipPath = Path.Combine(Application.persistentDataPath, "bug_report.zip");
+                string zipPath = Path.Combine(Application.persistentDataPath, "bug_report.zip");
                 if (File.Exists(zipPath)) File.Delete(zipPath);
                 using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
                 {
                     archive.CreateEntryFromFile(logPath, "game_log.txt");
                 }
-                Debug.Log($"[BugReportPanel] Created zip at {zipPath}");
+
+                long zipSize = new FileInfo(zipPath).Length;
+                if (zipSize <= MAX_ATTACHMENT_BYTES)
+                {
+                    attachmentPaths.Add(zipPath);
+                    Debug.Log($"[BugReportPanel] Created zip at {zipPath} ({zipSize} bytes, single part).");
+                }
+                else
+                {
+                    // Split into chunks that fit Gmail's attachment limit
+                    byte[] zipBytes = File.ReadAllBytes(zipPath);
+                    int totalParts = (int)Math.Ceiling((double)zipBytes.Length / MAX_ATTACHMENT_BYTES);
+                    for (int i = 0; i < totalParts; i++)
+                    {
+                        int offset = (int)(i * MAX_ATTACHMENT_BYTES);
+                        int length = (int)Math.Min(MAX_ATTACHMENT_BYTES, zipBytes.Length - offset);
+                        byte[] partBytes = new byte[length];
+                        Buffer.BlockCopy(zipBytes, offset, partBytes, 0, length);
+                        string partPath = Path.Combine(Application.persistentDataPath, $"bug_report.zip.{(i + 1):D3}");
+                        File.WriteAllBytes(partPath, partBytes);
+                        attachmentPaths.Add(partPath);
+                    }
+                    File.Delete(zipPath);
+                    Debug.Log($"[BugReportPanel] Split zip ({zipSize} bytes) into {totalParts} parts.");
+                }
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[BugReportPanel] Failed to create zip: {e.Message}");
-                zipPath = null;
             }
         }
 
-        string capturedZipPath = zipPath;
+        string[] capturedPaths = attachmentPaths.ToArray();
+        sendState = SendState.Sending;
 
         ThreadPool.QueueUserWorkItem(_ =>
         {
             try
             {
-                string subject = $"Bug Report - v{version}";
+                int totalEmails = Math.Max(1, capturedPaths.Length);
                 string body = $"Bug Report\n" +
                     $"==========\n" +
                     $"Version: {version}\n" +
@@ -181,13 +221,25 @@ public class BugReportPanel : MonoBehaviour
                     smtp.Credentials = new NetworkCredential(senderEmail, senderPassword);
                     smtp.Timeout = 15000;
 
-                    using (var mail = new MailMessage(senderEmail, recipientEmail, subject, body))
+                    for (int i = 0; i < totalEmails; i++)
                     {
-                        if (!string.IsNullOrEmpty(capturedZipPath) && File.Exists(capturedZipPath))
+                        string subject = $"Bug Report - v{version}";
+                        if (totalEmails > 1)
                         {
-                            mail.Attachments.Add(new System.Net.Mail.Attachment(capturedZipPath));
+                            subject += $" (Part {i + 1}/{totalEmails})";
+                            progressMessage = $"Sending part {i + 1}/{totalEmails}...";
                         }
-                        smtp.Send(mail);
+
+                        using (var mail = new MailMessage(senderEmail, recipientEmail, subject, body))
+                        {
+                            if (i < capturedPaths.Length && File.Exists(capturedPaths[i]))
+                            {
+                                mail.Attachments.Add(new System.Net.Mail.Attachment(capturedPaths[i]));
+                            }
+                            smtp.Send(mail);
+                        }
+
+                        Debug.Log($"[BugReportPanel] Sent email {i + 1}/{totalEmails}.");
                     }
                 }
 
@@ -200,13 +252,11 @@ public class BugReportPanel : MonoBehaviour
             }
             finally
             {
-                // Clean up zip
-                try
+                progressMessage = null;
+                foreach (var path in capturedPaths)
                 {
-                    if (!string.IsNullOrEmpty(capturedZipPath) && File.Exists(capturedZipPath))
-                        File.Delete(capturedZipPath);
+                    try { if (File.Exists(path)) File.Delete(path); } catch { }
                 }
-                catch { }
             }
         });
     }

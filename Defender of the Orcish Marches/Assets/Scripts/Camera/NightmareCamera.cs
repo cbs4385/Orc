@@ -21,7 +21,6 @@ public class NightmareCamera : MonoBehaviour
     private UnityEngine.Camera orthoCamera;
     private float pitch;
     private bool inBuildView;
-    private bool cursorLocked;
     private bool subscribedToBuildMode;
 
     /// <summary>Current pitch angle in degrees (read by Ballista.cs for fire direction).</summary>
@@ -247,13 +246,11 @@ public class NightmareCamera : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-        cursorLocked = true;
     }
 
     private void UnlockCursor()
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        cursorLocked = false;
     }
 }

@@ -27,6 +27,14 @@ public class EnemyAttack : MonoBehaviour
 
         if (movement.HasReachedTarget && movement.CurrentTarget != null && attackCooldown <= 0)
         {
+            // Verify actual distance — HasReachedTarget can be true on partial paths
+            // where the agent can't reach the destination but remainingDistance is small
+            float distToTarget = Vector3.Distance(transform.position, movement.CurrentTarget.position);
+            if (distToTarget > enemy.Data.attackRange * 1.5f)
+            {
+                Debug.LogWarning($"[EnemyAttack] {enemy.Data.enemyName} HasReachedTarget=true but target {movement.CurrentTarget.name} is {distToTarget:F1} away (attackRange={enemy.Data.attackRange}). Skipping attack.");
+                return;
+            }
             Attack(movement.CurrentTarget);
         }
     }
