@@ -126,6 +126,12 @@ public class GameOverScreen : MonoBehaviour
         float firstBoss = RunStatsTracker.Instance != null ? RunStatsTracker.Instance.FirstBossKillTime : 0;
         LifetimeStatsManager.RecordRunEnd(current, GameSettings.CurrentDifficulty, gameTime, peakDef, firstBoss);
 
+        // Evaluate achievements
+        var newAchievements = AchievementManager.EvaluateRunEnd(current, GameSettings.CurrentDifficulty);
+
+        // Award legacy points
+        int legacyEarned = LegacyProgressionManager.AddPointsFromScore(current.compositeScore);
+
         // Save and get rank
         int rank = RunHistoryManager.SaveRun(current);
 
@@ -186,6 +192,28 @@ public class GameOverScreen : MonoBehaviour
             if (MutatorManager.ActiveCount > 0)
             {
                 sb.AppendFormat("\nMutators: {0} ({1:F2}x)", MutatorManager.GetActiveNamesDisplay(), MutatorManager.GetScoreMultiplier());
+            }
+
+            // Legacy points
+            if (legacyEarned > 0)
+            {
+                sb.AppendFormat("\n<color=#B89030>+{0} Legacy Points</color> ({1})", legacyEarned, LegacyProgressionManager.GetCurrentRankTitle());
+            }
+
+            // New achievements
+            if (newAchievements.Count > 0)
+            {
+                sb.Append("\n");
+                foreach (var (achId, achTier) in newAchievements)
+                {
+                    var achDef = AchievementDefs.GetById(achId);
+                    if (achDef != null)
+                    {
+                        string tierColor = achTier == AchievementTier.Gold ? "#FFD700" :
+                                           achTier == AchievementTier.Silver ? "#C0C0CC" : "#CD7F32";
+                        sb.AppendFormat("\n<color={0}>[{1}]</color> {2}", tierColor, achTier, achDef.Value.name);
+                    }
+                }
             }
 
             scoreText.text = sb.ToString();

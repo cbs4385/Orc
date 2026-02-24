@@ -27,6 +27,14 @@ public class LifetimeStatsData
     public int killsSuicide;
     public int killsArtillery;
 
+    // Per-enemy-name kills
+    public int killsOrcGrunt;
+    public int killsBowOrc;
+    public int killsTroll;
+    public int killsSuicideGoblin;
+    public int killsGoblinCannoneer;
+    public int killsOrcWarBoss;
+
     // Per-type hires
     public int hiresEngineer;
     public int hiresPikeman;
@@ -134,6 +142,14 @@ public static class LifetimeStatsManager
         data.killsWallBreaker += record.killsWallBreaker;
         data.killsSuicide += record.killsSuicide;
         data.killsArtillery += record.killsArtillery;
+
+        // Per-enemy-name kills
+        data.killsOrcGrunt += record.killsOrcGrunt;
+        data.killsBowOrc += record.killsBowOrc;
+        data.killsTroll += record.killsTroll;
+        data.killsSuicideGoblin += record.killsSuicideGoblin;
+        data.killsGoblinCannoneer += record.killsGoblinCannoneer;
+        data.killsOrcWarBoss += record.killsOrcWarBoss;
 
         // Per-type hires
         data.hiresEngineer += record.hiresEngineer;

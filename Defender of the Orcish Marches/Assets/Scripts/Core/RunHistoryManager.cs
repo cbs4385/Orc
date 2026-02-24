@@ -32,6 +32,14 @@ public struct RunRecord
     public int killsSuicide;
     public int killsArtillery;
 
+    // Per-enemy-name kills
+    public int killsOrcGrunt;
+    public int killsBowOrc;
+    public int killsTroll;
+    public int killsSuicideGoblin;
+    public int killsGoblinCannoneer;
+    public int killsOrcWarBoss;
+
     // Per-type hires
     public int hiresEngineer;
     public int hiresPikeman;

@@ -164,10 +164,10 @@ public class MenuSceneBuilder : MonoBehaviour
         panelRect.anchorMin = new Vector2(0f, 0.08f);
         panelRect.anchorMax = new Vector2(0f, 0.88f);
         panelRect.pivot = new Vector2(0f, 0.5f);
-        panelRect.sizeDelta = new Vector2(220, 0);
+        panelRect.sizeDelta = new Vector2(260, 0);
         panelRect.anchoredPosition = new Vector2(20, 0);
         var vlg = panelObj.AddComponent<VerticalLayoutGroup>();
-        vlg.spacing = 10;
+        vlg.spacing = 6;
         vlg.childAlignment = TextAnchor.MiddleCenter;
         vlg.childControlWidth = true;
         vlg.childControlHeight = true;
@@ -185,6 +185,12 @@ public class MenuSceneBuilder : MonoBehaviour
 
         // Mutators button
         var mutatorsBtn = CreateMenuButton("MutatorsButton", "MUTATORS", panelObj.transform);
+
+        // Achievements button
+        var achievementsBtn = CreateMenuButton("AchievementsButton", "ACHIEVEMENTS", panelObj.transform);
+
+        // Legacy button
+        var legacyBtn = CreateMenuButton("LegacyButton", "LEGACY", panelObj.transform);
 
         // Bug report button (top-right corner)
         var bugReportBtn = CreateMenuButton("BugReportButton", "REPORT BUG", canvasObj.transform);
@@ -347,6 +353,8 @@ public class MenuSceneBuilder : MonoBehaviour
         var bugReportPanel = mgrObj.AddComponent<BugReportPanel>();
         var statsDashboardPanel = mgrObj.AddComponent<StatsDashboardPanel>();
         var mutatorUI = mgrObj.AddComponent<MutatorUI>();
+        var achievementUI = mgrObj.AddComponent<AchievementUI>();
+        var legacyUI = mgrObj.AddComponent<LegacyUI>();
 
         // Load BugReportConfig asset
         var bugReportConfig = AssetDatabase.LoadAssetAtPath<BugReportConfig>("Assets/ScriptableObjects/BugReportConfig.asset");
@@ -363,6 +371,10 @@ public class MenuSceneBuilder : MonoBehaviour
         mmSO.FindProperty("statsDashboardPanel").objectReferenceValue = statsDashboardPanel;
         mmSO.FindProperty("mutatorsButton").objectReferenceValue = mutatorsBtn;
         mmSO.FindProperty("mutatorUI").objectReferenceValue = mutatorUI;
+        mmSO.FindProperty("achievementsButton").objectReferenceValue = achievementsBtn;
+        mmSO.FindProperty("achievementUI").objectReferenceValue = achievementUI;
+        mmSO.FindProperty("legacyButton").objectReferenceValue = legacyBtn;
+        mmSO.FindProperty("legacyUI").objectReferenceValue = legacyUI;
         mmSO.FindProperty("bugReportButton").objectReferenceValue = bugReportBtn;
         mmSO.FindProperty("bugReportPanel").objectReferenceValue = bugReportPanel;
         mmSO.FindProperty("difficultySlider").objectReferenceValue = diffSlider;
@@ -602,6 +614,9 @@ public class MenuSceneBuilder : MonoBehaviour
         var tmp = txtObj.AddComponent<TextMeshProUGUI>();
         tmp.text = label;
         tmp.fontSize = 32;
+        tmp.enableAutoSizing = true;
+        tmp.fontSizeMin = 18;
+        tmp.fontSizeMax = 32;
         tmp.fontStyle = FontStyles.Bold;
         tmp.color = new Color(0.9f, 0.8f, 0.5f);
         tmp.alignment = TextAlignmentOptions.Center;

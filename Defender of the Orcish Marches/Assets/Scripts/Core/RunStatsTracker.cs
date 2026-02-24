@@ -32,6 +32,14 @@ public class RunStatsTracker : MonoBehaviour
     public int KillsSuicide { get; private set; }
     public int KillsArtillery { get; private set; }
 
+    // Per-enemy-name kills (individual enemy identities)
+    public int KillsOrcGrunt { get; private set; }
+    public int KillsBowOrc { get; private set; }
+    public int KillsTroll { get; private set; }
+    public int KillsSuicideGoblin { get; private set; }
+    public int KillsGoblinCannoneer { get; private set; }
+    public int KillsOrcWarBoss { get; private set; }
+
     // Per-type hires
     public int HiresEngineer { get; private set; }
     public int HiresPikeman { get; private set; }
@@ -151,6 +159,17 @@ public class RunStatsTracker : MonoBehaviour
                 case EnemyType.WallBreaker: KillsWallBreaker++; break;
                 case EnemyType.Suicide: KillsSuicide++; break;
                 case EnemyType.Artillery: KillsArtillery++; break;
+            }
+
+            // Per-enemy-name kill tracking
+            switch (enemy.Data.enemyName)
+            {
+                case "Orc Grunt": KillsOrcGrunt++; break;
+                case "Bow Orc": KillsBowOrc++; break;
+                case "Troll": KillsTroll++; break;
+                case "Suicide Goblin": KillsSuicideGoblin++; break;
+                case "Goblin Cannoneer": KillsGoblinCannoneer++; break;
+                case "Orc War Boss": KillsOrcWarBoss++; break;
             }
 
             if (enemy.Data.enemyName.Contains("Boss"))
@@ -278,7 +297,15 @@ public class RunStatsTracker : MonoBehaviour
             hiresEngineer = HiresEngineer,
             hiresPikeman = HiresPikeman,
             hiresCrossbowman = HiresCrossbowman,
-            hiresWizard = HiresWizard
+            hiresWizard = HiresWizard,
+
+            // Per-enemy-name kills
+            killsOrcGrunt = KillsOrcGrunt,
+            killsBowOrc = KillsBowOrc,
+            killsTroll = KillsTroll,
+            killsSuicideGoblin = KillsSuicideGoblin,
+            killsGoblinCannoneer = KillsGoblinCannoneer,
+            killsOrcWarBoss = KillsOrcWarBoss
         };
     }
 }

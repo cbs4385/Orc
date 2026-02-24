@@ -10,6 +10,8 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private Button exitButton;
     [SerializeField] private Button statsButton;
     [SerializeField] private Button mutatorsButton;
+    [SerializeField] private Button achievementsButton;
+    [SerializeField] private Button legacyButton;
     [SerializeField] private Button bugReportButton;
 
     [Header("Bug Report")]
@@ -20,6 +22,12 @@ public class MainMenuManager : MonoBehaviour
 
     [Header("Mutators")]
     [SerializeField] private MutatorUI mutatorUI;
+
+    [Header("Achievements")]
+    [SerializeField] private AchievementUI achievementUI;
+
+    [Header("Legacy")]
+    [SerializeField] private LegacyUI legacyUI;
 
     [Header("Difficulty")]
     [SerializeField] private Slider difficultySlider;
@@ -50,6 +58,10 @@ public class MainMenuManager : MonoBehaviour
             statsButton.onClick.AddListener(OnStatsClicked);
         if (mutatorsButton != null)
             mutatorsButton.onClick.AddListener(OnMutatorsClicked);
+        if (achievementsButton != null)
+            achievementsButton.onClick.AddListener(OnAchievementsClicked);
+        if (legacyButton != null)
+            legacyButton.onClick.AddListener(OnLegacyClicked);
         if (bugReportButton != null)
             bugReportButton.onClick.AddListener(OnBugReportClicked);
 
@@ -75,6 +87,10 @@ public class MainMenuManager : MonoBehaviour
             statsButton.onClick.RemoveListener(OnStatsClicked);
         if (mutatorsButton != null)
             mutatorsButton.onClick.RemoveListener(OnMutatorsClicked);
+        if (achievementsButton != null)
+            achievementsButton.onClick.RemoveListener(OnAchievementsClicked);
+        if (legacyButton != null)
+            legacyButton.onClick.RemoveListener(OnLegacyClicked);
         if (bugReportButton != null)
             bugReportButton.onClick.RemoveListener(OnBugReportClicked);
         if (difficultySlider != null)
@@ -134,6 +150,24 @@ public class MainMenuManager : MonoBehaviour
             mutatorUI.Show();
         else
             Debug.LogWarning("[MainMenuManager] MutatorUI reference is null.");
+    }
+
+    private void OnAchievementsClicked()
+    {
+        Debug.Log("[MainMenuManager] Achievements clicked.");
+        if (achievementUI != null)
+            achievementUI.Show();
+        else
+            Debug.LogWarning("[MainMenuManager] AchievementUI reference is null.");
+    }
+
+    private void OnLegacyClicked()
+    {
+        Debug.Log("[MainMenuManager] Legacy clicked.");
+        if (legacyUI != null)
+            legacyUI.Show();
+        else
+            Debug.LogWarning("[MainMenuManager] LegacyUI reference is null.");
     }
 
     private void OnBugReportClicked()

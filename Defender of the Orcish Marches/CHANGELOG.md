@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.14.0
+
+### Achievement System
+- Added 20 achievements across 5 categories: Survival, Combat, Economy, Defender, Special
+- Each achievement has Bronze, Silver, and Gold tiers with escalating thresholds
+- Achievements track both single-run bests and cumulative lifetime stats
+- Gold-tier achievements unlock corresponding mutators (e.g. "Orc Slayer" gold unlocks Blood Tide)
+- Achievement progress persists across sessions via PlayerPrefs
+- Added AchievementUI panel accessible from main menu with progress bars, tier badges, and category headers
+- New achievements earned are displayed on the Game Over screen
+
+### Legacy Rank (Meta-Progression)
+- Added Legacy Points system: points earned each run = floor(score / 1000)
+- 11 ranks from Recruit to Mythic with escalating point thresholds
+- Each rank provides small permanent bonuses: starting gold, menial speed, starting menials, ballista damage, defender attack speed, wall HP, loot value
+- Bonuses are modest (5-15% at max rank) to avoid trivializing difficulty
+- Legacy points never decrease — they only accumulate
+- Added LegacyUI panel accessible from main menu showing rank, progress bar, active bonuses, and rank tier reference
+- Legacy points earned and rank shown on Game Over screen
+
+### Per-Enemy Kill Statistics
+- Statistics dashboard now tracks and displays kills by individual enemy name instead of generic combat type
+- Orc Grunts, Bow Orcs, Trolls, Suicide Goblins, Goblin Cannoneers, and Orc War Bosses each have their own kill counter
+- Per-enemy-name tracking added to RunStatsTracker, RunRecord, LifetimeStatsData, and StatsDashboardPanel
+
+### Main Menu
+- Added ACHIEVEMENTS button to main menu
+- Added LEGACY button to main menu
+- Widened button panel and enabled auto-sizing text to accommodate 8 buttons
+
 ## 0.13.0
 
 ### Unlockable Mutators

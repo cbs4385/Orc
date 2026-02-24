@@ -89,12 +89,12 @@ public class StatsDashboardPanel : MonoBehaviour
 
         AddSectionHeader("ENEMY KILLS");
         AddStatRow("Total Kills", data.totalKills.ToString("N0"));
-        AddStatRow("Boss Kills", data.totalBossKills.ToString("N0"));
-        AddStatRow("Melee Kills", data.killsMelee.ToString("N0"));
-        AddStatRow("Ranged Kills", data.killsRanged.ToString("N0"));
-        AddStatRow("Wall Breaker Kills", data.killsWallBreaker.ToString("N0"));
-        AddStatRow("Suicide Kills", data.killsSuicide.ToString("N0"));
-        AddStatRow("Artillery Kills", data.killsArtillery.ToString("N0"));
+        AddStatRow("Orc Grunts", data.killsOrcGrunt.ToString("N0"));
+        AddStatRow("Bow Orcs", data.killsBowOrc.ToString("N0"));
+        AddStatRow("Trolls", data.killsTroll.ToString("N0"));
+        AddStatRow("Suicide Goblins", data.killsSuicideGoblin.ToString("N0"));
+        AddStatRow("Goblin Cannoneers", data.killsGoblinCannoneer.ToString("N0"));
+        AddStatRow("Orc War Bosses", data.killsOrcWarBoss.ToString("N0"));
 
         AddSectionHeader("DEFENDERS");
         AddStatRow("Total Hires", data.totalHires.ToString("N0"));
