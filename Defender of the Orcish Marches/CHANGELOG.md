@@ -1,5 +1,58 @@
 # Changelog
 
+## 0.15.1
+
+### UI Polish
+- Fixed Upgrades panel BUY button column to have consistent fixed width (120px) across all rows
+- Styled BUY buttons to match the game's standard button appearance (brown background, gold text, drop shadow)
+- MAXED label now has a visible background matching the button column layout
+
+## 0.15.0
+
+### Commander Class System
+- Added 4 selectable commander classes that modify gameplay for the entire run
+- **Warden** — walls +30% HP, wall cost -20%, but defenders cost +30%
+- **Captain** — defenders +20% damage, defender cost -20%, but walls -20% HP
+- **Artificer** — ballista upgrades -50% cost, ballista damage +25%, start with 1 fewer menial
+- **Merchant** — loot value +40%, refugees arrive 30% faster, but enemies +15% HP
+- Commander selection accessible from main menu and persists in PlayerPrefs
+- Each commander applies 11 different gameplay multipliers (walls, defenders, ballista, loot, enemies, menials, refugees)
+
+### Relic / Boon System
+- Added 11 relics offered as choices during the night phase (starting after day 1)
+- 3 random relics offered each night; player picks one or skips
+- Relics stack multiplicatively across the run
+- **Offensive**: Orcish Whetstone (defenders +15%), Sharpened Bolts (ballista +20%), Battle Fury (defender attack +20%)
+- **Defensive**: Reinforced Mortar (walls take -15% damage), Slowing Wards (enemies -15% speed)
+- **Economy**: War Chest (+30 gold), Plunderer's Charm (loot +20%), Refugee's Beacon (+1 menial)
+- **Risk/Reward**: Blood Offering, Rapid Reload, Engineer's Toolkit, Orcish Trophy — each with tradeoffs
+- Night phase selection UI with relic descriptions and skip option
+
+### Meta-Progression (War Trophies)
+- Added War Trophies currency earned per run: (days×2) + (kills/10) + (bossKills×5), minimum 1
+- 9 permanent upgrades purchasable from the main menu Upgrades panel
+- **Gold**: War Coffers I/II/III (+10/+25/+50 starting gold)
+- **Ballista**: Forged Tips (+5 damage/level, 3 levels), Oiled Gears (+10% fire rate/level, 2 levels)
+- **Menial**: Swift Boots (+10% speed/level, 3 levels), Volunteer Corps (+1 menial)
+- **Wall**: Reinforced Foundations (+10% HP/level, 3 levels)
+- **Loot**: Keen Eye (+5% value/level, 3 levels)
+- Upgrade costs scale per level; bonuses apply automatically at run start
+
+### Milestone System
+- Added 26 one-time milestones across survival, combat, boss, economy, relic, and commander categories
+- Milestones award War Trophies on first completion (3–15 trophies each)
+- Survival milestones track days survived per difficulty (Easy/Normal/Hard/Nightmare at 5/10/15/20 days)
+- Newly completed milestones and trophy totals displayed on the Game Over screen
+
+### Bestiary
+- Added enemy bestiary tracking lifetime kill counts for all 6 enemy types
+- Tactical lore tips unlock after 25 kills per enemy type
+- Bestiary panel accessible from main menu shows kill counts, enemy descriptions, and unlocked tips
+
+### Main Menu
+- Added COMMANDER, UPGRADES, and BESTIARY buttons to main menu
+- Wired CommanderSelectionUI, MetaProgressionUI, and BestiaryUI panels to MenuSceneBuilder
+
 ## 0.14.1
 
 ### Main Menu Layout

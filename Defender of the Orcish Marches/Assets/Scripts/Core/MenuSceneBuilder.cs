@@ -183,6 +183,9 @@ public class MenuSceneBuilder : MonoBehaviour
         var mutatorsBtn = CreateMenuButton("MutatorsButton", "MUTATORS", panelObj.transform);
         var achievementsBtn = CreateMenuButton("AchievementsButton", "ACHIEVEMENTS", panelObj.transform);
         var legacyBtn = CreateMenuButton("LegacyButton", "LEGACY", panelObj.transform);
+        var commanderBtn = CreateMenuButton("CommanderButton", "COMMANDER", panelObj.transform);
+        var metaProgressionBtn = CreateMenuButton("MetaProgressionButton", "UPGRADES", panelObj.transform);
+        var bestiaryBtn = CreateMenuButton("BestiaryButton", "BESTIARY", panelObj.transform);
         CreateButtonSpacer(panelObj.transform); // half-button gap before EXIT
         var exitBtn = CreateMenuButton("ExitButton", "EXIT", panelObj.transform);
 
@@ -349,6 +352,9 @@ public class MenuSceneBuilder : MonoBehaviour
         var mutatorUI = mgrObj.AddComponent<MutatorUI>();
         var achievementUI = mgrObj.AddComponent<AchievementUI>();
         var legacyUI = mgrObj.AddComponent<LegacyUI>();
+        var commanderSelectionUI = mgrObj.AddComponent<CommanderSelectionUI>();
+        var metaProgressionUI = mgrObj.AddComponent<MetaProgressionUI>();
+        var bestiaryUI = mgrObj.AddComponent<BestiaryUI>();
 
         // Load BugReportConfig asset
         var bugReportConfig = AssetDatabase.LoadAssetAtPath<BugReportConfig>("Assets/ScriptableObjects/BugReportConfig.asset");
@@ -369,6 +375,12 @@ public class MenuSceneBuilder : MonoBehaviour
         mmSO.FindProperty("achievementUI").objectReferenceValue = achievementUI;
         mmSO.FindProperty("legacyButton").objectReferenceValue = legacyBtn;
         mmSO.FindProperty("legacyUI").objectReferenceValue = legacyUI;
+        mmSO.FindProperty("commanderButton").objectReferenceValue = commanderBtn;
+        mmSO.FindProperty("commanderSelectionUI").objectReferenceValue = commanderSelectionUI;
+        mmSO.FindProperty("metaProgressionButton").objectReferenceValue = metaProgressionBtn;
+        mmSO.FindProperty("metaProgressionUI").objectReferenceValue = metaProgressionUI;
+        mmSO.FindProperty("bestiaryButton").objectReferenceValue = bestiaryBtn;
+        mmSO.FindProperty("bestiaryUI").objectReferenceValue = bestiaryUI;
         mmSO.FindProperty("bugReportButton").objectReferenceValue = bugReportBtn;
         mmSO.FindProperty("bugReportPanel").objectReferenceValue = bugReportPanel;
         mmSO.FindProperty("difficultySlider").objectReferenceValue = diffSlider;
