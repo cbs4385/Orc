@@ -23,6 +23,9 @@ public class Wall : MonoBehaviour
 
     private void Awake()
     {
+        // Apply wall HP multipliers from commander and meta-progression
+        float wallHPMult = CommanderManager.GetWallHPMultiplier() * MetaProgressionManager.GetWallHPMultiplier();
+        maxHP = Mathf.RoundToInt(maxHP * wallHPMult);
         CurrentHP = maxHP;
         if (MutatorManager.IsActive("glass_fortress")) { maxHP = Mathf.Max(1, maxHP / 2); CurrentHP = maxHP; }
         Corners = GetComponent<WallCorners>();
@@ -157,6 +160,9 @@ public class Wall : MonoBehaviour
     public void TakeDamage(int damage)
     {
         if (IsDestroyed || IsUnderConstruction) return;
+        // Relic wall damage taken multiplier
+        float relicMult = RelicManager.Instance != null ? RelicManager.Instance.GetWallDamageTakenMultiplier() : 1f;
+        damage = Mathf.RoundToInt(damage * relicMult);
         int prevHP = CurrentHP;
         CurrentHP = Mathf.Max(0, CurrentHP - damage);
         Debug.Log($"[Wall] {name} took {damage} damage at {transform.position}. HP: {prevHP} -> {CurrentHP}/{maxHP}");

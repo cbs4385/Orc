@@ -278,7 +278,12 @@ public class RunStatsTracker : MonoBehaviour
             hiresEngineer = HiresEngineer,
             hiresPikeman = HiresPikeman,
             hiresCrossbowman = HiresCrossbowman,
-            hiresWizard = HiresWizard
+            hiresWizard = HiresWizard,
+
+            // Commander and relics
+            commanderId = CommanderManager.ActiveCommanderId,
+            relicsCollected = RelicManager.Instance != null ? RelicManager.Instance.CollectedCount : 0,
+            warTrophiesEarned = MetaProgressionManager.CalculateRunTrophies(new RunRecord { days = Days, kills = Kills, bossKills = BossKills })
         };
     }
 }

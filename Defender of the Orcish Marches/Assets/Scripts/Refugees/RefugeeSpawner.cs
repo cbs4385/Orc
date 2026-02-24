@@ -12,7 +12,7 @@ public class RefugeeSpawner : MonoBehaviour
 
     private void Start()
     {
-        spawnTimer = Random.Range(minSpawnInterval, maxSpawnInterval) * GameSettings.GetRefugeeSpawnMultiplier();
+        spawnTimer = Random.Range(minSpawnInterval, maxSpawnInterval) * GameSettings.GetRefugeeSpawnMultiplier() * CommanderManager.GetRefugeeSpawnMultiplier();
         if (MutatorManager.IsActive("skeleton_crew")) spawnTimer *= 0.5f;
         Debug.Log($"[RefugeeSpawner] Initialized. interval=[{minSpawnInterval},{maxSpawnInterval}], powerUpChance={powerUpChance}, firstSpawn in {spawnTimer:F1}s");
     }
@@ -28,7 +28,7 @@ public class RefugeeSpawner : MonoBehaviour
         if (spawnTimer <= 0)
         {
             SpawnRefugee();
-            spawnTimer = Random.Range(minSpawnInterval, maxSpawnInterval) * GameSettings.GetRefugeeSpawnMultiplier();
+            spawnTimer = Random.Range(minSpawnInterval, maxSpawnInterval) * GameSettings.GetRefugeeSpawnMultiplier() * CommanderManager.GetRefugeeSpawnMultiplier();
             if (MutatorManager.IsActive("skeleton_crew")) spawnTimer *= 0.5f;
         }
     }

@@ -326,9 +326,12 @@ public class Defender : MonoBehaviour
         if (MutatorManager.IsActive("pacifist_run")) return;
         if (data == null || currentTarget == null) return;
         float dailyAtkSpd = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderAttackSpeedMultiplier : 1f;
-        attackCooldown = (1f / data.attackRate) / dailyAtkSpd;
+        float relicAtkSpd = RelicManager.Instance != null ? RelicManager.Instance.GetDefenderAttackSpeedMultiplier() : 1f;
+        attackCooldown = (1f / data.attackRate) / (dailyAtkSpd * relicAtkSpd);
         float dailyDmg = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderDamageMultiplier : 1f;
-        int scaledDmg = Mathf.RoundToInt(data.damage * dailyDmg);
+        float commanderDmg = CommanderManager.GetDefenderDamageMultiplier();
+        float relicDmg = RelicManager.Instance != null ? RelicManager.Instance.GetDefenderDamageMultiplier() : 1f;
+        int scaledDmg = Mathf.RoundToInt(data.damage * dailyDmg * commanderDmg * relicDmg);
         if (MutatorManager.IsActive("glass_fortress")) scaledDmg = Mathf.RoundToInt(scaledDmg * 1.5f);
         Debug.Log($"[Defender] {data.defenderName} attacking {currentTarget.name} for {scaledDmg} damage at dist={GetDistanceToTarget(currentTarget):F1}");
         currentTarget.TakeDamage(scaledDmg);

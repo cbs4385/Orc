@@ -11,6 +11,9 @@ public class GameOverScreen : MonoBehaviour
     [SerializeField] private Button restartButton;
     [SerializeField] private Button exitButton;
 
+    [Header("Meta-Progression")]
+    [SerializeField] private MilestoneNotificationUI milestoneNotification;
+
     private SceneLoader sceneLoader;
     private bool subscribed;
 
@@ -126,6 +129,23 @@ public class GameOverScreen : MonoBehaviour
         float firstBoss = RunStatsTracker.Instance != null ? RunStatsTracker.Instance.FirstBossKillTime : 0;
         LifetimeStatsManager.RecordRunEnd(current, GameSettings.CurrentDifficulty, gameTime, peakDef, firstBoss);
 
+        // Record bestiary kills
+        BestiaryManager.RecordRunKills(current);
+
+        // Award War Trophies
+        int trophiesEarned = MetaProgressionManager.CalculateRunTrophies(current);
+        MetaProgressionManager.AwardTrophies(trophiesEarned);
+
+        // Check milestones
+        int relicsCollected = RelicManager.Instance != null ? RelicManager.Instance.CollectedCount : 0;
+        var newMilestones = MilestoneManager.CheckRunMilestones(current, GameSettings.CurrentDifficulty, relicsCollected);
+
+        // Show milestone notifications
+        if (milestoneNotification != null)
+        {
+            milestoneNotification.ShowMilestones(newMilestones, trophiesEarned);
+        }
+
         // Save and get rank
         int rank = RunHistoryManager.SaveRun(current);
 
@@ -186,6 +206,16 @@ public class GameOverScreen : MonoBehaviour
             if (MutatorManager.ActiveCount > 0)
             {
                 sb.AppendFormat("\nMutators: {0} ({1:F2}x)", MutatorManager.GetActiveNamesDisplay(), MutatorManager.GetScoreMultiplier());
+            }
+
+            if (CommanderManager.HasCommander)
+            {
+                sb.AppendFormat("\nCommander: {0}", CommanderManager.GetActiveDisplayName());
+            }
+
+            if (RelicManager.Instance != null && RelicManager.Instance.CollectedCount > 0)
+            {
+                sb.AppendFormat("\nRelics ({0}): {1}", RelicManager.Instance.CollectedCount, RelicManager.Instance.GetCollectedNamesDisplay());
             }
 
             scoreText.text = sb.ToString();

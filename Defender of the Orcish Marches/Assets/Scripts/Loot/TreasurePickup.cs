@@ -16,7 +16,10 @@ public class TreasurePickup : MonoBehaviour
     public void Initialize(int treasureValue)
     {
         float dailyLoot = DailyEventManager.Instance != null ? DailyEventManager.Instance.LootValueMultiplier : 1f;
-        value = Mathf.RoundToInt(treasureValue * dailyLoot);
+        float commanderLoot = CommanderManager.GetLootValueMultiplier();
+        float relicLoot = RelicManager.Instance != null ? RelicManager.Instance.GetLootValueMultiplier() : 1f;
+        float metaLoot = MetaProgressionManager.GetLootValueMultiplier();
+        value = Mathf.RoundToInt(treasureValue * dailyLoot * commanderLoot * relicLoot * metaLoot);
         if (GameManager.Instance != null)
         {
             spawnGameTime = GameManager.Instance.GameTime;

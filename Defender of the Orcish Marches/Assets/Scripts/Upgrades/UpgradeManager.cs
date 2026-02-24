@@ -69,7 +69,27 @@ public class UpgradeManager : MonoBehaviour
         int treasureCost = upgrade.GetTreasureCost(count);
         int menialCost = upgrade.GetMenialCost(count);
         if (MutatorManager.IsActive("golden_horde")) treasureCost *= 2;
+
+        // Commander cost modifiers
+        if (IsHireUpgrade(upgrade.upgradeType))
+        {
+            treasureCost = Mathf.RoundToInt(treasureCost * CommanderManager.GetDefenderCostMultiplier());
+        }
+        else if (IsBallistaUpgrade(upgrade.upgradeType))
+        {
+            treasureCost = Mathf.RoundToInt(treasureCost * CommanderManager.GetBallistaCostMultiplier());
+        }
+        else if (upgrade.upgradeType == UpgradeType.NewWall)
+        {
+            treasureCost = Mathf.RoundToInt(treasureCost * CommanderManager.GetWallCostMultiplier());
+        }
+
         return (treasureCost, menialCost);
+    }
+
+    private bool IsBallistaUpgrade(UpgradeType type)
+    {
+        return type == UpgradeType.BallistaDamage || type == UpgradeType.BallistaFireRate || type == UpgradeType.NewBallista;
     }
 
     public bool Purchase(UpgradeData upgrade)

@@ -11,6 +11,9 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private Button statsButton;
     [SerializeField] private Button mutatorsButton;
     [SerializeField] private Button bugReportButton;
+    [SerializeField] private Button commanderButton;
+    [SerializeField] private Button metaProgressionButton;
+    [SerializeField] private Button bestiaryButton;
 
     [Header("Bug Report")]
     [SerializeField] private BugReportPanel bugReportPanel;
@@ -20,6 +23,15 @@ public class MainMenuManager : MonoBehaviour
 
     [Header("Mutators")]
     [SerializeField] private MutatorUI mutatorUI;
+
+    [Header("Commander")]
+    [SerializeField] private CommanderSelectionUI commanderSelectionUI;
+
+    [Header("Meta-Progression")]
+    [SerializeField] private MetaProgressionUI metaProgressionUI;
+
+    [Header("Bestiary")]
+    [SerializeField] private BestiaryUI bestiaryUI;
 
     [Header("Difficulty")]
     [SerializeField] private Slider difficultySlider;
@@ -52,6 +64,12 @@ public class MainMenuManager : MonoBehaviour
             mutatorsButton.onClick.AddListener(OnMutatorsClicked);
         if (bugReportButton != null)
             bugReportButton.onClick.AddListener(OnBugReportClicked);
+        if (commanderButton != null)
+            commanderButton.onClick.AddListener(OnCommanderClicked);
+        if (metaProgressionButton != null)
+            metaProgressionButton.onClick.AddListener(OnMetaProgressionClicked);
+        if (bestiaryButton != null)
+            bestiaryButton.onClick.AddListener(OnBestiaryClicked);
 
         if (difficultySlider != null)
         {
@@ -77,6 +95,12 @@ public class MainMenuManager : MonoBehaviour
             mutatorsButton.onClick.RemoveListener(OnMutatorsClicked);
         if (bugReportButton != null)
             bugReportButton.onClick.RemoveListener(OnBugReportClicked);
+        if (commanderButton != null)
+            commanderButton.onClick.RemoveListener(OnCommanderClicked);
+        if (metaProgressionButton != null)
+            metaProgressionButton.onClick.RemoveListener(OnMetaProgressionClicked);
+        if (bestiaryButton != null)
+            bestiaryButton.onClick.RemoveListener(OnBestiaryClicked);
         if (difficultySlider != null)
             difficultySlider.onValueChanged.RemoveListener(OnDifficultyChanged);
     }
@@ -143,5 +167,32 @@ public class MainMenuManager : MonoBehaviour
             bugReportPanel.Show();
         else
             Debug.LogWarning("[MainMenuManager] BugReportPanel reference is null.");
+    }
+
+    private void OnCommanderClicked()
+    {
+        Debug.Log("[MainMenuManager] Commander clicked.");
+        if (commanderSelectionUI != null)
+            commanderSelectionUI.Show();
+        else
+            Debug.LogWarning("[MainMenuManager] CommanderSelectionUI reference is null.");
+    }
+
+    private void OnMetaProgressionClicked()
+    {
+        Debug.Log("[MainMenuManager] Meta-Progression clicked.");
+        if (metaProgressionUI != null)
+            metaProgressionUI.Show();
+        else
+            Debug.LogWarning("[MainMenuManager] MetaProgressionUI reference is null.");
+    }
+
+    private void OnBestiaryClicked()
+    {
+        Debug.Log("[MainMenuManager] Bestiary clicked.");
+        if (bestiaryUI != null)
+            bestiaryUI.Show();
+        else
+            Debug.LogWarning("[MainMenuManager] BestiaryUI reference is null.");
     }
 }

@@ -37,6 +37,11 @@ public struct RunRecord
     public int hiresPikeman;
     public int hiresCrossbowman;
     public int hiresWizard;
+
+    // Commander and relics (added for replayability features)
+    public string commanderId;
+    public int relicsCollected;
+    public int warTrophiesEarned;
 }
 
 [Serializable]

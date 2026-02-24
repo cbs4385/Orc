@@ -122,7 +122,9 @@ public class Menial : MonoBehaviour
     {
         if (agent == null) return;
         float dailySpeed = DailyEventManager.Instance != null ? DailyEventManager.Instance.MenialSpeedMultiplier : 1f;
-        agent.speed = moveSpeed * dailySpeed;
+        float relicSpeed = RelicManager.Instance != null ? RelicManager.Instance.GetMenialSpeedMultiplier() : 1f;
+        float metaSpeed = MetaProgressionManager.GetMenialSpeedMultiplier();
+        agent.speed = moveSpeed * dailySpeed * relicSpeed * metaSpeed;
     }
 
     private void Start()
@@ -571,7 +573,9 @@ public class Menial : MonoBehaviour
         CurrentState = MenialState.Fleeing;
         normalSpeed = agent.speed;
         float dailySpeed = DailyEventManager.Instance != null ? DailyEventManager.Instance.MenialSpeedMultiplier : 1f;
-        agent.speed = moveSpeed * dailySpeed * FLEE_SPEED_MULTIPLIER;
+        float relicSpeed = RelicManager.Instance != null ? RelicManager.Instance.GetMenialSpeedMultiplier() : 1f;
+        float metaSpeed = MetaProgressionManager.GetMenialSpeedMultiplier();
+        agent.speed = moveSpeed * dailySpeed * relicSpeed * metaSpeed * FLEE_SPEED_MULTIPLIER;
 
         if (agent.isOnNavMesh)
         {
