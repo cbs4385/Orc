@@ -54,8 +54,8 @@ subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
 doc.add_paragraph()
 meta = doc.add_paragraph()
 meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
-meta.add_run('Version 1.0 | February 2026\n').bold = True
-meta.add_run('Status: Proposal / Design Phase')
+meta.add_run('Version 1.1 | February 2026\n').bold = True
+meta.add_run('Status: Proposal / Design Phase (with Gap Analysis)')
 doc.add_page_break()
 
 # ============================================================
@@ -64,12 +64,13 @@ doc.add_page_break()
 doc.add_heading('Table of Contents', level=1)
 toc_items = [
     '1. Context & Problem Statement',
-    '2. System 1: Achievements / Milestones',
-    '3. System 2: Unlockable Mutators',
-    '4. System 3: Meta-Progression (Legacy Ranks)',
-    '5. System 4: Statistics Dashboard',
-    '6. System Interconnections',
-    '7. Implementation Order',
+    '2. Gap Analysis: What\u2019s Not Implemented',
+    '3. System 1: Achievements / Milestones',
+    '4. System 2: Unlockable Mutators',
+    '5. System 3: Meta-Progression (Legacy Ranks)',
+    '6. System 4: Statistics Dashboard',
+    '7. System Interconnections',
+    '8. Implementation Order',
 ]
 for item in toc_items:
     doc.add_paragraph(item, style='List Number')
@@ -123,9 +124,121 @@ for label, system in goals:
 doc.add_page_break()
 
 # ============================================================
-# 2. ACHIEVEMENTS
+# 2. GAP ANALYSIS
 # ============================================================
-doc.add_heading('2. System 1: Achievements / Milestones', level=1)
+doc.add_heading('2. Gap Analysis: What\u2019s Not Implemented', level=1)
+
+doc.add_paragraph(
+    'After a thorough codebase audit, none of the four proposed replayability systems exist '
+    'in the current codebase. This section documents what is missing, what foundation exists, '
+    'and where new code needs to hook in.'
+)
+
+doc.add_heading('System Status Overview', level=2)
+add_table(
+    ['System', 'Status', 'Implementation'],
+    [
+        ['Achievements / Milestones', 'NOT IMPLEMENTED', 'Zero references in codebase'],
+        ['Unlockable Mutators', 'NOT IMPLEMENTED', 'Zero references in codebase'],
+        ['Meta-Progression (Legacy Ranks)', 'NOT IMPLEMENTED', 'Zero references in codebase'],
+        ['Statistics Dashboard', 'NOT IMPLEMENTED', 'Zero references in codebase'],
+    ]
+)
+
+doc.add_heading('Existing Foundation (Reusable)', level=2)
+doc.add_paragraph(
+    'These existing systems provide building blocks for the new features:'
+)
+add_table(
+    ['Component', 'File', 'What It Does', 'Reusable For'],
+    [
+        ['Run stats tracking', 'RunStatsTracker.cs', 'Tracks 7 per-run stats (days, kills, bossKills, goldEarned, hires, menialsLost, compositeScore)', 'Stats Dashboard, Achievements'],
+        ['Run history leaderboard', 'RunHistoryManager.cs', 'Persists top 20 RunRecord structs via PlayerPrefs JSON', 'Stats Dashboard'],
+        ['Game Over display', 'GameOverScreen.cs', 'Shows per-run stats with "NEW BEST!" flags and rank', 'Achievement/Legacy display'],
+        ['Daily event multipliers', 'DailyEventManager.cs', '8 multiplier channels (loot, damage, speed, HP, spawn rate, etc.)', 'Mutator hook point'],
+        ['Score formula', 'RunStatsTracker.cs:121', 'Hardcoded composite: Days*1000 + Kills*10 + Gold*2 + Hires*50 + Boss*500 - Menials*100', 'Mutator score multiplier'],
+        ['Difficulty settings', 'GameSettings.cs', 'Starting gold/menials, spawn rate, HP multipliers per difficulty', 'Legacy rank bonus application'],
+        ['Banner notification', 'GameHUD.cs:150-208', 'ShowBanner(text, duration) for major announcements', 'Could be adapted for toasts'],
+        ['Enemy scaling', 'EnemySpawnManager.cs', 'Per-day HP/damage scaling, reads DailyEventManager multipliers', 'Mutator spawn/HP hooks'],
+        ['Singleton pattern', 'All managers', 'Consistent Instance access throughout codebase', 'New manager singletons'],
+    ]
+)
+
+doc.add_heading('Stat Tracking Gaps', level=2)
+doc.add_paragraph(
+    'RunStatsTracker.cs currently tracks 7 stats. The Achievement and Statistics systems '
+    'require 7 additional stats that are not yet tracked:'
+)
+add_table(
+    ['Stat', 'Currently Tracked?', 'Where to Hook'],
+    [
+        ['Total kills', 'Yes', 'Enemy.OnEnemyDied event'],
+        ['Boss kills', 'Yes', 'Checks enemy name contains "Boss"'],
+        ['Gold earned', 'Yes', 'GameManager.OnTreasureGained event'],
+        ['Hires', 'Yes', 'UpgradeManager.OnUpgradePurchased event'],
+        ['Menials lost', 'Yes', 'Menial.OnMenialDied event'],
+        ['Days survived', 'Yes', 'DayNightCycleManager.OnDayStarted event'],
+        ['Kills by enemy type', 'NO', 'Enemy.OnEnemyDied \u2014 need to read data.enemyType'],
+        ['Ballista shots fired', 'NO', 'Ballista.Fire() \u2014 line 155'],
+        ['Wall HP repaired', 'NO', 'Wall.Repair(int amount) \u2014 line 176'],
+        ['Vegetation cleared', 'NO', 'Menial state ClearingVegetation \u2192 Vegetation.Clear()'],
+        ['Refugees saved', 'NO', 'Refugee.cs arrival at fortress (line 113)'],
+        ['Gold spent', 'NO', 'UpgradeManager purchase flow'],
+        ['Peak defenders alive', 'NO', 'FindObjectsByType<Defender>() peak tracking'],
+    ]
+)
+
+doc.add_heading('UI Infrastructure Gaps', level=2)
+add_table(
+    ['Component', 'Status', 'Notes'],
+    [
+        ['Bottom-right toast notification', 'MISSING', 'Needed for mid-run achievement pop-ups'],
+        ['Scrollable panel (ScrollRect)', 'MISSING', 'Only TutorialManager uses one; needed for achievements, stats, mutators'],
+        ['Tabbed interface', 'MISSING', 'No tab pattern exists; needed for stats dashboard'],
+        ['Main menu buttons', '3 MISSING', 'Need: Achievements, Mutators, Statistics buttons in MainMenuManager.cs'],
+        ['Legacy rank display', 'MISSING', 'No persistent rank/progress display on main menu'],
+    ]
+)
+
+doc.add_heading('Persistence Gaps', level=2)
+add_table(
+    ['PlayerPrefs Key', 'Exists?', 'Needed For'],
+    [
+        ['"RunHistory"', 'Yes', 'Existing leaderboard'],
+        ['"Difficulty"', 'Yes', 'Existing setting'],
+        ['"SfxVolume" / "MusicVolume"', 'Yes', 'Existing audio'],
+        ['"Achievements"', 'NO', 'Achievement progress + tier tracking'],
+        ['"UnlockedMutators"', 'NO', 'Mutator unlock state'],
+        ['"LegacyPoints"', 'NO', 'Meta-progression points'],
+        ['"LifetimeStats"', 'NO', 'Cumulative stat totals'],
+    ]
+)
+
+doc.add_heading('Score Multiplier Gap', level=2)
+doc.add_paragraph(
+    'The current ComputeScore() in RunStatsTracker.cs is hardcoded with no multiplier parameter. '
+    'For mutators to apply score multipliers, this needs to accept an optional float multiplier = 1.0f '
+    'parameter or the multiplier needs to be applied in GameOverScreen.cs after computation.'
+)
+
+doc.add_heading('Files That Need No Changes', level=2)
+doc.add_paragraph(
+    'These files are NOT affected by any of the four systems:'
+)
+no_change = [
+    'BugReportPanel.cs, SceneLoader.cs, TutorialManager.cs',
+    'EnemyAttack.cs, EnemyMovement.cs (unless mutators affect pathfinding)',
+    'BallistaProjectile.cs, CameraController.cs',
+]
+for item in no_change:
+    doc.add_paragraph(item, style='List Bullet')
+
+doc.add_page_break()
+
+# ============================================================
+# 3. ACHIEVEMENTS
+# ============================================================
+doc.add_heading('3. System 1: Achievements / Milestones', level=1)
 
 doc.add_heading('Overview', level=2)
 doc.add_paragraph(
@@ -238,9 +351,9 @@ for label, desc in files:
 doc.add_page_break()
 
 # ============================================================
-# 3. MUTATORS
+# 4. MUTATORS
 # ============================================================
-doc.add_heading('3. System 2: Unlockable Mutators', level=1)
+doc.add_heading('4. System 2: Unlockable Mutators', level=1)
 
 doc.add_heading('Overview', level=2)
 doc.add_paragraph(
@@ -322,9 +435,9 @@ for label, desc in files:
 doc.add_page_break()
 
 # ============================================================
-# 4. META-PROGRESSION
+# 5. META-PROGRESSION
 # ============================================================
-doc.add_heading('4. System 3: Meta-Progression (Legacy Ranks)', level=1)
+doc.add_heading('5. System 3: Meta-Progression (Legacy Ranks)', level=1)
 
 doc.add_heading('Overview', level=2)
 doc.add_paragraph(
@@ -405,9 +518,9 @@ for label, desc in files:
 doc.add_page_break()
 
 # ============================================================
-# 5. STATISTICS DASHBOARD
+# 6. STATISTICS DASHBOARD
 # ============================================================
-doc.add_heading('5. System 4: Statistics Dashboard', level=1)
+doc.add_heading('6. System 4: Statistics Dashboard', level=1)
 
 doc.add_heading('Overview', level=2)
 doc.add_paragraph(
@@ -501,9 +614,9 @@ for label, desc in files:
 doc.add_page_break()
 
 # ============================================================
-# 6. SYSTEM INTERCONNECTIONS
+# 7. SYSTEM INTERCONNECTIONS
 # ============================================================
-doc.add_heading('6. System Interconnections', level=1)
+doc.add_heading('7. System Interconnections', level=1)
 
 doc.add_paragraph('The four systems feed into each other through a common data pipeline:')
 
@@ -543,9 +656,9 @@ for i, step in enumerate(flow, 1):
 doc.add_page_break()
 
 # ============================================================
-# 7. IMPLEMENTATION ORDER
+# 8. IMPLEMENTATION ORDER
 # ============================================================
-doc.add_heading('7. Implementation Order (Recommended)', level=1)
+doc.add_heading('8. Implementation Order (Recommended)', level=1)
 
 doc.add_paragraph(
     'The systems should be implemented in the following order to minimize '
