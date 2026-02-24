@@ -9,7 +9,7 @@ public class TorchManager : MonoBehaviour
     private const float COURTYARD_TORCH_RADIUS = 4.0f;
     private const float COURTYARD_TORCH_HEIGHT = 2.0f;
     private const float TOWER_TORCH_OFFSET = 0.5f;
-    private const float TOWER_TORCH_HEIGHT = 2.5f;
+    private const float TOWER_TORCH_HEIGHT = 3.5f;
 
     private List<GameObject> torches = new List<GameObject>();
     private Material flameMaterial;

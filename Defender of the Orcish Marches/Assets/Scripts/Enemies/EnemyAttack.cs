@@ -114,14 +114,17 @@ public class EnemyAttack : MonoBehaviour
 
         if (enemy.Data.projectilePrefab != null)
         {
-            Vector3 dir = (target.position - transform.position).normalized;
+            float projectileSpeed = 10f;
+            Vector3 aimPos = GetLeadPosition(target, projectileSpeed);
+            Vector3 dir = (aimPos - transform.position);
             dir.y = 0;
-            Debug.Log($"[EnemyAttack] {enemy.Data.enemyName} firing projectile at {target.name}, dir={dir}, range={enemy.Data.attackRange}");
+            dir.Normalize();
+            Debug.Log($"[EnemyAttack] {enemy.Data.enemyName} firing projectile at {target.name}, dir={dir}, range={enemy.Data.attackRange}, leadAim={aimPos}");
             var proj = Instantiate(enemy.Data.projectilePrefab, transform.position + Vector3.up * 0.5f, Quaternion.LookRotation(dir));
             var projectile = proj.GetComponent<EnemyProjectile>();
             if (projectile != null)
             {
-                projectile.Initialize(dir, 10f, enemy.ScaledDamage, enemy.Data.attackRange * 1.5f);
+                projectile.Initialize(dir, projectileSpeed, enemy.ScaledDamage, enemy.Data.attackRange * 1.5f);
             }
         }
         else
@@ -130,6 +133,54 @@ public class EnemyAttack : MonoBehaviour
             // Fallback: instant damage if no projectile prefab
             MeleeAttack(target);
         }
+    }
+
+    /// <summary>
+    /// Calculate the intercept point for a moving target.
+    /// Solves the quadratic |T + V*t - P| = speed*t for the smallest positive t.
+    /// Falls back to the target's current position if no valid solution exists.
+    /// </summary>
+    private Vector3 GetLeadPosition(Transform target, float projectileSpeed)
+    {
+        // Get target velocity from NavMeshAgent
+        Vector3 targetVel = Vector3.zero;
+        var targetAgent = target.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (targetAgent != null && targetAgent.enabled)
+            targetVel = targetAgent.velocity;
+
+        // If target isn't moving, just aim at current position
+        if (targetVel.sqrMagnitude < 0.01f)
+            return target.position;
+
+        // Solve in XZ plane
+        Vector3 D = target.position - transform.position;
+        D.y = 0;
+        targetVel.y = 0;
+
+        float a = targetVel.sqrMagnitude - projectileSpeed * projectileSpeed;
+        float b = 2f * Vector3.Dot(D, targetVel);
+        float c = D.sqrMagnitude;
+
+        float discriminant = b * b - 4f * a * c;
+        if (discriminant < 0)
+            return target.position;
+
+        float sqrtDisc = Mathf.Sqrt(discriminant);
+        float t1 = (-b - sqrtDisc) / (2f * a);
+        float t2 = (-b + sqrtDisc) / (2f * a);
+
+        // Pick smallest positive time
+        float t = -1f;
+        if (t1 > 0.01f && t2 > 0.01f) t = Mathf.Min(t1, t2);
+        else if (t1 > 0.01f) t = t1;
+        else if (t2 > 0.01f) t = t2;
+
+        if (t < 0)
+            return target.position;
+
+        Vector3 leadPos = target.position + targetVel * t;
+        leadPos.y = target.position.y;
+        return leadPos;
     }
 
     private void SuicideAttack(Transform target)

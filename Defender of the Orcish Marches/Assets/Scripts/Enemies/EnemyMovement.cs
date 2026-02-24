@@ -63,6 +63,14 @@ public class EnemyMovement : MonoBehaviour
             return;
         }
 
+        // Re-target if current target was destroyed (e.g. refugee arrived/died)
+        if (currentTarget == null || !currentTarget.gameObject.activeInHierarchy)
+        {
+            currentTarget = null;
+            lastRetargetPos = transform.position;
+            FindTarget();
+        }
+
         float distMoved = Vector3.Distance(transform.position, lastRetargetPos);
         if (distMoved >= RETARGET_DISTANCE)
         {

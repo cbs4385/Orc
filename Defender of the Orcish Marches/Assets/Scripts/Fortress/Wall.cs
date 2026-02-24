@@ -29,8 +29,8 @@ public class Wall : MonoBehaviour
         var boxCol = GetComponent<BoxCollider>();
         if (boxCol != null)
         {
-            boxCol.center = new Vector3(0, 1f, 0);
-            boxCol.size = new Vector3(1f, 2f, 0.5f);
+            boxCol.center = new Vector3(0, 1.5f, 0);
+            boxCol.size = new Vector3(1f, 3f, 0.5f);
         }
 
         // Add capsule colliders for the octagonal towers at each end
@@ -76,20 +76,20 @@ public class Wall : MonoBehaviour
         // for engineer stand position validation.
         var leftTower = new GameObject("TowerCollider_L");
         leftTower.transform.SetParent(transform, false);
-        leftTower.transform.localPosition = new Vector3(-towerOffset, 1f, 0);
+        leftTower.transform.localPosition = new Vector3(-towerOffset, 1.5f, 0);
         if (enemyBlockLayer >= 0) leftTower.layer = enemyBlockLayer;
         var leftCap = leftTower.AddComponent<CapsuleCollider>();
         leftCap.radius = towerRadius;
-        leftCap.height = 2f;
+        leftCap.height = 3f;
         leftCap.direction = 1; // Y-axis
 
         var rightTower = new GameObject("TowerCollider_R");
         rightTower.transform.SetParent(transform, false);
-        rightTower.transform.localPosition = new Vector3(towerOffset, 1f, 0);
+        rightTower.transform.localPosition = new Vector3(towerOffset, 1.5f, 0);
         if (enemyBlockLayer >= 0) rightTower.layer = enemyBlockLayer;
         var rightCap = rightTower.AddComponent<CapsuleCollider>();
         rightCap.radius = towerRadius;
-        rightCap.height = 2f;
+        rightCap.height = 3f;
         rightCap.direction = 1; // Y-axis
     }
 

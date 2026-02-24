@@ -23,6 +23,9 @@ public class Enemy : MonoBehaviour
     private Color[] originalColors;
     private float damageFlashTimer;
     private Animator animator;
+    private UnityEngine.AI.NavMeshAgent agent;
+    private float actionAnimTimer;
+    private const float IDLE_WALK_FRAME = 0.25f; // frame 6 of 24
 
     private void OnEnable()
     {
@@ -37,6 +40,7 @@ public class Enemy : MonoBehaviour
     public void Initialize(EnemyData enemyData)
     {
         data = enemyData;
+        agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         float dailyHP = DailyEventManager.Instance != null ? DailyEventManager.Instance.EnemyHPMultiplier : 1f;
         float dailyDmg = DailyEventManager.Instance != null ? DailyEventManager.Instance.EnemyDamageMultiplier : 1f;
         CurrentHP = Mathf.RoundToInt(data.maxHP * GameSettings.GetEnemyHPMultiplier() * dailyHP);
@@ -115,6 +119,25 @@ public class Enemy : MonoBehaviour
                 RestoreColors();
             }
         }
+
+        if (!IsDead) UpdateIdleAnimation();
+    }
+
+    private void UpdateIdleAnimation()
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+        if (actionAnimTimer > 0) { actionAnimTimer -= Time.deltaTime; return; }
+
+        bool isMoving = agent != null && agent.enabled && agent.velocity.sqrMagnitude > 0.1f;
+        if (isMoving)
+        {
+            if (animator.speed < 0.01f) animator.speed = 1f;
+        }
+        else
+        {
+            animator.Play("Walk", 0, IDLE_WALK_FRAME);
+            animator.speed = 0f;
+        }
     }
 
     private void RestoreColors()
@@ -141,7 +164,11 @@ public class Enemy : MonoBehaviour
     public void TriggerAttackAnimation()
     {
         if (animator != null)
+        {
+            animator.speed = 1f;
             animator.SetTrigger("Attack");
+            actionAnimTimer = 1.0f;
+        }
     }
 
     public void TakeDamage(int damage)

@@ -21,6 +21,8 @@ public class Refugee : MonoBehaviour
     private NavMeshAgent agent;
     private Animator animator;
     private int currentHP;
+    private float actionAnimTimer;
+    private const float IDLE_WALK_FRAME = 0.25f; // frame 6 of 24
     private bool isDead;
     private bool arrived;
 
@@ -103,9 +105,28 @@ public class Refugee : MonoBehaviour
         }
     }
 
+    private void UpdateIdleAnimation()
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+        if (actionAnimTimer > 0) { actionAnimTimer -= Time.deltaTime; return; }
+
+        bool isMoving = agent != null && agent.enabled && agent.velocity.sqrMagnitude > 0.1f;
+        if (isMoving)
+        {
+            if (animator.speed < 0.01f) animator.speed = 1f;
+        }
+        else
+        {
+            animator.Play("Walk", 0, IDLE_WALK_FRAME);
+            animator.speed = 0f;
+        }
+    }
+
     private void Update()
     {
         if (isDead || arrived) return;
+
+        UpdateIdleAnimation();
 
         if (!agent.pathPending && agent.remainingDistance < 2f)
         {

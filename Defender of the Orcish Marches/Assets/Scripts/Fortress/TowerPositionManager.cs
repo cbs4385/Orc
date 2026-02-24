@@ -16,7 +16,7 @@ public class TowerPositionManager : MonoBehaviour
     private List<TowerPosition> towers = new List<TowerPosition>();
 
     private const float DEDUP_THRESHOLD = 0.5f; // XZ proximity for same tower
-    private const float TOWER_TOP_Y = 2.0f;
+    private const float TOWER_TOP_Y = 1.85f;
     private const float MIN_TOWER_SPACING = 1.0f; // Minimum XZ distance between occupied towers
 
     public IReadOnlyList<TowerPosition> Towers => towers;

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.12.3
+
+### Visual
+- Scaled character models (enemies, defenders, menials, refugees) to 2.5x for better visibility
+- Increased wall and tower height by 1.5x (Y-axis only)
+- Removed mouse-over hover magnification from TooltipSystem
+- Idle characters now display frame 6 of the Walk animation as a static pose instead of looping
+
+### Bug Fixes
+- Fixed Bow Orc projectiles missing moving targets — ranged attacks now lead the shot using quadratic intercept prediction based on target velocity
+- Fixed Bow Orc becoming static after target leaves attack range — enemies now immediately retarget when current target is destroyed or deactivated
+- Fixed tower defenders not relocating when no enemies are in range — defenders on towers now reassess tower position even with no current target, moving closer to approaching enemies
+
 ## 0.12.2
 
 ### Manual Build Mode

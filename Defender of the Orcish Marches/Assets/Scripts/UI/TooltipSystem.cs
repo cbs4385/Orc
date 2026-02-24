@@ -10,11 +10,6 @@ public class TooltipSystem : MonoBehaviour
 
     private UnityEngine.Camera mainCam;
 
-    // Hover magnification
-    private const float HOVER_SCALE = 4f;
-    private Transform hoveredTransform;
-    private Vector3 originalScale;
-
     private void Start()
     {
         mainCam = UnityEngine.Camera.main;
@@ -25,30 +20,11 @@ public class TooltipSystem : MonoBehaviour
     {
         if (mainCam == null || Mouse.current == null) return;
 
-        // Raycast from mouse to find hoverable objects
         Vector2 mousePos = Mouse.current.position.ReadValue();
         Ray ray = mainCam.ScreenPointToRay(new Vector3(mousePos.x, mousePos.y, 0));
 
         if (Physics.Raycast(ray, out RaycastHit hit, 100f))
         {
-            // Check for hover magnification on characters
-            Transform magnifyTarget = GetMagnifyTarget(hit.collider.gameObject);
-            if (magnifyTarget != null)
-            {
-                if (magnifyTarget != hoveredTransform)
-                {
-                    RestoreHovered();
-                    hoveredTransform = magnifyTarget;
-                    originalScale = magnifyTarget.localScale;
-                    magnifyTarget.localScale = originalScale * HOVER_SCALE;
-                    Debug.Log($"[TooltipSystem] Hover magnify: {magnifyTarget.name} at {magnifyTarget.position}");
-                }
-            }
-            else
-            {
-                RestoreHovered();
-            }
-
             string tooltip = GetTooltipForObject(hit.collider.gameObject);
             if (!string.IsNullOrEmpty(tooltip))
             {
@@ -56,43 +32,8 @@ public class TooltipSystem : MonoBehaviour
                 return;
             }
         }
-        else
-        {
-            RestoreHovered();
-        }
 
         HideTooltip();
-    }
-
-    private Transform GetMagnifyTarget(GameObject obj)
-    {
-        var enemy = obj.GetComponentInParent<Enemy>();
-        if (enemy != null && !enemy.IsDead) return enemy.transform;
-
-        var defender = obj.GetComponentInParent<Defender>();
-        if (defender != null && !defender.IsDead) return defender.transform;
-
-        var menial = obj.GetComponentInParent<Menial>();
-        if (menial != null && !menial.IsDead) return menial.transform;
-
-        var refugee = obj.GetComponentInParent<Refugee>();
-        if (refugee != null) return refugee.transform;
-
-        return null;
-    }
-
-    private void RestoreHovered()
-    {
-        if (hoveredTransform != null)
-        {
-            hoveredTransform.localScale = originalScale;
-            hoveredTransform = null;
-        }
-    }
-
-    private void OnDisable()
-    {
-        RestoreHovered();
     }
 
     private string GetTooltipForObject(GameObject obj)
