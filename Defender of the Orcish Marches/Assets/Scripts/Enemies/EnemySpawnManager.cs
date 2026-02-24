@@ -119,7 +119,11 @@ public class EnemySpawnManager : MonoBehaviour
         // Calculate exact spawn budget for the day
         int remnantCount = remnantEnemies.Count;
         regularSpawnsRemaining = CalculateSpawnCount(dayNumber);
-        bool willSpawnBoss = halfSpread >= 90f && orcWarBossData != null;
+        bool willSpawnBoss;
+        if (MutatorManager.IsActive("bounty_hunter"))
+            willSpawnBoss = dayNumber >= 5 && dayNumber % 5 == 0 && orcWarBossData != null;
+        else
+            willSpawnBoss = halfSpread >= 90f && orcWarBossData != null;
         dayTotalEnemies = remnantCount + regularSpawnsRemaining + (willSpawnBoss ? 1 : 0);
 
         Debug.Log($"[EnemySpawnManager] Day {dayNumber}: remnants={remnantCount}, spawns={regularSpawnsRemaining}, boss={willSpawnBoss}, total={dayTotalEnemies}");
@@ -159,7 +163,10 @@ public class EnemySpawnManager : MonoBehaviour
         if (spawnWindow <= 0f) return 0;
 
         // First enemy spawns immediately, then one per interval
-        return Mathf.FloorToInt(spawnWindow / interval) + 1;
+        int count = Mathf.FloorToInt(spawnWindow / interval) + 1;
+        if (MutatorManager.IsActive("blood_tide"))
+            count = Mathf.RoundToInt(count * 1.5f);
+        return count;
     }
 
     private void SpawnRemnants(int dayNumber)
@@ -273,7 +280,11 @@ public class EnemySpawnManager : MonoBehaviour
                 int dayNumber = DayNightCycle.Instance.DayNumber;
                 regularSpawnsRemaining = CalculateSpawnCount(dayNumber);
                 float halfSpread = 5f + 10f * (dayNumber - 1);
-                bool willSpawnBoss = halfSpread >= 90f && orcWarBossData != null;
+                bool willSpawnBoss;
+                if (MutatorManager.IsActive("bounty_hunter"))
+                    willSpawnBoss = dayNumber >= 5 && dayNumber % 5 == 0 && orcWarBossData != null;
+                else
+                    willSpawnBoss = halfSpread >= 90f && orcWarBossData != null;
                 dayTotalEnemies = remnantEnemies.Count + regularSpawnsRemaining + (willSpawnBoss ? 1 : 0);
                 Debug.Log($"[EnemySpawnManager] Late init Day {dayNumber}: spawns={regularSpawnsRemaining}, total={dayTotalEnemies}");
             }
@@ -313,10 +324,19 @@ public class EnemySpawnManager : MonoBehaviour
         nightHarassTimer -= Time.deltaTime;
         if (nightHarassTimer <= 0)
         {
-            nightHarassTimer = NIGHT_HARASS_INTERVAL;
-            if (Random.value < NIGHT_HARASS_CHANCE)
+            if (MutatorManager.IsActive("night_terrors"))
             {
+                // Night Terrors: full-rate spawning at night (no chance check)
+                nightHarassTimer = GetSpawnInterval(dayNumber);
                 SpawnNightHarassEnemy();
+            }
+            else
+            {
+                nightHarassTimer = NIGHT_HARASS_INTERVAL;
+                if (Random.value < NIGHT_HARASS_CHANCE)
+                {
+                    SpawnNightHarassEnemy();
+                }
             }
         }
     }

@@ -9,6 +9,7 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private Button tutorialButton;
     [SerializeField] private Button exitButton;
     [SerializeField] private Button statsButton;
+    [SerializeField] private Button mutatorsButton;
     [SerializeField] private Button bugReportButton;
 
     [Header("Bug Report")]
@@ -16,6 +17,9 @@ public class MainMenuManager : MonoBehaviour
 
     [Header("Stats")]
     [SerializeField] private StatsDashboardPanel statsDashboardPanel;
+
+    [Header("Mutators")]
+    [SerializeField] private MutatorUI mutatorUI;
 
     [Header("Difficulty")]
     [SerializeField] private Slider difficultySlider;
@@ -44,6 +48,8 @@ public class MainMenuManager : MonoBehaviour
             exitButton.onClick.AddListener(OnExitClicked);
         if (statsButton != null)
             statsButton.onClick.AddListener(OnStatsClicked);
+        if (mutatorsButton != null)
+            mutatorsButton.onClick.AddListener(OnMutatorsClicked);
         if (bugReportButton != null)
             bugReportButton.onClick.AddListener(OnBugReportClicked);
 
@@ -67,6 +73,8 @@ public class MainMenuManager : MonoBehaviour
             exitButton.onClick.RemoveListener(OnExitClicked);
         if (statsButton != null)
             statsButton.onClick.RemoveListener(OnStatsClicked);
+        if (mutatorsButton != null)
+            mutatorsButton.onClick.RemoveListener(OnMutatorsClicked);
         if (bugReportButton != null)
             bugReportButton.onClick.RemoveListener(OnBugReportClicked);
         if (difficultySlider != null)
@@ -117,6 +125,15 @@ public class MainMenuManager : MonoBehaviour
             statsDashboardPanel.Show();
         else
             Debug.LogWarning("[MainMenuManager] StatsDashboardPanel reference is null.");
+    }
+
+    private void OnMutatorsClicked()
+    {
+        Debug.Log("[MainMenuManager] Mutators clicked.");
+        if (mutatorUI != null)
+            mutatorUI.Show();
+        else
+            Debug.LogWarning("[MainMenuManager] MutatorUI reference is null.");
     }
 
     private void OnBugReportClicked()

@@ -96,8 +96,74 @@ public class Enemy : MonoBehaviour
         }
 
         transform.localScale = data.bodyScale;
+        FitColliderToModel();
         Debug.Log($"[Enemy] Initialized: {data.enemyName}, HP={data.maxHP}, type={data.enemyType}");
         OnEnemySpawned?.Invoke(this);
+    }
+
+    private void FitColliderToModel()
+    {
+        var capsule = GetComponent<CapsuleCollider>();
+        if (capsule == null || bodyRenderers == null || bodyRenderers.Length == 0) return;
+
+        // Compute combined world-space bounds of all renderers
+        Bounds worldBounds = default;
+        bool hasBounds = false;
+        foreach (var r in bodyRenderers)
+        {
+            if (r == null) continue;
+            if (!hasBounds)
+            {
+                worldBounds = r.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                worldBounds.Encapsulate(r.bounds);
+            }
+        }
+        if (!hasBounds) return;
+
+        // Convert world height to local space (collider is in local coords)
+        float scaleY = Mathf.Max(transform.lossyScale.y, 0.001f);
+        float localHeight = worldBounds.size.y / scaleY;
+        Vector3 localCenter = transform.InverseTransformPoint(worldBounds.center);
+        // Keep XZ center at zero so collider stays centered on the pivot
+        localCenter.x = 0f;
+        localCenter.z = 0f;
+
+        // Place capsule from ground up (y=0 to y=localHeight)
+        capsule.height = localHeight;
+        capsule.center = new Vector3(0f, localHeight / 2f, 0f);
+
+        // Create visible hitbox indicator using a capsule primitive
+        var hitboxObj = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        hitboxObj.name = "HitboxGizmo";
+        hitboxObj.transform.SetParent(transform);
+        // Unity capsule primitive: height=2, radius=0.5 at scale (1,1,1)
+        float capsuleScaleY = localHeight / 2f;
+        float capsuleScaleXZ = capsule.radius / 0.5f;
+        hitboxObj.transform.localScale = new Vector3(capsuleScaleXZ, capsuleScaleY, capsuleScaleXZ);
+        hitboxObj.transform.localPosition = new Vector3(0f, localHeight / 2f, 0f);
+        hitboxObj.transform.localRotation = Quaternion.identity;
+
+        // Remove auto-created collider so it doesn't interfere with gameplay
+        var primCollider = hitboxObj.GetComponent<Collider>();
+        if (primCollider != null) Destroy(primCollider);
+
+        // Apply transparent red material (Sprites/Default supports alpha in all pipelines)
+        var hitboxRenderer = hitboxObj.GetComponent<Renderer>();
+        if (hitboxRenderer != null)
+        {
+            var mat = new Material(Shader.Find("Sprites/Default"));
+            mat.color = new Color(1f, 0.15f, 0.15f, 0.3f);
+            mat.renderQueue = 3100; // Render on top of opaque geometry
+            hitboxRenderer.material = mat;
+            hitboxRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            hitboxRenderer.receiveShadows = false;
+        }
+
+        Debug.Log($"[Enemy] Collider fitted to model: height={localHeight:F2}, center.y={localHeight / 2f:F2}, worldHeight={worldBounds.size.y:F2}");
     }
 
     public void ApplyDayScaling(float hpMultiplier, float damageMultiplier)
@@ -266,6 +332,8 @@ public class Enemy : MonoBehaviour
             if (pickup != null)
             {
                 int lootValue = UnityEngine.Random.Range(data.minLootValue, data.maxLootValue + 1);
+                if (MutatorManager.IsActive("blood_tide")) lootValue = Mathf.RoundToInt(lootValue * 1.3f);
+                if (MutatorManager.IsActive("golden_horde")) lootValue *= 3;
                 pickup.Initialize(lootValue);
                 totalValue += lootValue;
             }
@@ -277,4 +345,5 @@ public class Enemy : MonoBehaviour
 
         Debug.Log($"[Enemy] {data.enemyName} died at {transform.position}. Dropped {dropCount} loot (total value={totalValue})");
     }
+
 }

@@ -24,23 +24,10 @@ public class Wall : MonoBehaviour
     private void Awake()
     {
         CurrentHP = maxHP;
+        if (MutatorManager.IsActive("glass_fortress")) { maxHP = Mathf.Max(1, maxHP / 2); CurrentHP = maxHP; }
         Corners = GetComponent<WallCorners>();
 
-        // Ensure the root BoxCollider covers the wall body
-        var boxCol = GetComponent<BoxCollider>();
-        if (boxCol != null)
-        {
-            boxCol.center = new Vector3(0, 1.5f, 0);
-            boxCol.size = new Vector3(1f, 3f, 0.5f);
-        }
-
-        // Add capsule colliders for the octagonal towers at each end
-        AddTowerColliders();
-
-        // Add invisible pathing cube for PathingRayManager ray detection
-        AddPathingCube();
-
-        // Gather ALL renderers (FBX model has one renderer with 4 material sub-meshes)
+        // Gather renderers FIRST so we can compute model bounds for collider sizing
         renderers = GetComponentsInChildren<Renderer>();
 
         // Cache original colors for each material on each renderer
@@ -56,10 +43,42 @@ public class Wall : MonoBehaviour
             }
         }
 
-        Debug.Log($"[Wall] Initialized at {transform.position}, HP={maxHP}, renderers={renderers.Length}");
+        // Compute collider height from model TOP down to wall root (local y=0).
+        // Collider must NOT extend below the wall root to avoid blocking ground-level NavMesh gaps.
+        float colliderHeight = 2f; // fallback
+        float colliderCenterY = 1f;
+        if (renderers.Length > 0)
+        {
+            Bounds worldBounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++)
+            {
+                if (renderers[i] != null)
+                    worldBounds.Encapsulate(renderers[i].bounds);
+            }
+            float modelLocalTop = worldBounds.max.y - transform.position.y;
+            colliderHeight = Mathf.Max(modelLocalTop, 0.5f);
+            colliderCenterY = colliderHeight / 2f;
+            Debug.Log($"[Wall] Model bounds: worldTop={worldBounds.max.y:F2}, localTop={modelLocalTop:F2}, colliderHeight={colliderHeight:F2}");
+        }
+
+        // Set BoxCollider from wall root (local y=0) up to model top
+        var boxCol = GetComponent<BoxCollider>();
+        if (boxCol != null)
+        {
+            boxCol.center = new Vector3(0, colliderCenterY, 0);
+            boxCol.size = new Vector3(1f, colliderHeight, 0.5f);
+        }
+
+        // Add capsule colliders for the octagonal towers at each end
+        AddTowerColliders(colliderHeight, colliderCenterY);
+
+        // Add invisible pathing cube for PathingRayManager ray detection
+        AddPathingCube();
+
+        Debug.Log($"[Wall] Initialized at {transform.position}, HP={maxHP}, renderers={renderers.Length}, colliderHeight={colliderHeight:F2}");
     }
 
-    private void AddTowerColliders()
+    private void AddTowerColliders(float modelHeight, float modelLocalCenterY)
     {
         // Skip tower colliders on ghost walls (placement preview)
         var corners = GetComponent<WallCorners>();
@@ -77,20 +96,20 @@ public class Wall : MonoBehaviour
         // for engineer stand position validation.
         var leftTower = new GameObject("TowerCollider_L");
         leftTower.transform.SetParent(transform, false);
-        leftTower.transform.localPosition = new Vector3(-towerOffset, 1.5f, 0);
+        leftTower.transform.localPosition = new Vector3(-towerOffset, modelLocalCenterY, 0);
         if (enemyBlockLayer >= 0) leftTower.layer = enemyBlockLayer;
         var leftCap = leftTower.AddComponent<CapsuleCollider>();
         leftCap.radius = towerRadius;
-        leftCap.height = 3f;
+        leftCap.height = modelHeight;
         leftCap.direction = 1; // Y-axis
 
         var rightTower = new GameObject("TowerCollider_R");
         rightTower.transform.SetParent(transform, false);
-        rightTower.transform.localPosition = new Vector3(towerOffset, 1.5f, 0);
+        rightTower.transform.localPosition = new Vector3(towerOffset, modelLocalCenterY, 0);
         if (enemyBlockLayer >= 0) rightTower.layer = enemyBlockLayer;
         var rightCap = rightTower.AddComponent<CapsuleCollider>();
         rightCap.radius = towerRadius;
-        rightCap.height = 3f;
+        rightCap.height = modelHeight;
         rightCap.direction = 1; // Y-axis
     }
 
@@ -151,9 +170,11 @@ public class Wall : MonoBehaviour
             if (SoundManager.Instance != null) SoundManager.Instance.PlayWallCollapse(transform.position);
             OnWallDestroyed?.Invoke(this);
             gameObject.SetActive(false);
-            // Rebake enemy NavMesh so tower geometry is updated, then retarget
-            if (WallManager.Instance != null) WallManager.Instance.RebakeEnemyNavMesh();
-            EnemyMovement.ForceAllRetarget();
+            // Immediately rebake NavMesh (widening breach gaps) and retarget enemies
+            if (WallManager.Instance != null)
+                WallManager.Instance.RebakeImmediateAndRetarget();
+            else
+                EnemyMovement.ForceAllRetarget();
         }
     }
 
@@ -212,9 +233,11 @@ public class Wall : MonoBehaviour
                     TorchManager.Instance.AddWallTorches(this);
             }
 
-            // Rebake enemy NavMesh to include new tower geometry, then retarget
-            if (WallManager.Instance != null) WallManager.Instance.RebakeEnemyNavMesh();
-            EnemyMovement.ForceAllRetarget();
+            // Immediately rebake NavMesh with new tower geometry and retarget
+            if (WallManager.Instance != null)
+                WallManager.Instance.RebakeImmediateAndRetarget();
+            else
+                EnemyMovement.ForceAllRetarget();
         }
 
         UpdateVisual();

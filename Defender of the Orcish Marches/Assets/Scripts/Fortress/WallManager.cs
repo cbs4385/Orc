@@ -269,6 +269,11 @@ public class WallManager : MonoBehaviour
 
     private void DoRebakeEnemyNavMesh()
     {
+        // Temporarily disable tower colliders adjacent to breaches so the NavMesh
+        // gap is wide enough for enemies to walk through destroyed wall positions.
+        var disabledTowers = DisableBreachAdjacentTowerColliders();
+
+        bool found = false;
         var surfaces = FindObjectsByType<NavMeshSurface>(FindObjectsSortMode.None);
         foreach (var surface in surfaces)
         {
@@ -283,10 +288,93 @@ public class WallManager : MonoBehaviour
                 }
                 surface.BuildNavMesh();
                 Debug.Log($"[WallManager] Rebaked enemy NavMesh (agentTypeID={surface.agentTypeID})");
-                return;
+                found = true;
+                break;
             }
         }
-        Debug.LogWarning("[WallManager] No enemy NavMeshSurface found for rebake");
+
+        // Re-enable tower colliders (they only need to be off during the bake)
+        foreach (var go in disabledTowers)
+            go.SetActive(true);
+
+        if (!found)
+            Debug.LogWarning("[WallManager] No enemy NavMeshSurface found for rebake");
+    }
+
+    /// <summary>
+    /// Immediately rebake enemy NavMesh (widening breach gaps) and retarget all enemies.
+    /// Call this when a wall is destroyed or construction completes so enemies get
+    /// fresh NavMesh data before choosing their next destination.
+    /// </summary>
+    public void RebakeImmediateAndRetarget()
+    {
+        enemyNavMeshDirty = false; // Cancel any pending deferred rebake
+        DoRebakeEnemyNavMesh();
+        EnemyMovement.ForceAllRetarget();
+    }
+
+    /// <summary>
+    /// When a wall is destroyed, its adjacent walls still have tower CapsuleColliders at
+    /// the shared endpoints. These narrow the breach gap to ~1.0 unit, which is too tight
+    /// for the enemy NavMesh agent to path through. This method temporarily disables those
+    /// tower colliders so the NavMesh bake produces a full-width gap at each breach.
+    /// Returns the list of disabled GameObjects that must be re-enabled after the bake.
+    /// </summary>
+    private List<GameObject> DisableBreachAdjacentTowerColliders()
+    {
+        var disabled = new List<GameObject>();
+
+        // Collect XZ positions of all breach walls' tower endpoints
+        var breachTowerXZ = new List<Vector2>();
+        foreach (var wall in allWalls)
+        {
+            if (wall == null) continue;
+            // A wall is a breach if destroyed or inactive
+            if (!wall.IsDestroyed && wall.gameObject.activeInHierarchy) continue;
+
+            Vector3 right = wall.transform.right;
+            Vector3 pos = wall.transform.position;
+            float offset = WallCorners.TOWER_OFFSET;
+            Vector3 leftTower = pos - right * offset;
+            Vector3 rightTower = pos + right * offset;
+            breachTowerXZ.Add(new Vector2(leftTower.x, leftTower.z));
+            breachTowerXZ.Add(new Vector2(rightTower.x, rightTower.z));
+        }
+
+        if (breachTowerXZ.Count == 0) return disabled;
+
+        // Disable matching tower colliders on active walls
+        foreach (var wall in allWalls)
+        {
+            if (wall == null || wall.IsDestroyed || !wall.gameObject.activeInHierarchy) continue;
+
+            DisableTowerIfAtBreach(wall.transform, "TowerCollider_L", breachTowerXZ, disabled);
+            DisableTowerIfAtBreach(wall.transform, "TowerCollider_R", breachTowerXZ, disabled);
+        }
+
+        if (disabled.Count > 0)
+            Debug.Log($"[WallManager] Temporarily disabled {disabled.Count} breach-adjacent tower collider(s) for NavMesh rebake");
+
+        return disabled;
+    }
+
+    private void DisableTowerIfAtBreach(Transform wallTransform, string towerName,
+        List<Vector2> breachPositions, List<GameObject> disabledList)
+    {
+        var tower = wallTransform.Find(towerName);
+        if (tower == null) return;
+
+        Vector2 towerXZ = new Vector2(tower.position.x, tower.position.z);
+        foreach (var bp in breachPositions)
+        {
+            if (Vector2.Distance(towerXZ, bp) < 0.5f)
+            {
+                tower.gameObject.SetActive(false);
+                disabledList.Add(tower.gameObject);
+                Debug.Log($"[WallManager] Disabled {towerName} on {wallTransform.name} at breach endpoint ({bp.x:F2}, {bp.y:F2})");
+                break;
+            }
+        }
     }
 
     public GameObject PlaceWall(Vector3 position, Quaternion rotation = default, float scaleX = 1f)

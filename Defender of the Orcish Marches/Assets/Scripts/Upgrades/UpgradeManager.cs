@@ -48,6 +48,12 @@ public class UpgradeManager : MonoBehaviour
         // Walls are purchased via build mode, not the upgrade panel
         if (upgrade.upgradeType == UpgradeType.NewWall) return false;
 
+        if (MutatorManager.IsActive("lone_ballista") && IsHireUpgrade(upgrade.upgradeType))
+        {
+            Debug.Log($"[UpgradeManager] Lone Ballista mutator prevents hiring: {upgrade.upgradeName}");
+            return false;
+        }
+
         int scaledTreasure = upgrade.GetTreasureCost(count);
         int scaledMenial = upgrade.GetMenialCost(count);
         bool canAfford = GameManager.Instance.CanAfford(scaledTreasure, scaledMenial);
@@ -60,7 +66,10 @@ public class UpgradeManager : MonoBehaviour
     public (int treasure, int menial) GetCurrentCost(UpgradeData upgrade)
     {
         int count = GetScalingCount(upgrade);
-        return (upgrade.GetTreasureCost(count), upgrade.GetMenialCost(count));
+        int treasureCost = upgrade.GetTreasureCost(count);
+        int menialCost = upgrade.GetMenialCost(count);
+        if (MutatorManager.IsActive("golden_horde")) treasureCost *= 2;
+        return (treasureCost, menialCost);
     }
 
     public bool Purchase(UpgradeData upgrade)

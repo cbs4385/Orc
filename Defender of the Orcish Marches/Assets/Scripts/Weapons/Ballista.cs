@@ -44,6 +44,13 @@ public class Ballista : MonoBehaviour
         if (firePoint == null) firePoint = transform;
         isNightmareMode = NightmareCamera.IsNightmareMode;
 
+        if (MutatorManager.IsActive("lone_ballista"))
+        {
+            damage *= 2;
+            fireRate *= 1.5f;
+            Debug.Log($"[Ballista] Lone Ballista mutator applied: damage={damage}, fireRate={fireRate}");
+        }
+
         Debug.Log($"[Ballista] Initialized. damage={damage}, fireRate={fireRate}, range={maxRange}, nightmare={isNightmareMode}");
 
         aimLine = CreateAimLine("AimLine");

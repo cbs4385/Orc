@@ -19,6 +19,10 @@ public class BallistaProjectile : MonoBehaviour
     private Vector3 velocity;
     private float totalDistanceTraveled;
 
+    // Linger after impact
+    private bool stopped;
+
+
     public void Initialize(Vector3 dir, float spd, int dmg, float range, bool burst = false, float burstRad = 0f, bool gravity = false)
     {
         direction = dir.normalized;
@@ -31,11 +35,50 @@ public class BallistaProjectile : MonoBehaviour
         useGravity = gravity;
         velocity = direction * speed;
         initialized = true;
+
+        // Add trajectory trail
+        var trail = gameObject.AddComponent<TrailRenderer>();
+        trail.time = 1.5f;
+        trail.startWidth = 0.08f;
+        trail.endWidth = 0.02f;
+        trail.numCapVertices = 2;
+        trail.receiveShadows = false;
+        trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var shader = Shader.Find("Sprites/Default");
+        if (shader != null)
+        {
+            var mat = new Material(shader);
+            trail.material = mat;
+        }
+        var gradient = new Gradient();
+        gradient.SetKeys(
+            new GradientColorKey[] {
+                new GradientColorKey(new Color(1f, 0.9f, 0.3f), 0f),
+                new GradientColorKey(new Color(1f, 0.4f, 0.1f), 1f)
+            },
+            new GradientAlphaKey[] {
+                new GradientAlphaKey(0.8f, 0f),
+                new GradientAlphaKey(0f, 1f)
+            }
+        );
+        trail.colorGradient = gradient;
+    }
+
+    private void StopAndLinger(bool hitEnemy = false)
+    {
+        if (stopped) return;
+        stopped = true;
+        initialized = false;
+        var col = GetComponent<Collider>();
+        if (col != null) col.enabled = false;
+        BoltImpactVFX.Spawn(transform.position, hitEnemy);
+        Debug.Log($"[BallistaProjectile] Stopped at {transform.position}, hitEnemy={hitEnemy}, lingering 1s");
+        Destroy(gameObject, 1f);
     }
 
     private void Update()
     {
-        if (!initialized) return;
+        if (!initialized || stopped) return;
 
         float step;
         Vector3 oldPos = transform.position;
@@ -87,7 +130,7 @@ public class BallistaProjectile : MonoBehaviour
                         }
                     }
                 }
-                Destroy(gameObject);
+                StopAndLinger();
                 return;
             }
 
@@ -113,7 +156,7 @@ public class BallistaProjectile : MonoBehaviour
                         }
                     }
                 }
-                Destroy(gameObject);
+                StopAndLinger();
                 return;
             }
         }
@@ -142,14 +185,14 @@ public class BallistaProjectile : MonoBehaviour
                         }
                     }
                 }
-                Destroy(gameObject);
+                StopAndLinger();
                 return;
             }
 
             // Range limit based on total distance traveled
             if (totalDistanceTraveled >= maxRange)
             {
-                Destroy(gameObject);
+                StopAndLinger();
                 return;
             }
         }
@@ -157,13 +200,14 @@ public class BallistaProjectile : MonoBehaviour
         {
             if (Vector3.Distance(startPosition, transform.position) >= maxRange)
             {
-                Destroy(gameObject);
+                StopAndLinger();
             }
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
+        if (stopped) return;
         var enemy = other.GetComponentInParent<Enemy>();
         if (enemy != null && !enemy.IsDead)
         {
@@ -189,7 +233,7 @@ public class BallistaProjectile : MonoBehaviour
                     }
                 }
             }
-            Destroy(gameObject);
+            StopAndLinger();
             return;
         }
 
@@ -213,7 +257,7 @@ public class BallistaProjectile : MonoBehaviour
                     }
                 }
             }
-            Destroy(gameObject);
+            StopAndLinger();
         }
     }
 
@@ -239,6 +283,6 @@ public class BallistaProjectile : MonoBehaviour
             Debug.Log($"[BallistaProjectile] Burst damage at {transform.position}, radius={burstRadius}");
         }
 
-        Destroy(gameObject);
+        StopAndLinger(hitEnemy: true);
     }
 }

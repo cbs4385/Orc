@@ -323,11 +323,13 @@ public class Defender : MonoBehaviour
 
     protected virtual void Attack()
     {
+        if (MutatorManager.IsActive("pacifist_run")) return;
         if (data == null || currentTarget == null) return;
         float dailyAtkSpd = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderAttackSpeedMultiplier : 1f;
         attackCooldown = (1f / data.attackRate) / dailyAtkSpd;
         float dailyDmg = DailyEventManager.Instance != null ? DailyEventManager.Instance.DefenderDamageMultiplier : 1f;
         int scaledDmg = Mathf.RoundToInt(data.damage * dailyDmg);
+        if (MutatorManager.IsActive("glass_fortress")) scaledDmg = Mathf.RoundToInt(scaledDmg * 1.5f);
         Debug.Log($"[Defender] {data.defenderName} attacking {currentTarget.name} for {scaledDmg} damage at dist={GetDistanceToTarget(currentTarget):F1}");
         currentTarget.TakeDamage(scaledDmg);
     }

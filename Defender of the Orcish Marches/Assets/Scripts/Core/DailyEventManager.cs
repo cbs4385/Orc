@@ -241,15 +241,15 @@ public class DailyEventManager : MonoBehaviour
         lastEventIndex = index;
         var evt = AllEvents[index];
 
-        // Apply multipliers
-        LootValueMultiplier = evt.lootValueMultiplier;
-        DefenderDamageMultiplier = evt.defenderDamageMultiplier;
-        MenialSpeedMultiplier = evt.menialSpeedMultiplier;
-        EnemyDamageMultiplier = evt.enemyDamageMultiplier;
-        SpawnRateMultiplier = evt.spawnRateMultiplier;
-        EnemyHPMultiplier = evt.enemyHPMultiplier;
-        EnemySpeedMultiplier = evt.enemySpeedMultiplier;
-        DefenderAttackSpeedMultiplier = evt.defenderAttackSpeedMultiplier;
+        // Apply multipliers (chaos_modifiers doubles the deviation from 1.0)
+        LootValueMultiplier = ApplyChaos(evt.lootValueMultiplier);
+        DefenderDamageMultiplier = ApplyChaos(evt.defenderDamageMultiplier);
+        MenialSpeedMultiplier = ApplyChaos(evt.menialSpeedMultiplier);
+        EnemyDamageMultiplier = ApplyChaos(evt.enemyDamageMultiplier);
+        SpawnRateMultiplier = ApplyChaos(evt.spawnRateMultiplier);
+        EnemyHPMultiplier = ApplyChaos(evt.enemyHPMultiplier);
+        EnemySpeedMultiplier = ApplyChaos(evt.enemySpeedMultiplier);
+        DefenderAttackSpeedMultiplier = ApplyChaos(evt.defenderAttackSpeedMultiplier);
 
         CurrentEventName = evt.name;
         CurrentEventDescription = evt.description;
@@ -263,6 +263,12 @@ public class DailyEventManager : MonoBehaviour
         RefreshMenialSpeeds();
 
         OnEventChanged?.Invoke(evt);
+    }
+
+    private float ApplyChaos(float value)
+    {
+        if (!MutatorManager.IsActive("chaos_modifiers")) return value;
+        return 1f + (value - 1f) * 2f;
     }
 
     private void RefreshMenialSpeeds()

@@ -183,6 +183,11 @@ public class GameOverScreen : MonoBehaviour
             if (hasPrevRuns && current.compositeScore <= prevBest.compositeScore)
                 sb.AppendFormat("\nBest: {0:N0}", prevBest.compositeScore);
 
+            if (MutatorManager.ActiveCount > 0)
+            {
+                sb.AppendFormat("\nMutators: {0} ({1:F2}x)", MutatorManager.GetActiveNamesDisplay(), MutatorManager.GetScoreMultiplier());
+            }
+
             scoreText.text = sb.ToString();
         }
 

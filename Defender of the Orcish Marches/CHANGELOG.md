@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.13.0
+
+### Unlockable Mutators
+- Added 10 game-modifying mutators that can be toggled before a run from the main menu
+- **Blood Tide** — 50% more enemies per wave, loot value +30% (×1.5 score)
+- **Iron March** — enemies move 30% faster (×1.3 score)
+- **Glass Fortress** — walls have half HP, defenders deal 50% more damage (×1.4 score)
+- **Night Terrors** — full enemy waves spawn at night instead of harassment groups (×1.6 score)
+- **Lone Ballista** — cannot hire defenders, ballista does double damage at 1.5× fire rate (×1.8 score)
+- **Golden Horde** — enemies drop 3× loot, all costs doubled (×1.2 score)
+- **Skeleton Crew** — start with 1 menial, refugees arrive 50% faster (×1.3 score)
+- **Chaos Modifiers** — daily event multipliers are twice as extreme (×1.4 score)
+- **Pacifist Run** — defenders cannot attack, score ×2.0
+- **Bounty Hunter** — a boss enemy spawns every 5 days starting day 5 (×1.5 score)
+- Mutators unlock based on gameplay achievements (e.g. survive 10 days, kill 100 enemies)
+- Score multipliers stack multiplicatively, capped at 5.0×
+- Incompatible mutators auto-disable when toggling (e.g. Lone Ballista ↔ Pacifist Run)
+- Active mutators and score multiplier shown on the Game Over screen
+- Mutator unlock state persists across sessions via PlayerPrefs
+- Added MutatorUI panel with scrollable toggle list, lock/unlock states, and multiplier badges
+
+### Lifetime Stats & Stats Dashboard
+- Added LifetimeStatsManager tracking cumulative stats across all runs (enemies killed, gold earned, walls built, days survived, etc.)
+- Added StatsDashboardPanel accessible from main menu with three tabs: Lifetime, Records, Computed
+- Stats persist across sessions via PlayerPrefs JSON
+- RunStatsTracker extended with 15+ new tracking properties feeding into lifetime stats
+
 ## 0.12.4
 
 ### Bug Fixes

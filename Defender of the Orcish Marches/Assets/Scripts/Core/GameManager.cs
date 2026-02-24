@@ -49,6 +49,7 @@ public class GameManager : MonoBehaviour
         // Initialize resources from difficulty settings (serialized values are fallbacks)
         Treasure = GameSettings.GetStartingGold();
         MenialCount = GameSettings.GetStartingMenials();
+        if (MutatorManager.IsActive("skeleton_crew")) { MenialCount = 1; }
         IdleMenialCount = MenialCount;
         Debug.Log($"[GameManager] Difficulty={GameSettings.CurrentDifficulty}: gold={Treasure}, menials={MenialCount}");
     }

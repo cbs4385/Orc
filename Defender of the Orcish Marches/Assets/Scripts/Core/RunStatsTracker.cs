@@ -238,7 +238,9 @@ public class RunStatsTracker : MonoBehaviour
 
     public int ComputeScore()
     {
-        return (Days * 1000) + (Kills * 10) + (GoldEarned * 2) + (Hires * 50) + (BossKills * 500) - (MenialsLost * 100);
+        int baseScore = (Days * 1000) + (Kills * 10) + (GoldEarned * 2) + (Hires * 50) + (BossKills * 500) - (MenialsLost * 100);
+        float mutatorMult = MutatorManager.GetScoreMultiplier();
+        return Mathf.RoundToInt(baseScore * mutatorMult);
     }
 
     public RunRecord ToRecord()
