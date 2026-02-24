@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.15.2
+
+### Tutorial
+- Added 5 new tutorial pages covering all 0.13–0.15 features (19 → 24 pages total)
+- Relics & Boons: night phase relic choices, categories, stacking, and tradeoffs
+- Commander Classes: all 4 commanders with bonuses/drawbacks
+- Mutators: game modifiers, score multipliers, unlock mechanism
+- War Trophies & Upgrades: trophy formula, 9 permanent upgrades, scaling costs
+- Achievements & Milestones: achievement tiers, milestone rewards, legacy rank
+- Updated hotkey summary page with main menu features
+
 ## 0.15.1
 
 ### UI Polish

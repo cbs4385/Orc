@@ -319,6 +319,78 @@ public class TutorialManager : MonoBehaviour
             },
             new TutorialPage
             {
+                title = "Relics & Boons",
+                spriteName = "tut_side",
+                body = "At the end of each night (starting after day 1), you are offered a choice of <b>3 Relics</b>.\n\n" +
+                       "Relics provide permanent bonuses for the rest of the run. " +
+                       "Pick one, or <b>skip</b> if none suit your strategy.\n\n" +
+                       "<b>Offensive:</b> Orcish Whetstone, Sharpened Bolts, Battle Fury\n" +
+                       "<b>Defensive:</b> Reinforced Mortar, Slowing Wards\n" +
+                       "<b>Economy:</b> War Chest, Plunderer's Charm, Refugee's Beacon\n" +
+                       "<b>Risk/Reward:</b> Blood Offering, Rapid Reload, Engineer's Toolkit, Orcish Trophy\n\n" +
+                       "Many relics have tradeoffs — read carefully before choosing. " +
+                       "Relics <b>stack multiplicatively</b>, so the same type of bonus compounds over multiple nights."
+            },
+            new TutorialPage
+            {
+                title = "Commander Classes",
+                spriteName = "tut_overview",
+                body = "Before starting a run, you can select a <b>Commander Class</b> from the main menu.\n\n" +
+                       "Each commander changes the rules for the entire run:\n\n" +
+                       "  <b>Warden</b> — walls +30% HP, wall cost -20%, but defenders cost +30%\n" +
+                       "  <b>Captain</b> — defenders +20% damage, cost -20%, but walls -20% HP\n" +
+                       "  <b>Artificer</b> — ballista upgrades -50% cost, +25% damage, but -1 starting menial\n" +
+                       "  <b>Merchant</b> — loot +40%, refugees +30% faster, but enemies +15% HP\n\n" +
+                       "Or select <b>None</b> to play with default settings. " +
+                       "Your choice persists between sessions until you change it."
+            },
+            new TutorialPage
+            {
+                title = "Mutators",
+                spriteName = "tut_side",
+                body = "<b>Mutators</b> are game-modifying rules you can toggle from the main menu.\n\n" +
+                       "Each mutator changes the gameplay significantly and applies a <b>score multiplier</b>:\n\n" +
+                       "  <b>Blood Tide</b> — +50% enemies, +30% loot (x1.5)\n" +
+                       "  <b>Iron March</b> — enemies move 30% faster (x1.3)\n" +
+                       "  <b>Glass Fortress</b> — walls half HP, defenders +50% damage (x1.4)\n" +
+                       "  <b>Night Terrors</b> — full waves spawn at night (x1.6)\n" +
+                       "  <b>Lone Ballista</b> — no defenders, ballista 2x damage (x1.8)\n\n" +
+                       "Mutators unlock through <b>achievements</b>. " +
+                       "Score multipliers stack (capped at 5.0x). " +
+                       "Some mutators are incompatible and auto-disable each other."
+            },
+            new TutorialPage
+            {
+                title = "War Trophies & Upgrades",
+                spriteName = "tut_treasure",
+                body = "Every run earns <b>War Trophies</b> — a permanent currency that persists across runs.\n\n" +
+                       "Trophies earned = (days x 2) + (kills / 10) + (boss kills x 5). Minimum 1 per run.\n\n" +
+                       "Spend trophies in the main menu <b>UPGRADES</b> panel on permanent bonuses:\n\n" +
+                       "  <b>War Coffers</b> — bonus starting gold\n" +
+                       "  <b>Forged Tips / Oiled Gears</b> — ballista damage and fire rate\n" +
+                       "  <b>Swift Boots</b> — faster menials\n" +
+                       "  <b>Reinforced Foundations</b> — wall HP\n" +
+                       "  <b>Keen Eye</b> — loot value\n" +
+                       "  <b>Volunteer Corps</b> — extra starting menial\n\n" +
+                       "Upgrades have multiple levels with scaling costs. Bonuses apply automatically at run start."
+            },
+            new TutorialPage
+            {
+                title = "Achievements & Milestones",
+                spriteName = "tut_overview",
+                body = "The game tracks your progress through two reward systems:\n\n" +
+                       "<b>Achievements</b> have Bronze, Silver, and Gold tiers across 5 categories " +
+                       "(Survival, Combat, Economy, Defender, Special). " +
+                       "Gold-tier achievements <b>unlock mutators</b>.\n\n" +
+                       "<b>Milestones</b> are 26 one-time challenges that award <b>War Trophies</b> " +
+                       "(3-15 each) on first completion. Examples: survive 10 days on Hard, " +
+                       "kill 500 enemies, defeat a boss.\n\n" +
+                       "Your <b>Legacy Rank</b> also accumulates over time, providing small permanent " +
+                       "bonuses (starting gold, menial speed, ballista damage, and more).\n\n" +
+                       "Check your progress from the main menu: ACHIEVEMENTS, STATISTICS, BESTIARY, and LEGACY."
+            },
+            new TutorialPage
+            {
                 title = "Nightmare Difficulty",
                 spriteName = "tut_ballista",
                 body = "On <b>Nightmare</b> difficulty, you experience the battle from the scorpio itself.\n\n" +
@@ -343,9 +415,14 @@ public class TutorialManager : MonoBehaviour
                        "  <b>U</b> — Open/close upgrade panel\n" +
                        "  <b>1-9</b> — Upgrade hotkeys\n" +
                        "  <b>A / D</b> — Rotate wall in build mode\n" +
-                       "  <b>B</b> — Exit build mode\n" +
+                       "  <b>B</b> — Enter/exit build mode\n" +
                        "  <b>Space</b> — Toggle pause\n" +
                        "  <b>Escape</b> — Pause menu / exit build mode\n\n" +
+                       "<b>Main Menu Features:</b>\n" +
+                       "  COMMANDER — choose a class before starting\n" +
+                       "  MUTATORS — toggle game modifiers\n" +
+                       "  UPGRADES — spend War Trophies on permanent bonuses\n" +
+                       "  BESTIARY / STATISTICS / ACHIEVEMENTS / LEGACY\n\n" +
                        "Good luck, Commander. The Marches depend on you!"
             }
         };
