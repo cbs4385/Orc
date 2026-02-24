@@ -299,6 +299,12 @@ public class RunStatsTracker : MonoBehaviour
             hiresCrossbowman = HiresCrossbowman,
             hiresWizard = HiresWizard,
 
+            // Commander and relics
+            commanderId = CommanderManager.ActiveCommanderId,
+            relicsCollected = RelicManager.Instance != null ? RelicManager.Instance.CollectedCount : 0,
+            warTrophiesEarned = MetaProgressionManager.CalculateRunTrophies(new RunRecord { days = Days, kills = Kills, bossKills = BossKills })
+            hiresWizard = HiresWizard,
+
             // Per-enemy-name kills
             killsOrcGrunt = KillsOrcGrunt,
             killsBowOrc = KillsBowOrc,

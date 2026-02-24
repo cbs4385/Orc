@@ -38,7 +38,8 @@ public class EnemyMovement : MonoBehaviour
         if (enemy.Data != null)
         {
             float dailySpeed = DailyEventManager.Instance != null ? DailyEventManager.Instance.EnemySpeedMultiplier : 1f;
-            agent.speed = enemy.Data.moveSpeed * dailySpeed;
+            float relicSpeed = RelicManager.Instance != null ? RelicManager.Instance.GetEnemySpeedMultiplier() : 1f;
+            agent.speed = enemy.Data.moveSpeed * dailySpeed * relicSpeed;
             if (MutatorManager.IsActive("iron_march")) agent.speed *= 1.3f;
             agent.stoppingDistance = enemy.Data.attackRange * 0.9f;
         }

@@ -51,6 +51,19 @@ public class Ballista : MonoBehaviour
             Debug.Log($"[Ballista] Lone Ballista mutator applied: damage={damage}, fireRate={fireRate}");
         }
 
+        // Commander and meta-progression ballista bonuses
+        damage += MetaProgressionManager.GetBonusBallistaDamage();
+        damage = Mathf.RoundToInt(damage * CommanderManager.GetBallistaDamageMultiplier());
+        fireRate *= MetaProgressionManager.GetBallistaFireRateMultiplier();
+        fireRate *= CommanderManager.GetBallistaFireRateMultiplier();
+
+        // Relic ballista multipliers
+        if (RelicManager.Instance != null)
+        {
+            damage = Mathf.RoundToInt(damage * RelicManager.Instance.GetBallistaDamageMultiplier());
+            fireRate *= RelicManager.Instance.GetBallistaFireRateMultiplier();
+        }
+
         Debug.Log($"[Ballista] Initialized. damage={damage}, fireRate={fireRate}, range={maxRange}, nightmare={isNightmareMode}");
 
         aimLine = CreateAimLine("AimLine");

@@ -166,6 +166,11 @@ public class EnemySpawnManager : MonoBehaviour
         int count = Mathf.FloorToInt(spawnWindow / interval) + 1;
         if (MutatorManager.IsActive("blood_tide"))
             count = Mathf.RoundToInt(count * 1.5f);
+
+        // Relic spawn count modifier
+        if (RelicManager.Instance != null)
+            count = Mathf.RoundToInt(count * RelicManager.Instance.GetSpawnCountMultiplier());
+
         return count;
     }
 
@@ -383,10 +388,18 @@ public class EnemySpawnManager : MonoBehaviour
     private void ApplyDayScaling(Enemy enemy)
     {
         int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
-        if (dayNumber <= 1) return;
-        float hpMult = 1f + hpScalingPerDay * (dayNumber - 1);
-        float dmgMult = 1f + damageScalingPerDay * (dayNumber - 1);
-        enemy.ApplyDayScaling(hpMult, dmgMult);
+        float hpMult = dayNumber > 1 ? 1f + hpScalingPerDay * (dayNumber - 1) : 1f;
+        float dmgMult = dayNumber > 1 ? 1f + damageScalingPerDay * (dayNumber - 1) : 1f;
+
+        // Commander enemy HP modifier
+        hpMult *= CommanderManager.GetEnemyHPMultiplier();
+
+        // Relic enemy HP modifier
+        if (RelicManager.Instance != null)
+            hpMult *= RelicManager.Instance.GetEnemyHPMultiplier();
+
+        if (hpMult != 1f || dmgMult != 1f)
+            enemy.ApplyDayScaling(hpMult, dmgMult);
     }
 
     private EnemyData ChooseEnemyType()

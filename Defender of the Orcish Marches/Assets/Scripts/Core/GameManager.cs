@@ -46,12 +46,19 @@ public class GameManager : MonoBehaviour
         Debug.Log("[GameManager] Instance registered in Awake.");
         Application.runInBackground = true;
 
-        // Initialize resources from difficulty settings (serialized values are fallbacks)
-        Treasure = GameSettings.GetStartingGold();
-        MenialCount = GameSettings.GetStartingMenials();
+        // Initialize resources from difficulty settings + meta-progression + commander
+        Treasure = GameSettings.GetStartingGold() + MetaProgressionManager.GetBonusStartingGold();
+        MenialCount = GameSettings.GetStartingMenials() + MetaProgressionManager.GetBonusStartingMenials()
+                    + Mathf.RoundToInt(CommanderManager.GetStartingMenialModifier());
+        MenialCount = Mathf.Max(1, MenialCount); // Always start with at least 1
         if (MutatorManager.IsActive("skeleton_crew")) { MenialCount = 1; }
         IdleMenialCount = MenialCount;
-        Debug.Log($"[GameManager] Difficulty={GameSettings.CurrentDifficulty}: gold={Treasure}, menials={MenialCount}");
+
+        // Load commander selection for this run
+        CommanderManager.LoadSelection();
+        CommanderManager.LogActiveState();
+
+        Debug.Log($"[GameManager] Difficulty={GameSettings.CurrentDifficulty}, Commander={CommanderManager.GetActiveDisplayName()}: gold={Treasure}, menials={MenialCount}");
     }
 
     private void OnEnable()
@@ -191,7 +198,14 @@ public class GameManager : MonoBehaviour
         Debug.Log("[GameManager] ========== GAME STATE SNAPSHOT ==========");
 
         // Core state
-        Debug.Log($"[GameManager] SNAPSHOT: state={CurrentState} gameTime={GameTime:F1} treasure={Treasure} menials={MenialCount} idleMenials={IdleMenialCount} kills={EnemyKills} difficulty={GameSettings.GetDifficultyName()}");
+        Debug.Log($"[GameManager] SNAPSHOT: state={CurrentState} gameTime={GameTime:F1} treasure={Treasure} menials={MenialCount} idleMenials={IdleMenialCount} kills={EnemyKills} difficulty={GameSettings.GetDifficultyName()} commander={CommanderManager.GetActiveDisplayName()}");
+
+        // Commander
+        CommanderManager.LogActiveState();
+
+        // Relics
+        if (RelicManager.Instance != null)
+            RelicManager.Instance.LogRelicState();
 
         // Day/Night cycle
         if (DayNightCycle.Instance != null)
