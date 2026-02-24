@@ -69,16 +69,24 @@ public static class FriendlyIndicator
 
     private static Material CreateMaterial(Color color)
     {
-        // Use URP unlit shader for a flat color that's always visible
+        // Try URP unlit first, then built-in fallbacks.
+        // Sprites/Default is always included in builds and supports vertex colors + alpha.
         var shader = Shader.Find("Universal Render Pipeline/Unlit");
         if (shader == null)
             shader = Shader.Find("Unlit/Color");
+        if (shader == null)
+            shader = Shader.Find("Sprites/Default");
+        if (shader == null)
+        {
+            Debug.LogWarning("[FriendlyIndicator] No suitable shader found. Indicator will be invisible.");
+            return new Material(Shader.Find("Hidden/InternalErrorShader"));
+        }
 
         var mat = new Material(shader);
         color.a = 0.5f;
         mat.color = color;
 
-        // Enable transparency
+        // Enable transparency (URP properties — harmless no-ops on other shaders)
         mat.SetFloat("_Surface", 1); // Transparent
         mat.SetFloat("_Blend", 0);   // Alpha
         mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);

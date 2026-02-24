@@ -180,6 +180,9 @@ public class MenuSceneBuilder : MonoBehaviour
         var optionsBtn = CreateMenuButton("OptionsButton", "OPTIONS", panelObj.transform);
         var exitBtn = CreateMenuButton("ExitButton", "EXIT", panelObj.transform);
 
+        // Stats button (below main buttons in the left panel)
+        var statsBtn = CreateMenuButton("StatsButton", "STATISTICS", panelObj.transform);
+
         // Bug report button (top-right corner)
         var bugReportBtn = CreateMenuButton("BugReportButton", "REPORT BUG", canvasObj.transform);
         var bugRect = bugReportBtn.GetComponent<RectTransform>();
@@ -339,6 +342,7 @@ public class MenuSceneBuilder : MonoBehaviour
         var mainMenu = mgrObj.AddComponent<MainMenuManager>();
         mgrObj.AddComponent<SceneLoader>();
         var bugReportPanel = mgrObj.AddComponent<BugReportPanel>();
+        var statsDashboardPanel = mgrObj.AddComponent<StatsDashboardPanel>();
 
         // Load BugReportConfig asset
         var bugReportConfig = AssetDatabase.LoadAssetAtPath<BugReportConfig>("Assets/ScriptableObjects/BugReportConfig.asset");
@@ -351,6 +355,8 @@ public class MenuSceneBuilder : MonoBehaviour
         mmSO.FindProperty("optionsButton").objectReferenceValue = optionsBtn;
         mmSO.FindProperty("tutorialButton").objectReferenceValue = tutorialBtn;
         mmSO.FindProperty("exitButton").objectReferenceValue = exitBtn;
+        mmSO.FindProperty("statsButton").objectReferenceValue = statsBtn;
+        mmSO.FindProperty("statsDashboardPanel").objectReferenceValue = statsDashboardPanel;
         mmSO.FindProperty("bugReportButton").objectReferenceValue = bugReportBtn;
         mmSO.FindProperty("bugReportPanel").objectReferenceValue = bugReportPanel;
         mmSO.FindProperty("difficultySlider").objectReferenceValue = diffSlider;

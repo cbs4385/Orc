@@ -30,6 +30,8 @@ public class Refugee : MonoBehaviour
     private Renderer[] bodyRenderers;
     private Color[] originalColors;
 
+    public static event System.Action OnRefugeeSaved;
+
     public RefugeePowerUp CarriedPowerUp => carriedPowerUp;
     public bool HasPowerUp => carriedPowerUp != RefugeePowerUp.None;
 
@@ -128,10 +130,14 @@ public class Refugee : MonoBehaviour
 
         UpdateIdleAnimation();
 
-        if (!agent.pathPending && agent.remainingDistance < 2f)
+        // Check actual distance to fortress center (not remainingDistance, which is 0
+        // before the path is computed and would cause instant false arrival).
+        float distToFortress = Vector3.Distance(transform.position, GameManager.FortressCenter);
+        if (distToFortress < 2f)
         {
             arrived = true;
-            Debug.Log($"[Refugee] Arrived at fortress center. Position={transform.position}");
+            Debug.Log($"[Refugee] Arrived at fortress center. Position={transform.position}, dist={distToFortress:F1}");
+            OnRefugeeSaved?.Invoke();
 
             // Apply power-up to the active ballista
             if (carriedPowerUp != RefugeePowerUp.None && BallistaManager.Instance != null)

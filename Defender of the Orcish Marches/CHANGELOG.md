@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.4
+
+### Bug Fixes
+- Fixed runaway defender spawn loop when hiring — an exception in FriendlyIndicator prevented menial cleanup code from running, causing the tower-entry callback to fire every frame and spawn hundreds of defenders; menial now marks itself dead before invoking the callback
+- Fixed FriendlyIndicator shader not found in player builds — Shader.Find("Universal Render Pipeline/Unlit") returns null in builds when the shader isn't directly referenced; added Sprites/Default as a runtime fallback
+- Fixed refugees arriving instantly upon spawning — arrival check used NavMeshAgent.remainingDistance (which is 0 before path computation), causing false arrival at the spawn point; now checks actual distance to fortress center
+- Added guard in ConsumeMenials so the hire callback can only fire exactly once
+
 ## 0.12.3
 
 ### Visual

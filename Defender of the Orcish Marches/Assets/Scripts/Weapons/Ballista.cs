@@ -34,6 +34,8 @@ public class Ballista : MonoBehaviour
     public float FireRate => fireRate;
     public bool HasDoubleShot => hasDoubleShot;
     public bool HasBurstDamage => hasBurstDamage;
+    public static event System.Action OnBallistaShotFired;
+
     public bool IsNightmareMode => isNightmareMode;
 
     private void Start()
@@ -155,6 +157,7 @@ public class Ballista : MonoBehaviour
     private void Fire()
     {
         fireCooldown = 1f / fireRate;
+        OnBallistaShotFired?.Invoke();
 
         if (projectilePrefab == null)
         {

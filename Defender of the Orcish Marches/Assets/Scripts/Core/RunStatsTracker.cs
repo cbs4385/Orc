@@ -15,9 +15,33 @@ public class RunStatsTracker : MonoBehaviour
     public int Hires { get; private set; }
     public int MenialsLost { get; private set; }
 
+    // Extended stats
+    public int GoldSpent { get; private set; }
+    public int WallsBuilt { get; private set; }
+    public int WallHPRepaired { get; private set; }
+    public int VegetationCleared { get; private set; }
+    public int RefugeesSaved { get; private set; }
+    public int BallistaShotsFired { get; private set; }
+    public int PeakDefendersAlive { get; private set; }
+    public float FirstBossKillTime { get; private set; }
+
+    // Per-type kills
+    public int KillsMelee { get; private set; }
+    public int KillsRanged { get; private set; }
+    public int KillsWallBreaker { get; private set; }
+    public int KillsSuicide { get; private set; }
+    public int KillsArtillery { get; private set; }
+
+    // Per-type hires
+    public int HiresEngineer { get; private set; }
+    public int HiresPikeman { get; private set; }
+    public int HiresCrossbowman { get; private set; }
+    public int HiresWizard { get; private set; }
+
     private bool subscribedGM;
     private bool subscribedDNC;
     private bool subscribedUpg;
+    private float peakDefenderCheckTimer;
 
     private void Awake()
     {
@@ -37,6 +61,11 @@ public class RunStatsTracker : MonoBehaviour
 
         Enemy.OnEnemyDied += HandleEnemyDied;
         Menial.OnMenialDied += HandleMenialDied;
+        WallManager.OnWallBuilt += HandleWallBuilt;
+        Wall.OnWallRepaired += HandleWallRepaired;
+        Ballista.OnBallistaShotFired += HandleBallistaShotFired;
+        Refugee.OnRefugeeSaved += HandleRefugeeSaved;
+        Vegetation.OnVegetationCleared += HandleVegetationCleared;
 
         subscribedGM = false;
         subscribedDNC = false;
@@ -47,9 +76,17 @@ public class RunStatsTracker : MonoBehaviour
     {
         Enemy.OnEnemyDied -= HandleEnemyDied;
         Menial.OnMenialDied -= HandleMenialDied;
+        WallManager.OnWallBuilt -= HandleWallBuilt;
+        Wall.OnWallRepaired -= HandleWallRepaired;
+        Ballista.OnBallistaShotFired -= HandleBallistaShotFired;
+        Refugee.OnRefugeeSaved -= HandleRefugeeSaved;
+        Vegetation.OnVegetationCleared -= HandleVegetationCleared;
 
         if (GameManager.Instance != null)
+        {
             GameManager.Instance.OnTreasureGained -= HandleTreasureGained;
+            GameManager.Instance.OnTreasureSpent -= HandleTreasureSpent;
+        }
         if (DayNightCycle.Instance != null)
             DayNightCycle.Instance.OnNewDay -= HandleNewDay;
         if (UpgradeManager.Instance != null)
@@ -64,6 +101,7 @@ public class RunStatsTracker : MonoBehaviour
         if (!subscribedGM && GameManager.Instance != null)
         {
             GameManager.Instance.OnTreasureGained += HandleTreasureGained;
+            GameManager.Instance.OnTreasureSpent += HandleTreasureSpent;
             subscribedGM = true;
         }
         if (!subscribedDNC && DayNightCycle.Instance != null)
@@ -76,15 +114,56 @@ public class RunStatsTracker : MonoBehaviour
             UpgradeManager.Instance.OnUpgradePurchased += HandleUpgradePurchased;
             subscribedUpg = true;
         }
+
+        // Track peak defenders alive every 2 seconds
+        peakDefenderCheckTimer -= Time.deltaTime;
+        if (peakDefenderCheckTimer <= 0)
+        {
+            peakDefenderCheckTimer = 2f;
+            int currentDefenders = CountLiveDefenders();
+            if (currentDefenders > PeakDefendersAlive)
+                PeakDefendersAlive = currentDefenders;
+        }
+    }
+
+    private int CountLiveDefenders()
+    {
+        var defenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
+        int count = 0;
+        foreach (var d in defenders)
+        {
+            if (d != null && !d.IsDead) count++;
+        }
+        return count;
     }
 
     private void HandleEnemyDied(Enemy enemy)
     {
         Kills++;
-        if (enemy.Data != null && enemy.Data.enemyName.Contains("Boss"))
+
+        // Per-type kill tracking
+        if (enemy.Data != null)
         {
-            BossKills++;
-            Debug.Log($"[RunStatsTracker] Boss killed! Total boss kills: {BossKills}");
+            switch (enemy.Data.enemyType)
+            {
+                case EnemyType.Melee: KillsMelee++; break;
+                case EnemyType.Ranged: KillsRanged++; break;
+                case EnemyType.WallBreaker: KillsWallBreaker++; break;
+                case EnemyType.Suicide: KillsSuicide++; break;
+                case EnemyType.Artillery: KillsArtillery++; break;
+            }
+
+            if (enemy.Data.enemyName.Contains("Boss"))
+            {
+                BossKills++;
+                // Record first boss kill time
+                if (FirstBossKillTime <= 0 && GameManager.Instance != null)
+                {
+                    FirstBossKillTime = GameManager.Instance.GameTime;
+                    Debug.Log($"[RunStatsTracker] First boss killed at {FirstBossKillTime:F1}s!");
+                }
+                Debug.Log($"[RunStatsTracker] Boss killed! Total boss kills: {BossKills}");
+            }
         }
     }
 
@@ -97,6 +176,11 @@ public class RunStatsTracker : MonoBehaviour
     private void HandleTreasureGained(int amount)
     {
         GoldEarned += amount;
+    }
+
+    private void HandleTreasureSpent(int amount)
+    {
+        GoldSpent += amount;
     }
 
     private void HandleNewDay(int dayNumber)
@@ -113,8 +197,43 @@ public class RunStatsTracker : MonoBehaviour
             upgrade.upgradeType == UpgradeType.SpawnWizard)
         {
             Hires++;
+
+            // Per-type hire tracking
+            switch (upgrade.upgradeType)
+            {
+                case UpgradeType.SpawnEngineer: HiresEngineer++; break;
+                case UpgradeType.SpawnPikeman: HiresPikeman++; break;
+                case UpgradeType.SpawnCrossbowman: HiresCrossbowman++; break;
+                case UpgradeType.SpawnWizard: HiresWizard++; break;
+            }
+
             Debug.Log($"[RunStatsTracker] Hire made: {upgrade.upgradeName}. Total hires: {Hires}");
         }
+    }
+
+    private void HandleWallBuilt()
+    {
+        WallsBuilt++;
+    }
+
+    private void HandleWallRepaired(int amount)
+    {
+        WallHPRepaired += amount;
+    }
+
+    private void HandleBallistaShotFired()
+    {
+        BallistaShotsFired++;
+    }
+
+    private void HandleRefugeeSaved()
+    {
+        RefugeesSaved++;
+    }
+
+    private void HandleVegetationCleared()
+    {
+        VegetationCleared++;
     }
 
     public int ComputeScore()
@@ -133,7 +252,31 @@ public class RunStatsTracker : MonoBehaviour
             hires = Hires,
             menialsLost = MenialsLost,
             compositeScore = ComputeScore(),
-            timestamp = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm")
+            timestamp = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+
+            // Extended stats
+            difficulty = (int)GameSettings.CurrentDifficulty,
+            goldSpent = GoldSpent,
+            wallsBuilt = WallsBuilt,
+            wallHPRepaired = WallHPRepaired,
+            vegetationCleared = VegetationCleared,
+            refugeesSaved = RefugeesSaved,
+            ballistaShotsFired = BallistaShotsFired,
+            peakDefendersAlive = PeakDefendersAlive,
+            firstBossKillTime = FirstBossKillTime,
+
+            // Per-type kills
+            killsMelee = KillsMelee,
+            killsRanged = KillsRanged,
+            killsWallBreaker = KillsWallBreaker,
+            killsSuicide = KillsSuicide,
+            killsArtillery = KillsArtillery,
+
+            // Per-type hires
+            hiresEngineer = HiresEngineer,
+            hiresPikeman = HiresPikeman,
+            hiresCrossbowman = HiresCrossbowman,
+            hiresWizard = HiresWizard
         };
     }
 }

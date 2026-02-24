@@ -21,6 +21,8 @@ public class Vegetation : MonoBehaviour
     public VegetationType Type => vegetationType;
     public bool IsDead { get; private set; }
 
+    public static event System.Action OnVegetationCleared;
+
     public float ClearTimeRequired => vegetationType == VegetationType.Bush ? 0.5f : 1.0f;
 
     public void Setup(VegetationType type)
@@ -89,6 +91,7 @@ public class Vegetation : MonoBehaviour
     {
         if (IsDead) return;
         Debug.Log($"[Vegetation] {vegetationType} cleared by menial at {transform.position}");
+        OnVegetationCleared?.Invoke();
         Die();
     }
 

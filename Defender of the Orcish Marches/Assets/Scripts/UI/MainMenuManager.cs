@@ -8,10 +8,14 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private Button optionsButton;
     [SerializeField] private Button tutorialButton;
     [SerializeField] private Button exitButton;
+    [SerializeField] private Button statsButton;
     [SerializeField] private Button bugReportButton;
 
     [Header("Bug Report")]
     [SerializeField] private BugReportPanel bugReportPanel;
+
+    [Header("Stats")]
+    [SerializeField] private StatsDashboardPanel statsDashboardPanel;
 
     [Header("Difficulty")]
     [SerializeField] private Slider difficultySlider;
@@ -38,6 +42,8 @@ public class MainMenuManager : MonoBehaviour
             tutorialButton.onClick.AddListener(OnTutorialClicked);
         if (exitButton != null)
             exitButton.onClick.AddListener(OnExitClicked);
+        if (statsButton != null)
+            statsButton.onClick.AddListener(OnStatsClicked);
         if (bugReportButton != null)
             bugReportButton.onClick.AddListener(OnBugReportClicked);
 
@@ -59,6 +65,8 @@ public class MainMenuManager : MonoBehaviour
             tutorialButton.onClick.RemoveListener(OnTutorialClicked);
         if (exitButton != null)
             exitButton.onClick.RemoveListener(OnExitClicked);
+        if (statsButton != null)
+            statsButton.onClick.RemoveListener(OnStatsClicked);
         if (bugReportButton != null)
             bugReportButton.onClick.RemoveListener(OnBugReportClicked);
         if (difficultySlider != null)
@@ -100,6 +108,15 @@ public class MainMenuManager : MonoBehaviour
     {
         Debug.Log("[MainMenuManager] Exit clicked.");
         sceneLoader.QuitGame();
+    }
+
+    private void OnStatsClicked()
+    {
+        Debug.Log("[MainMenuManager] Stats clicked.");
+        if (statsDashboardPanel != null)
+            statsDashboardPanel.Show();
+        else
+            Debug.LogWarning("[MainMenuManager] StatsDashboardPanel reference is null.");
     }
 
     private void OnBugReportClicked()

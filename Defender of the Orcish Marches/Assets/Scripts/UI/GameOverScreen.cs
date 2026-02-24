@@ -120,6 +120,12 @@ public class GameOverScreen : MonoBehaviour
             };
         }
 
+        // Record lifetime stats (counts ALL runs, not just top 20)
+        float gameTime = GameManager.Instance != null ? GameManager.Instance.GameTime : 0;
+        int peakDef = RunStatsTracker.Instance != null ? RunStatsTracker.Instance.PeakDefendersAlive : 0;
+        float firstBoss = RunStatsTracker.Instance != null ? RunStatsTracker.Instance.FirstBossKillTime : 0;
+        LifetimeStatsManager.RecordRunEnd(current, GameSettings.CurrentDifficulty, gameTime, peakDef, firstBoss);
+
         // Save and get rank
         int rank = RunHistoryManager.SaveRun(current);
 

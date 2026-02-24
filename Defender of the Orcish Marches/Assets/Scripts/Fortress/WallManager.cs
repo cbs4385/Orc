@@ -17,6 +17,8 @@ public class WallManager : MonoBehaviour
     private List<Wall> allWalls = new List<Wall>();
     private bool enemyNavMeshDirty;
 
+    public static event System.Action OnWallBuilt;
+
     public IReadOnlyList<Wall> AllWalls => allWalls;
     public GameObject WallPrefab => wallPrefab;
 
@@ -305,6 +307,7 @@ public class WallManager : MonoBehaviour
                 TowerPositionManager.Instance.RegisterNewWall(wall);
         }
         Debug.Log($"[WallManager] Wall placed (under construction) at {position}, rotation={rotation.eulerAngles}, scaleX={scaleX:F3}.");
+        OnWallBuilt?.Invoke();
         return go;
     }
 }

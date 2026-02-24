@@ -33,6 +33,7 @@ public class GameManager : MonoBehaviour
     public event Action OnGameOver;
     public event Action<bool> OnPauseChanged;
     public event Action<int> OnTreasureGained;
+    public event Action<int> OnTreasureSpent;
 
     private void Awake()
     {
@@ -112,6 +113,7 @@ public class GameManager : MonoBehaviour
         if (CurrentState != GameState.Playing || Treasure < amount) return false;
         Treasure -= amount;
         OnTreasureChanged?.Invoke(Treasure);
+        OnTreasureSpent?.Invoke(amount);
         return true;
     }
 

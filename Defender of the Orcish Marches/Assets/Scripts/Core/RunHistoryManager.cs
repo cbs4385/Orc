@@ -13,6 +13,30 @@ public struct RunRecord
     public int menialsLost;
     public int compositeScore;
     public string timestamp;
+
+    // Extended stats (JsonUtility defaults missing fields to 0 for old saves)
+    public int difficulty;
+    public int goldSpent;
+    public int wallsBuilt;
+    public int wallHPRepaired;
+    public int vegetationCleared;
+    public int refugeesSaved;
+    public int ballistaShotsFired;
+    public int peakDefendersAlive;
+    public float firstBossKillTime;
+
+    // Per-type kills
+    public int killsMelee;
+    public int killsRanged;
+    public int killsWallBreaker;
+    public int killsSuicide;
+    public int killsArtillery;
+
+    // Per-type hires
+    public int hiresEngineer;
+    public int hiresPikeman;
+    public int hiresCrossbowman;
+    public int hiresWizard;
 }
 
 [Serializable]

@@ -725,13 +725,18 @@ public class Menial : MonoBehaviour
         if (distFromCenter < 3f)
         {
             Debug.Log("[Menial] Entered tower, being consumed.");
-            onEnteredTower?.Invoke();
+
+            // Capture and clear callback BEFORE invoking, so an exception in the
+            // callback cannot prevent cleanup (which caused a runaway spawn loop).
+            var callback = onEnteredTower;
             onEnteredTower = null;
+            IsDead = true;
 
             if (GameManager.Instance != null)
                 GameManager.Instance.RemoveMenial();
 
-            IsDead = true;
+            callback?.Invoke();
+
             Destroy(gameObject);
         }
     }

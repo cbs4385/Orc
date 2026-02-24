@@ -11,6 +11,7 @@ public class Wall : MonoBehaviour
 
     public event Action<Wall> OnWallDestroyed;
     public event Action<Wall> OnWallDamaged;
+    public static event Action<int> OnWallRepaired;
 
     public WallCorners Corners { get; private set; }
 
@@ -177,7 +178,11 @@ public class Wall : MonoBehaviour
     {
         bool wasDestroyed = CurrentHP <= 0 && !IsUnderConstruction;
         bool wasConstruction = IsUnderConstruction;
+        int prevHP = CurrentHP;
         CurrentHP = Mathf.Min(maxHP, CurrentHP + amount);
+        int actualRepaired = CurrentHP - prevHP;
+        if (actualRepaired > 0)
+            OnWallRepaired?.Invoke(actualRepaired);
 
         if (wasDestroyed && CurrentHP > 0)
         {

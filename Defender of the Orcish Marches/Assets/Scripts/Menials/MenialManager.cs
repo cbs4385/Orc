@@ -428,14 +428,16 @@ public class MenialManager : MonoBehaviour
         }
 
         int arrived = 0;
+        bool completed = false;
         foreach (var menial in idle)
         {
             menial.SendToTower(() =>
             {
                 arrived++;
                 Debug.Log($"[MenialManager] Menial entered tower ({arrived}/{count})");
-                if (arrived >= count)
+                if (arrived == count && !completed)
                 {
+                    completed = true;
                     onAllEntered?.Invoke();
                 }
             });
