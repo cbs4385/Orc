@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.14.1
+
+### Main Menu Layout
+- Widened difficulty panel from 180 to 260 for fully visible difficulty labels
+- Reordered buttons: EXIT moved to bottom, separated by a half-button spacer
+- Added half-button spacer below PLAY to visually separate it from the other menu options
+
 ## 0.14.0
 
 ### Achievement System

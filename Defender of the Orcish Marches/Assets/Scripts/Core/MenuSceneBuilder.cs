@@ -172,25 +172,19 @@ public class MenuSceneBuilder : MonoBehaviour
         vlg.childControlWidth = true;
         vlg.childControlHeight = true;
         vlg.childForceExpandWidth = true;
-        vlg.childForceExpandHeight = true;
+        vlg.childForceExpandHeight = false;
 
         // Main buttons on left
         var playBtn = CreateMenuButton("PlayButton", "PLAY", panelObj.transform);
+        CreateButtonSpacer(panelObj.transform); // half-button gap after PLAY
         var tutorialBtn = CreateMenuButton("TutorialButton", "TUTORIAL", panelObj.transform);
         var optionsBtn = CreateMenuButton("OptionsButton", "OPTIONS", panelObj.transform);
-        var exitBtn = CreateMenuButton("ExitButton", "EXIT", panelObj.transform);
-
-        // Stats button (below main buttons in the left panel)
         var statsBtn = CreateMenuButton("StatsButton", "STATISTICS", panelObj.transform);
-
-        // Mutators button
         var mutatorsBtn = CreateMenuButton("MutatorsButton", "MUTATORS", panelObj.transform);
-
-        // Achievements button
         var achievementsBtn = CreateMenuButton("AchievementsButton", "ACHIEVEMENTS", panelObj.transform);
-
-        // Legacy button
         var legacyBtn = CreateMenuButton("LegacyButton", "LEGACY", panelObj.transform);
+        CreateButtonSpacer(panelObj.transform); // half-button gap before EXIT
+        var exitBtn = CreateMenuButton("ExitButton", "EXIT", panelObj.transform);
 
         // Bug report button (top-right corner)
         var bugReportBtn = CreateMenuButton("BugReportButton", "REPORT BUG", canvasObj.transform);
@@ -208,7 +202,7 @@ public class MenuSceneBuilder : MonoBehaviour
         diffPanelRect.anchorMin = new Vector2(1f, 0.08f);
         diffPanelRect.anchorMax = new Vector2(1f, 0.88f);
         diffPanelRect.pivot = new Vector2(1f, 0.5f);
-        diffPanelRect.sizeDelta = new Vector2(180, 0);
+        diffPanelRect.sizeDelta = new Vector2(260, 0);
         diffPanelRect.anchoredPosition = new Vector2(-10, 0);
 
         // "DIFFICULTY" header at top
@@ -600,6 +594,8 @@ public class MenuSceneBuilder : MonoBehaviour
         btnObj.transform.SetParent(parent, false);
         var btnImage = btnObj.AddComponent<Image>();
         btnImage.color = new Color(0.3f, 0.2f, 0.1f, 0.9f);
+        var btnLe = btnObj.AddComponent<LayoutElement>();
+        btnLe.flexibleHeight = 1;
         var btn = btnObj.AddComponent<Button>();
 
         var colors = btn.colors;
@@ -632,6 +628,15 @@ public class MenuSceneBuilder : MonoBehaviour
         shadow.effectDistance = new Vector2(2f, -2f);
 
         return btn;
+    }
+
+    /// <summary>Creates a half-button-height transparent spacer in a layout group.</summary>
+    static void CreateButtonSpacer(Transform parent)
+    {
+        var spacer = new GameObject("Spacer");
+        spacer.transform.SetParent(parent, false);
+        var le = spacer.AddComponent<LayoutElement>();
+        le.flexibleHeight = 0.5f; // half the height of a button (which has flexibleHeight=1)
     }
 
     static GameObject CreateLabel(string name, string text, Transform parent, Vector2 anchor, float fontSize, Color color)
