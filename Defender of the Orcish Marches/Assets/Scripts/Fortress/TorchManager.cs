@@ -7,12 +7,14 @@ public class TorchManager : MonoBehaviour
 
     private const int COURTYARD_TORCH_COUNT = 6;
     private const float COURTYARD_TORCH_RADIUS = 4.0f;
-    private const float COURTYARD_TORCH_HEIGHT = 2.0f;
+    private const float COURTYARD_TORCH_HEIGHT = 1.5f;
     private const float TOWER_TORCH_OFFSET = 0.5f;
-    private const float TOWER_TORCH_HEIGHT = 3.5f;
+    private const float TOWER_TORCH_HEIGHT = 3.0f;
 
     private List<GameObject> torches = new List<GameObject>();
     private Material flameMaterial;
+    private GameObject torchModel;
+    private bool torchModelLoaded;
 
     private void Awake()
     {
@@ -46,7 +48,8 @@ public class TorchManager : MonoBehaviour
 
     private void Start()
     {
-        CreateFlameMaterial();
+        LoadTorchModel();
+        if (torchModel == null) CreateFlameMaterial();
         CreateTorches();
 
         // If it's already night when we start, enable immediately
@@ -58,8 +61,18 @@ public class TorchManager : MonoBehaviour
         else
         {
             SetTorchesActive(false);
-            Debug.Log($"[TorchManager] Initialized with {torches.Count} torches (disabled until night).");
+            Debug.Log($"[TorchManager] Initialized with {torches.Count} torches (disabled until night). Model={torchModel != null}");
         }
+    }
+
+    private void LoadTorchModel()
+    {
+        torchModel = Resources.Load<GameObject>("Torch");
+        torchModelLoaded = true;
+        if (torchModel != null)
+            Debug.Log("[TorchManager] Loaded Torch model from Resources.");
+        else
+            Debug.LogWarning("[TorchManager] Torch model not found in Resources/Torch — using fallback emissive spheres.");
     }
 
     private void CreateFlameMaterial()
@@ -101,7 +114,7 @@ public class TorchManager : MonoBehaviour
         torchGO.transform.SetParent(transform);
         torchGO.transform.position = position;
 
-        // Point light
+        // Point light — always added (Blender doesn't export lights)
         var light = torchGO.AddComponent<Light>();
         light.type = LightType.Point;
         light.color = new Color(1f, 0.6f, 0.2f);
@@ -109,14 +122,43 @@ public class TorchManager : MonoBehaviour
         light.intensity = lightIntensity;
         light.shadows = LightShadows.None;
 
-        // Flame sphere (small emissive orb)
+        if (torchModel != null)
+        {
+            InstantiateTorchModel(torchGO);
+        }
+        else
+        {
+            CreateFallbackFlame(torchGO);
+        }
+
+        torches.Add(torchGO);
+    }
+
+    private void InstantiateTorchModel(GameObject parent)
+    {
+        var model = Instantiate(torchModel, parent.transform);
+        model.name = "TorchModel";
+        model.transform.localPosition = Vector3.zero;
+        model.transform.localRotation = Quaternion.identity;
+
+        // Strip colliders — torches shouldn't block gameplay
+        foreach (var col in model.GetComponentsInChildren<Collider>())
+            Destroy(col);
+
+        // Add flicker animation to the parent (animates the light)
+        if (parent.GetComponent<FlameFlicker>() == null)
+            parent.AddComponent<FlameFlicker>();
+    }
+
+    private void CreateFallbackFlame(GameObject parent)
+    {
+        // Fallback: emissive sphere (the old look)
         var flameGO = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         flameGO.name = "Flame";
-        flameGO.transform.SetParent(torchGO.transform, false);
+        flameGO.transform.SetParent(parent.transform, false);
         flameGO.transform.localPosition = Vector3.zero;
         flameGO.transform.localScale = new Vector3(0.15f, 0.25f, 0.15f);
 
-        // Remove collider — flame shouldn't block anything
         var col = flameGO.GetComponent<Collider>();
         if (col != null) Destroy(col);
 
@@ -125,8 +167,6 @@ public class TorchManager : MonoBehaviour
         {
             rend.material = flameMaterial;
         }
-
-        torches.Add(torchGO);
     }
 
     private void HandleNightStarted()
@@ -167,8 +207,9 @@ public class TorchManager : MonoBehaviour
             return;
         }
 
-        // Create flame material if not yet initialized (possible if called before Start)
-        if (flameMaterial == null) CreateFlameMaterial();
+        // Ensure we have materials/model loaded
+        if (!torchModelLoaded) LoadTorchModel();
+        if (torchModel == null && flameMaterial == null) CreateFlameMaterial();
 
         Vector3 nearEnd = corners.GetEndCenter(-1);
         Vector3 farEnd = corners.GetEndCenter(1);
@@ -203,21 +244,13 @@ public class TorchManager : MonoBehaviour
         light.intensity = lightIntensity;
         light.shadows = LightShadows.None;
 
-        // Flame sphere (small emissive orb)
-        var flameGO = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        flameGO.name = "Flame";
-        flameGO.transform.SetParent(torchGO.transform, false);
-        flameGO.transform.localPosition = Vector3.zero;
-        flameGO.transform.localScale = new Vector3(0.15f, 0.25f, 0.15f);
-
-        // Remove collider — flame shouldn't block anything
-        var col = flameGO.GetComponent<Collider>();
-        if (col != null) Destroy(col);
-
-        var rend = flameGO.GetComponent<Renderer>();
-        if (rend != null && flameMaterial != null)
+        if (torchModel != null)
         {
-            rend.material = flameMaterial;
+            InstantiateTorchModel(torchGO);
+        }
+        else
+        {
+            CreateFallbackFlame(torchGO);
         }
 
         return torchGO;

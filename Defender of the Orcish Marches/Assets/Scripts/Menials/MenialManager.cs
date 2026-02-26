@@ -141,12 +141,18 @@ public class MenialManager : MonoBehaviour
         var wallPlacement = FindAnyObjectByType<WallPlacement>();
         if (wallPlacement != null && wallPlacement.IsPlacing) return;
 
-        if (mainCam == null) mainCam = UnityEngine.Camera.main;
-        if (mainCam == null) return;
+        // Always fetch current main camera (switches between ortho and FPS in Nightmare mode)
+        var cam = UnityEngine.Camera.main;
+        if (cam == null) return;
 
-        // Raycast to find treasure
-        Vector2 mousePos = Mouse.current.position.ReadValue();
-        Ray ray = mainCam.ScreenPointToRay(new Vector3(mousePos.x, mousePos.y, 0));
+        // When cursor is locked (Nightmare FPS mode), use screen center (crosshair)
+        Vector2 mousePos;
+        if (Cursor.lockState == CursorLockMode.Locked)
+            mousePos = new Vector2(Screen.width / 2f, Screen.height / 2f);
+        else
+            mousePos = Mouse.current.position.ReadValue();
+
+        Ray ray = cam.ScreenPointToRay(new Vector3(mousePos.x, mousePos.y, 0));
         Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
         if (!groundPlane.Raycast(ray, out float distance)) return;
 

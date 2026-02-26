@@ -12,7 +12,7 @@ public class NightmareCamera : MonoBehaviour
 
     [Header("FPS Settings")]
     [SerializeField] private float sensitivity = 2f;
-    [SerializeField] private float minPitch = -60f;
+    [SerializeField] private float minPitch = -75f;
     [SerializeField] private float maxPitch = 30f;
     [SerializeField] private float fov = 70f;
 
@@ -106,6 +106,10 @@ public class NightmareCamera : MonoBehaviour
         }
         SubscribeToBuildMode();
 
+        // Atmospheric fog — obscures map boundaries, enemies loom from the mist
+        if (gameObject.GetComponent<NightmareFog>() == null)
+            gameObject.AddComponent<NightmareFog>();
+
         // Lock cursor for FPS gameplay
         LockCursor();
         Debug.Log("[NightmareCamera] FPS camera initialized and active.");
@@ -167,8 +171,8 @@ public class NightmareCamera : MonoBehaviour
 
         // Parent our root to the ballista so yaw rotation is inherited
         transform.SetParent(ballista.transform, false);
-        // Offset: slightly above and behind the barrel
-        transform.localPosition = new Vector3(0f, 0.3f, -0.2f);
+        // Offset: above and behind the barrel (raised for Nightmare tower height boost)
+        transform.localPosition = new Vector3(0f, 0.5f, -0.3f);
         transform.localRotation = Quaternion.identity;
 
         pitch = 0f;

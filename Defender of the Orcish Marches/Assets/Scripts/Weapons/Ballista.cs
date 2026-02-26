@@ -30,6 +30,10 @@ public class Ballista : MonoBehaviour
     private bool isNightmareMode;
     private float yaw;
 
+    // Hard mode aim wobble
+    private bool hasAimWobble;
+    private const float AIM_WOBBLE_DEGREES = 0.5f;
+
     public int Damage => damage;
     public float FireRate => fireRate;
     public bool HasDoubleShot => hasDoubleShot;
@@ -37,6 +41,10 @@ public class Ballista : MonoBehaviour
     public static event System.Action OnBallistaShotFired;
 
     public bool IsNightmareMode => isNightmareMode;
+    public Transform FirePoint => firePoint;
+    public float ProjectileSpeed => projectileSpeed;
+    public float MaxRange => maxRange;
+    public float BurstDamageRadius => hasBurstDamage ? burstDamageRadius : 0f;
 
     private void Start()
     {
@@ -66,20 +74,25 @@ public class Ballista : MonoBehaviour
 
         Debug.Log($"[Ballista] Initialized. damage={damage}, fireRate={fireRate}, range={maxRange}, nightmare={isNightmareMode}");
 
+        // Aim lines only visible on Easy difficulty
+        bool showAimLines = GameSettings.CurrentDifficulty == Difficulty.Easy && !isNightmareMode;
         aimLine = CreateAimLine("AimLine");
         aimLineSpread = CreateAimLine("AimLineSpread");
+        aimLine.enabled = showAimLines;
         aimLineSpread.enabled = false;
+
+        // Hard mode aim wobble
+        hasAimWobble = GameSettings.CurrentDifficulty == Difficulty.Hard;
 
         if (isNightmareMode)
         {
             // Face west (-X direction) initially
             yaw = 270f;
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-            // Disable aim lines in FPS mode
-            if (aimLine != null) aimLine.enabled = false;
-            if (aimLineSpread != null) aimLineSpread.enabled = false;
             Debug.Log($"[Ballista] Nightmare FPS mode enabled. Initial yaw={yaw}");
         }
+
+        Debug.Log($"[Ballista] aimLines={showAimLines}, aimWobble={hasAimWobble}, difficulty={GameSettings.CurrentDifficulty}");
     }
 
     private LineRenderer CreateAimLine(string name)
@@ -121,7 +134,7 @@ public class Ballista : MonoBehaviour
 
     private void UpdateAimLines()
     {
-        if (aimLine == null) return;
+        if (aimLine == null || !aimLine.enabled) return;
 
         Vector3 mouseWorld = GetMouseWorldPosition();
         Vector3 direction = mouseWorld - firePoint.position;
@@ -204,7 +217,15 @@ public class Ballista : MonoBehaviour
             spawnPos = new Vector3(firePoint.position.x, 0.5f, firePoint.position.z);
         }
 
-        Debug.Log($"[Ballista] Firing. dir={direction}, doubleShot={hasDoubleShot}, burstDamage={hasBurstDamage}");
+        // Hard mode: apply random aim wobble
+        if (hasAimWobble)
+        {
+            float wobbleYaw = Random.Range(-AIM_WOBBLE_DEGREES, AIM_WOBBLE_DEGREES);
+            float wobblePitch = Random.Range(-AIM_WOBBLE_DEGREES, AIM_WOBBLE_DEGREES);
+            direction = Quaternion.Euler(wobblePitch, wobbleYaw, 0f) * direction;
+        }
+
+        Debug.Log($"[Ballista] Firing. dir={direction}, doubleShot={hasDoubleShot}, burstDamage={hasBurstDamage}, wobble={hasAimWobble}");
 
         // Fire main projectile
         if (SoundManager.Instance != null) SoundManager.Instance.PlayScorpioFire(spawnPos);

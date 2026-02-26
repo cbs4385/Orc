@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.16.0
+
+### Nightmare Mode Overhaul
+- Nightmare difficulty now uses Hard mode enemy stats (1.25x HP, 0.75x spawn interval, 0.8x day/night duration) instead of Normal — FPS aiming is the core challenge, not stat inflation
+- Raised central tower and ballista by 2 units in Nightmare mode for better downward aiming at wall-adjacent enemies
+- Increased FPS camera pitch range from -60° to -75° and adjusted camera offset for steeper aiming
+- Projectiles now pass through friendly walls in FPS mode — bolts fired from the tower no longer get blocked by fortress walls
+- Right-click menial dispatch now works in FPS mode — uses crosshair aim point instead of broken locked-cursor mouse position
+- Added atmospheric distance fog (NightmareFog) that keeps full visibility within scorpio range + 1 unit, then gradually thickens to full opacity — hides map boundaries, conceals enemy spawn-in, enemies loom from the mist
+- Fog shifts between pale gray (day) and dark blue-gray (night), disables during build mode for full map visibility
+- FPS camera far clip tightened to fog boundary for performance
+- Removed aim assist (trajectory arc, impact circle, enemy highlighting) — pure FPS skill required
+
+### Difficulty-Scaled Aiming
+- Red aim guide lines now only visible on Easy difficulty (removed from Normal, Hard, and Nightmare)
+- Added +/- 0.5° random aim wobble on Hard difficulty — each shot deviates slightly from the aim point
+- Ballista projectile hit detection changed from thin Raycast to SphereCast (0.3 unit radius) for more reliable hits at steep firing angles
+
+### Enemy AI — Stuck Prevention
+- Enemies piled against walls that can't reach their attack target now retarget after 1 second instead of idling indefinitely
+- Added ForceRetarget() to EnemyMovement — clears current target and picks a new wall segment or alternative objective
+- Blocked enemies spread out to different wall sections rather than forming unresponsive blobs
+
 ## 0.15.2
 
 ### Tutorial

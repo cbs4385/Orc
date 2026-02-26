@@ -5,6 +5,8 @@ public class EnemyAttack : MonoBehaviour
     private Enemy enemy;
     private EnemyMovement movement;
     private float attackCooldown;
+    private float attackSkipTimer;
+    private const float RETARGET_AFTER_SKIP = 1.0f;
 
     private void Awake()
     {
@@ -32,9 +34,16 @@ public class EnemyAttack : MonoBehaviour
             float distToTarget = Vector3.Distance(transform.position, movement.CurrentTarget.position);
             if (distToTarget > enemy.Data.attackRange * 1.5f)
             {
-                Debug.LogWarning($"[EnemyAttack] {enemy.Data.enemyName} HasReachedTarget=true but target {movement.CurrentTarget.name} is {distToTarget:F1} away (attackRange={enemy.Data.attackRange}). Skipping attack.");
+                attackSkipTimer += Time.deltaTime;
+                if (attackSkipTimer >= RETARGET_AFTER_SKIP)
+                {
+                    Debug.LogWarning($"[EnemyAttack] {enemy.Data.enemyName} blocked for {attackSkipTimer:F1}s — target {movement.CurrentTarget.name} is {distToTarget:F1} away (range={enemy.Data.attackRange}). Forcing retarget.");
+                    attackSkipTimer = 0f;
+                    movement.ForceRetarget();
+                }
                 return;
             }
+            attackSkipTimer = 0f;
             Attack(movement.CurrentTarget);
         }
     }

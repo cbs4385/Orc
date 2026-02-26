@@ -19,6 +19,9 @@ public class BallistaProjectile : MonoBehaviour
     private Vector3 velocity;
     private float totalDistanceTraveled;
 
+    // SphereCast radius for hit detection — prevents misses at steep angles
+    private const float HIT_RADIUS = 0.3f;
+
     // Linger after impact
     private bool stopped;
 
@@ -99,8 +102,8 @@ public class BallistaProjectile : MonoBehaviour
             step = speed * Time.deltaTime;
         }
 
-        // Raycast along travel path to catch fast-moving hits
-        if (Physics.Raycast(oldPos, direction, out RaycastHit hit, step))
+        // SphereCast along travel path — wider than a thin ray to catch enemies at steep angles
+        if (Physics.SphereCast(oldPos, HIT_RADIUS, direction, out RaycastHit hit, step))
         {
             var enemy = hit.collider.GetComponentInParent<Enemy>();
             if (enemy != null && !enemy.IsDead)
@@ -110,8 +113,9 @@ public class BallistaProjectile : MonoBehaviour
                 return;
             }
 
+            // In FPS/gravity mode, projectiles pass through friendly walls (fired from inside fortress)
             var wall = hit.collider.GetComponentInParent<Wall>();
-            if (wall != null)
+            if (wall != null && !useGravity)
             {
                 transform.position = hit.point;
                 Debug.Log($"[BallistaProjectile] Blocked by wall {wall.name} at {hit.point}");
@@ -215,8 +219,9 @@ public class BallistaProjectile : MonoBehaviour
             return;
         }
 
+        // In FPS/gravity mode, projectiles pass through friendly walls
         var wall = other.GetComponentInParent<Wall>();
-        if (wall != null)
+        if (wall != null && !useGravity)
         {
             Debug.Log($"[BallistaProjectile] Trigger blocked by wall {wall.name} at {transform.position}");
             if (burstDamage && burstRadius > 0)

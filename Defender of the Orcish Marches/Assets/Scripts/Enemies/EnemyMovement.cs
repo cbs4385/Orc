@@ -528,6 +528,20 @@ public class EnemyMovement : MonoBehaviour
         Debug.Log($"[EnemyMovement] ForceAllRetarget — {count} enemies retargeted");
     }
 
+    /// <summary>
+    /// Clears the current target and picks a new one. Called by EnemyAttack
+    /// when the enemy is stuck at a position where it can't actually attack.
+    /// </summary>
+    public void ForceRetarget()
+    {
+        string prev = currentTarget != null ? currentTarget.name : "tower";
+        currentTarget = null;
+        lastRetargetPos = transform.position;
+        FindTarget();
+        string next = currentTarget != null ? currentTarget.name : "tower";
+        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} ForceRetarget (attack blocked): {prev} → {next}");
+    }
+
     public void Stop()
     {
         if (agent != null && agent.isOnNavMesh) agent.isStopped = true;

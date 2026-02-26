@@ -35,7 +35,7 @@ public static class GameSettings
             case Difficulty.Easy:      return 150;
             case Difficulty.Normal:    return 100;
             case Difficulty.Hard:      return 75;
-            case Difficulty.Nightmare: return 50;
+            case Difficulty.Nightmare: return 75;
             default:                   return 100;
         }
     }
@@ -47,7 +47,7 @@ public static class GameSettings
             case Difficulty.Easy:      return 4;
             case Difficulty.Normal:    return 3;
             case Difficulty.Hard:      return 2;
-            case Difficulty.Nightmare: return 3;
+            case Difficulty.Nightmare: return 2;
             default:                   return 3;
         }
     }
@@ -60,7 +60,7 @@ public static class GameSettings
             case Difficulty.Easy:      return 1.5f;
             case Difficulty.Normal:    return 1.0f;
             case Difficulty.Hard:      return 0.75f;
-            case Difficulty.Nightmare: return 0.5f;
+            case Difficulty.Nightmare: return 0.75f;
             default:                   return 1.0f;
         }
     }
@@ -73,7 +73,7 @@ public static class GameSettings
             case Difficulty.Easy:      return 0.8f;
             case Difficulty.Normal:    return 1.0f;
             case Difficulty.Hard:      return 1.25f;
-            case Difficulty.Nightmare: return 1.5f;
+            case Difficulty.Nightmare: return 1.25f;
             default:                   return 1.0f;
         }
     }
@@ -86,7 +86,7 @@ public static class GameSettings
             case Difficulty.Easy:      return 1.3f;
             case Difficulty.Normal:    return 1.0f;
             case Difficulty.Hard:      return 0.8f;
-            case Difficulty.Nightmare: return 0.7f;
+            case Difficulty.Nightmare: return 0.8f;
             default:                   return 1.0f;
         }
     }
@@ -99,7 +99,7 @@ public static class GameSettings
             case Difficulty.Easy:      return 1.3f;
             case Difficulty.Normal:    return 1.0f;
             case Difficulty.Hard:      return 0.8f;
-            case Difficulty.Nightmare: return 0.7f;
+            case Difficulty.Nightmare: return 0.8f;
             default:                   return 1.0f;
         }
     }
@@ -112,7 +112,7 @@ public static class GameSettings
             case Difficulty.Easy:      return 0.7f;
             case Difficulty.Normal:    return 1.0f;
             case Difficulty.Hard:      return 1.3f;
-            case Difficulty.Nightmare: return 1.6f;
+            case Difficulty.Nightmare: return 1.3f;
             default:                   return 1.0f;
         }
     }

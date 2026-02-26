@@ -155,7 +155,7 @@ public class GameOverScreen : MonoBehaviour
         // Save and get rank
         int rank = RunHistoryManager.SaveRun(current);
 
-        // Build stats display
+        // Build stats display — compact two-column layout
         if (statsText != null)
         {
             var sb = new System.Text.StringBuilder();
@@ -164,37 +164,28 @@ public class GameOverScreen : MonoBehaviour
             int minutes = Mathf.FloorToInt(time / 60);
             int seconds = Mathf.FloorToInt(time % 60);
 
-            sb.AppendFormat("Survival Time: {0}:{1:00}\n", minutes, seconds);
-            sb.AppendFormat("Days Survived: {0}", current.days);
+            sb.AppendFormat("{0}:{1:00}  |  Days: {2}", minutes, seconds, current.days);
             if (hasPrevRuns && current.days > prevBest.days) sb.Append(NEW_BEST);
             sb.AppendLine();
 
-            sb.AppendFormat("Enemies Killed: {0}", current.kills);
+            sb.AppendFormat("Kills: {0}", current.kills);
             if (hasPrevRuns && current.kills > prevBest.kills) sb.Append(NEW_BEST);
-            sb.AppendLine();
-
-            if (current.bossKills > 0 || (hasPrevRuns && prevBest.bossKills > 0))
+            if (current.bossKills > 0)
             {
-                sb.AppendFormat("Bosses Slain: {0}", current.bossKills);
+                sb.AppendFormat("  |  Bosses: {0}", current.bossKills);
                 if (hasPrevRuns && current.bossKills > prevBest.bossKills) sb.Append(NEW_BEST);
-                sb.AppendLine();
             }
+            sb.AppendLine();
 
-            sb.AppendFormat("Gold Earned: {0}", current.goldEarned);
+            sb.AppendFormat("Gold: {0}", current.goldEarned);
             if (hasPrevRuns && current.goldEarned > prevBest.goldEarned) sb.Append(NEW_BEST);
-            sb.AppendLine();
-
-            sb.AppendFormat("Hirelings Recruited: {0}", current.hires);
-            if (hasPrevRuns && current.hires > prevBest.hires) sb.Append(NEW_BEST);
-            sb.AppendLine();
-
-            sb.AppendFormat("Menials Lost: {0}", current.menialsLost);
-            if (hasPrevRuns && current.menialsLost < prevBest.menialsLost) sb.Append(NEW_BEST);
+            sb.AppendFormat("  |  Hires: {0}", current.hires);
+            sb.AppendFormat("  |  Lost: {0}", current.menialsLost);
 
             statsText.text = sb.ToString();
         }
 
-        // Build score display
+        // Build score display — condensed to fit
         if (scoreText != null)
         {
             var sb = new System.Text.StringBuilder();
@@ -203,47 +194,56 @@ public class GameOverScreen : MonoBehaviour
             if (hasPrevRuns && current.compositeScore > prevBest.compositeScore) sb.Append(NEW_BEST);
             sb.AppendLine();
 
+            // Rank and best on one line
             if (rank >= 0)
-                sb.AppendFormat("Rank #{0} of {1} runs", rank + 1, RunHistoryManager.GetRunCount());
+            {
+                sb.AppendFormat("<size=85%>Rank #{0}/{1}", rank + 1, RunHistoryManager.GetRunCount());
+                if (hasPrevRuns && current.compositeScore <= prevBest.compositeScore)
+                    sb.AppendFormat("  |  Best: {0:N0}", prevBest.compositeScore);
+                sb.Append("</size>");
+            }
 
-            if (hasPrevRuns && current.compositeScore <= prevBest.compositeScore)
-                sb.AppendFormat("\nBest: {0:N0}", prevBest.compositeScore);
-
+            // Modifiers line — mutators, commander, relics all on one line
+            var modParts = new System.Collections.Generic.List<string>();
             if (MutatorManager.ActiveCount > 0)
-            {
-                sb.AppendFormat("\nMutators: {0} ({1:F2}x)", MutatorManager.GetActiveNamesDisplay(), MutatorManager.GetScoreMultiplier());
-            }
-
+                modParts.Add($"Mutators ({MutatorManager.GetScoreMultiplier():F1}x)");
             if (CommanderManager.HasCommander)
-            {
-                sb.AppendFormat("\nCommander: {0}", CommanderManager.GetActiveDisplayName());
-            }
-
+                modParts.Add(CommanderManager.GetActiveDisplayName());
             if (RelicManager.Instance != null && RelicManager.Instance.CollectedCount > 0)
             {
-                sb.AppendFormat("\nRelics ({0}): {1}", RelicManager.Instance.CollectedCount, RelicManager.Instance.GetCollectedNamesDisplay());
+                string relicStr = $"Relics x{RelicManager.Instance.CollectedCount}";
+                if (RelicManager.Instance.ActiveSynergyCount > 0)
+                    relicStr += $" <color=#FFD700>[{RelicManager.Instance.ActiveSynergyCount} Synergy]</color>";
+                modParts.Add(relicStr);
             }
+            if (modParts.Count > 0)
+                sb.AppendFormat("\n<size=80%>{0}</size>", string.Join("  |  ", modParts));
 
             // Legacy points
             if (legacyEarned > 0)
-            {
-                sb.AppendFormat("\n<color=#B89030>+{0} Legacy Points</color> ({1})", legacyEarned, LegacyProgressionManager.GetCurrentRankTitle());
-            }
+                sb.AppendFormat("\n<size=85%><color=#B89030>+{0} Legacy</color> ({1})</size>", legacyEarned, LegacyProgressionManager.GetCurrentRankTitle());
 
-            // New achievements
+            // Achievements — inline, capped at 3 on one line
             if (newAchievements.Count > 0)
             {
-                sb.Append("\n");
+                sb.Append("\n<size=85%>");
+                int shown = 0;
                 foreach (var (achId, achTier) in newAchievements)
                 {
+                    if (shown >= 3) break;
                     var achDef = AchievementDefs.GetById(achId);
                     if (achDef != null)
                     {
                         string tierColor = achTier == AchievementTier.Gold ? "#FFD700" :
                                            achTier == AchievementTier.Silver ? "#C0C0CC" : "#CD7F32";
-                        sb.AppendFormat("\n<color={0}>[{1}]</color> {2}", tierColor, achTier, achDef.Value.name);
+                        if (shown > 0) sb.Append("  ");
+                        sb.AppendFormat("<color={0}>[{1}]</color> {2}", tierColor, achTier, achDef.Value.name);
+                        shown++;
                     }
                 }
+                if (newAchievements.Count > 3)
+                    sb.AppendFormat(" +{0} more", newAchievements.Count - 3);
+                sb.Append("</size>");
             }
 
             scoreText.text = sb.ToString();

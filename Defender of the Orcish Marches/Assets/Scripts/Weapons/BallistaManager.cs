@@ -9,6 +9,9 @@ public class BallistaManager : MonoBehaviour
     [SerializeField] private GameObject ballistaPrefab;
     [SerializeField] private Transform[] ballistaSlots;
 
+    /// <summary>Extra height added to tower and ballistas in Nightmare FPS mode for better downward aiming.</summary>
+    private const float NIGHTMARE_HEIGHT_BOOST = 2.0f;
+
     private List<Ballista> ballistas = new List<Ballista>();
     private int activeBallistaIndex;
 
@@ -45,11 +48,21 @@ public class BallistaManager : MonoBehaviour
             ballistas.Add(b);
         }
 
-        // In nightmare mode, face first ballista west and spawn FPS camera
+        // In nightmare mode, raise tower + ballistas for better downward aiming, then spawn FPS camera
         if (NightmareCamera.IsNightmareMode && ballistas.Count > 0)
         {
+            RaiseTowerForNightmare();
+
+            // Raise all ballistas so the FPS viewpoint is higher
+            foreach (var b in ballistas)
+            {
+                var pos = b.transform.position;
+                b.transform.position = new Vector3(pos.x, pos.y + NIGHTMARE_HEIGHT_BOOST, pos.z);
+                Debug.Log($"[BallistaManager] Raised ballista {b.name} to Y={b.transform.position.y}");
+            }
+
             ballistas[0].transform.rotation = Quaternion.Euler(0f, 270f, 0f);
-            Debug.Log("[BallistaManager] Nightmare mode — first ballista set to face west.");
+            Debug.Log($"[BallistaManager] Nightmare mode — raised ballistas by {NIGHTMARE_HEIGHT_BOOST}. First ballista facing west.");
 
             // Spawn NightmareCamera if it doesn't already exist
             if (NightmareCamera.Instance == null)
@@ -94,5 +107,44 @@ public class BallistaManager : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Finds the central tower model in the scene and scales it taller for Nightmare mode,
+    /// so the raised ballista position looks visually correct from the build-mode overhead view.
+    /// </summary>
+    private void RaiseTowerForNightmare()
+    {
+        // Try to find the tower by name first
+        GameObject tower = GameObject.Find("Tower");
+
+        // Fallback: search for any mesh object near fortress center
+        if (tower == null)
+        {
+            foreach (var mr in FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
+            {
+                if (mr.gameObject.name.IndexOf("Tower", System.StringComparison.OrdinalIgnoreCase) >= 0
+                    && Vector3.Distance(mr.transform.position, GameManager.FortressCenter) < 2f)
+                {
+                    tower = mr.transform.root.gameObject;
+                    break;
+                }
+            }
+        }
+
+        if (tower != null)
+        {
+            // Scale Y to stretch the tower taller — keeps XZ the same
+            const float ORIGINAL_TOWER_HEIGHT = 3.3f;
+            float scaleMultiplier = (ORIGINAL_TOWER_HEIGHT + NIGHTMARE_HEIGHT_BOOST) / ORIGINAL_TOWER_HEIGHT;
+            var scale = tower.transform.localScale;
+            scale.y *= scaleMultiplier;
+            tower.transform.localScale = scale;
+            Debug.Log($"[BallistaManager] Raised tower model '{tower.name}' scale Y to {scale.y:F2} (x{scaleMultiplier:F2}).");
+        }
+        else
+        {
+            Debug.LogWarning("[BallistaManager] Could not find tower model to raise for Nightmare mode.");
+        }
     }
 }
