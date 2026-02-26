@@ -238,7 +238,10 @@ public class InputBindingManager : MonoBehaviour
             if (Keyboard.current == null) return;
             foreach (Key k in Enum.GetValues(typeof(Key)))
             {
-                if (k == Key.None || k == Key.IMESelected) continue;
+                if (k == Key.None) continue;
+#pragma warning disable CS0618
+                if (k == Key.IMESelected) continue;
+#pragma warning restore CS0618
                 KeyControl ctrl;
                 try { ctrl = Keyboard.current[k]; }
                 catch { continue; }

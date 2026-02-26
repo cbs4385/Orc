@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.2
+
+### Bug Fixes
+- Suppressed CS0618 obsolete warning for `Key.IMESelected` in InputBindingManager rebind listener
+
 ## 0.16.1
 
 ### Rebindable Input System
