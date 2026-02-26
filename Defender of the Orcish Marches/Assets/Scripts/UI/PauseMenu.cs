@@ -68,8 +68,8 @@ public class PauseMenu : MonoBehaviour
             if (optionsPanel != null) optionsPanel.SetActive(false);
         }
 
-        if (Keyboard.current == null) return;
-        if (!Keyboard.current.escapeKey.wasPressedThisFrame) return;
+        if (InputBindingManager.Instance == null) return;
+        if (!InputBindingManager.Instance.WasPressedThisFrame(GameAction.OpenMenu)) return;
         if (GameManager.Instance.CurrentState == GameManager.GameState.GameOver) return;
 
         // If wall placement is active, let it handle ESC

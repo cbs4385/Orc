@@ -97,12 +97,12 @@ public class BuildModeManager : MonoBehaviour
         // Update idle speedup check periodically
         UpdateIdleSpeedup();
 
-        // B key — toggle build mode
-        if (Keyboard.current != null && Keyboard.current.bKey.wasPressedThisFrame)
+        // Toggle build mode
+        if (InputBindingManager.Instance != null && InputBindingManager.Instance.WasPressedThisFrame(GameAction.ToggleBuildMode))
         {
             if (IsBuildMode)
             {
-                Debug.Log("[BuildModeManager] B key pressed — exiting build mode.");
+                Debug.Log("[BuildModeManager] Build mode key pressed — exiting build mode.");
                 ExitBuildMode();
             }
             else
@@ -142,7 +142,9 @@ public class BuildModeManager : MonoBehaviour
 
         if (!hasEngineer)
         {
-            GameHUD.ShowBanner("No engineer — hire one from Upgrades (U)", HINT_BANNER_DURATION);
+            string upgKey = InputBindingManager.Instance != null
+                ? InputBindingManager.Instance.GetKeyboardDisplayName(GameAction.ToggleUpgrades) : "U";
+            GameHUD.ShowBanner($"No engineer — hire one from Upgrades ({upgKey})", HINT_BANNER_DURATION);
             Debug.Log("[BuildModeManager] B key pressed — no engineer.");
             return;
         }
@@ -214,8 +216,10 @@ public class BuildModeManager : MonoBehaviour
         WallCost = GetWallCost();
         if (HasLivingEngineer() && CanAffordWall())
         {
-            GameHUD.ShowBanner("Press B to build walls", HINT_BANNER_DURATION);
-            Debug.Log("[BuildModeManager] Night hint: Press B to build walls.");
+            string buildKey = InputBindingManager.Instance != null
+                ? InputBindingManager.Instance.GetKeyboardDisplayName(GameAction.ToggleBuildMode) : "B";
+            GameHUD.ShowBanner($"Press {buildKey} to build walls", HINT_BANNER_DURATION);
+            Debug.Log($"[BuildModeManager] Night hint: Press {buildKey} to build walls.");
         }
     }
 

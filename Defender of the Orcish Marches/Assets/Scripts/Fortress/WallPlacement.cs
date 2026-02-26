@@ -74,23 +74,25 @@ public class WallPlacement : MonoBehaviour
         if (!isPlacing) return;
         if (Mouse.current == null) return;
 
-        // Right-click or Escape to exit build mode entirely
-        if (Mouse.current.rightButton.wasPressedThisFrame ||
-            (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame))
+        // Right-click or exit build mode key to exit
+        bool exitPressed = Mouse.current.rightButton.wasPressedThisFrame;
+        if (!exitPressed && InputBindingManager.Instance != null)
+            exitPressed = InputBindingManager.Instance.WasPressedThisFrame(GameAction.ExitBuildMode);
+        if (exitPressed)
         {
-            Debug.Log("[WallPlacement] Right-click/Escape — exiting build mode.");
+            Debug.Log("[WallPlacement] Exit build mode input — exiting build mode.");
             StopPlacement();
             if (BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildMode)
                 BuildModeManager.Instance.ExitBuildMode();
             return;
         }
 
-        // A/D to rotate
-        if (Keyboard.current != null)
+        // Rotate wall
+        if (InputBindingManager.Instance != null)
         {
-            if (Keyboard.current.aKey.wasPressedThisFrame)
+            if (InputBindingManager.Instance.WasPressedThisFrame(GameAction.RotateWallLeft))
                 ghostRotationY -= 45f;
-            if (Keyboard.current.dKey.wasPressedThisFrame)
+            if (InputBindingManager.Instance.WasPressedThisFrame(GameAction.RotateWallRight))
                 ghostRotationY += 45f;
         }
 

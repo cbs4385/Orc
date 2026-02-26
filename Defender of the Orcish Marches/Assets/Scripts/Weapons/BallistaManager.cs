@@ -78,8 +78,8 @@ public class BallistaManager : MonoBehaviour
     {
         if (ballistas.Count == 0) return;
 
-        // Tab to switch active ballista
-        if (Keyboard.current != null && Keyboard.current.tabKey.wasPressedThisFrame && ballistas.Count > 1)
+        // Switch active ballista
+        if (InputBindingManager.Instance != null && InputBindingManager.Instance.WasPressedThisFrame(GameAction.SwitchBallista) && ballistas.Count > 1)
         {
             activeBallistaIndex = (activeBallistaIndex + 1) % ballistas.Count;
             Debug.Log($"[BallistaManager] Switched to ballista {activeBallistaIndex}: {ballistas[activeBallistaIndex].name}");

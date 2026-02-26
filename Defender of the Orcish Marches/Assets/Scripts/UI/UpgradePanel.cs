@@ -28,11 +28,12 @@ public class UpgradePanel : MonoBehaviour
         TryCreateButtons();
     }
 
-    // Number keys mapped to button indices
-    private static readonly Key[] HotkeyMap = new Key[]
+    // Upgrade slot actions mapped to button indices
+    private static readonly GameAction[] UpgradeHotkeys = new GameAction[]
     {
-        Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5,
-        Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9
+        GameAction.Upgrade1, GameAction.Upgrade2, GameAction.Upgrade3,
+        GameAction.Upgrade4, GameAction.Upgrade5, GameAction.Upgrade6,
+        GameAction.Upgrade7, GameAction.Upgrade8, GameAction.Upgrade9
     };
 
     private void Update()
@@ -43,19 +44,21 @@ public class UpgradePanel : MonoBehaviour
             TryCreateButtons();
         }
 
-        // Toggle panel with U key
-        if (Keyboard.current != null && Keyboard.current.uKey.wasPressedThisFrame)
+        if (InputBindingManager.Instance == null) { UpdateButtonStates(); return; }
+
+        // Toggle panel
+        if (InputBindingManager.Instance.WasPressedThisFrame(GameAction.ToggleUpgrades))
         {
             isOpen = !isOpen;
             if (panelRoot != null) panelRoot.SetActive(isOpen);
         }
 
-        // Hotkeys 1-9 to purchase upgrades
-        if (Keyboard.current != null && buttonsCreated)
+        // Hotkeys to purchase upgrades
+        if (buttonsCreated)
         {
-            for (int i = 0; i < buttons.Count && i < HotkeyMap.Length; i++)
+            for (int i = 0; i < buttons.Count && i < UpgradeHotkeys.Length; i++)
             {
-                if (Keyboard.current[HotkeyMap[i]].wasPressedThisFrame)
+                if (InputBindingManager.Instance.WasPressedThisFrame(UpgradeHotkeys[i]))
                 {
                     OnUpgradeClicked(buttons[i].data);
                     break;

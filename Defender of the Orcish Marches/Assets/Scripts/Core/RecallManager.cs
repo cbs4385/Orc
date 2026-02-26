@@ -34,9 +34,9 @@ public class RecallManager : MonoBehaviour
         if (BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildMode) return;
 
         bool middleClick = Mouse.current != null && Mouse.current.middleButton.wasPressedThisFrame;
-        bool rKey = Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame;
+        bool recallKey = InputBindingManager.Instance != null && InputBindingManager.Instance.WasPressedThisFrame(GameAction.Recall);
 
-        if (middleClick || rKey)
+        if (middleClick || recallKey)
         {
             RecallAll();
         }

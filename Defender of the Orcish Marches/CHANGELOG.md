@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.16.1
+
+### Rebindable Input System
+- Added InputBindingManager singleton — centralizes all keyboard and gamepad input bindings with PlayerPrefs persistence
+- All hardcoded key checks (Space, Escape, B, A/D, U, R, Tab, 1-9) replaced with InputBindingManager lookups
+- Full gamepad support — every action has a default gamepad binding (face buttons, shoulders, D-pad, Start)
+- Options screen now includes a scrollable "INPUT BINDINGS" section with two-column layout (Keyboard | Gamepad)
+- Click any binding to rebind — press a new key/button, or Escape to cancel; full overlay prompt during rebind
+- "Reset to Defaults" button restores all bindings to factory settings
+- Bindings persist across sessions via PlayerPrefs
+- InputBindingManager auto-creates via RuntimeInitializeOnLoadMethod — available in every scene without manual setup
+
+### Dynamic Key Name Display
+- Tutorial pages now display current key bindings instead of hardcoded key names (Build Mode, Ballista, Upgrades, Defenders, Nightmare, hotkey summary)
+- Build mode HUD hint ("A/D rotate B to exit") now reflects rebound keys
+- Build mode banners ("Press B to build walls", "No engineer — hire one from Upgrades (U)") use dynamic key names
+- Added note to tutorial: "All controls can be rebound from Options > Input Bindings"
+
 ## 0.16.0
 
 ### Nightmare Mode Overhaul

@@ -93,8 +93,8 @@ public class GameHUD : MonoBehaviour
         if (!subscribed) TrySubscribe();
         if (GameManager.Instance == null) return;
 
-        // SPACE to toggle pause
-        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        // Pause toggle
+        if (InputBindingManager.Instance != null && InputBindingManager.Instance.WasPressedThisFrame(GameAction.Pause))
         {
             GameManager.Instance.TogglePause();
         }
@@ -280,7 +280,7 @@ public class GameHUD : MonoBehaviour
         hintRect.anchorMax = new Vector2(1f, 0.22f);
         hintRect.offsetMin = new Vector2(10, 3);
         hintRect.offsetMax = new Vector2(-10, 0);
-        hintTMP.text = "A/D rotate  B to exit";
+        hintTMP.text = GetBuildHintText();
         hintTMP.fontSize = 14;
         hintTMP.color = new Color(0.7f, 0.7f, 0.7f);
         hintTMP.alignment = TextAlignmentOptions.Center;
@@ -355,6 +355,16 @@ public class GameHUD : MonoBehaviour
     {
         if (GameManager.Instance != null)
             GameManager.Instance.TogglePause();
+    }
+
+    private static string GetBuildHintText()
+    {
+        if (InputBindingManager.Instance == null)
+            return "A/D rotate  B to exit";
+        string left = InputBindingManager.Instance.GetKeyboardDisplayName(GameAction.RotateWallLeft);
+        string right = InputBindingManager.Instance.GetKeyboardDisplayName(GameAction.RotateWallRight);
+        string exit = InputBindingManager.Instance.GetKeyboardDisplayName(GameAction.ToggleBuildMode);
+        return $"{left}/{right} rotate  {exit} to exit";
     }
 
     private void UpdatePauseButton(bool isPaused)

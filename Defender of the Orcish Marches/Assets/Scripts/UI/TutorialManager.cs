@@ -122,6 +122,15 @@ public class TutorialManager : MonoBehaviour
         sceneLoader.LoadMainMenu();
     }
 
+    /// <summary>Get the display name for a key binding, with bold tags for tutorial text.</summary>
+    private static string K(GameAction action)
+    {
+        if (InputBindingManager.Instance != null)
+            return InputBindingManager.Instance.GetKeyboardDisplayName(action);
+        // Fallback if InputBindingManager hasn't loaded
+        return InputBindingManager.GetActionDisplayName(action);
+    }
+
     private void BuildPages()
     {
         pages = new TutorialPage[]
@@ -190,10 +199,10 @@ public class TutorialManager : MonoBehaviour
                        "while you plan your defenses.\n\n" +
                        "A green <b>ghost wall</b> follows your cursor. " +
                        "It snaps to existing walls when close enough.\n\n" +
-                       "  <b>Left Click</b> — place a wall (costs gold)\n" +
-                       "  <b>A / D</b> — rotate the ghost wall\n" +
-                       "  <b>B</b> — exit build mode\n" +
-                       "  <b>Right Click / Escape</b> — exit build mode\n\n" +
+                       $"  <b>Left Click</b> — place a wall (costs gold)\n" +
+                       $"  <b>{K(GameAction.RotateWallLeft)} / {K(GameAction.RotateWallRight)}</b> — rotate the ghost wall\n" +
+                       $"  <b>{K(GameAction.ToggleBuildMode)}</b> — exit build mode\n" +
+                       $"  <b>Right Click / {K(GameAction.ExitBuildMode)}</b> — exit build mode\n\n" +
                        "The ghost turns <b>red</b> when you can't afford the next wall. " +
                        "Build mode ends automatically when you run out of gold."
             },
@@ -211,10 +220,12 @@ public class TutorialManager : MonoBehaviour
             {
                 title = "The Ballista",
                 spriteName = "tut_ballista",
-                body = "Your primary weapon is the <b>Ballista</b> mounted on the tower.\n\n" +
+                body = "Your primary weapon is the <b>Ballista</b> (scorpio) mounted on the tower.\n\n" +
                        "<b>Left Click</b> on the battlefield to aim and fire at the target location.\n\n" +
                        "You can purchase additional ballistas from the upgrade panel (up to 3 total). " +
-                       "Press <b>Tab</b> to switch between them.\n\n" +
+                       $"Press <b>{K(GameAction.SwitchBallista)}</b> to switch between them.\n\n" +
+                       "On <b>Easy</b> difficulty, red <b>aim lines</b> show your firing direction. " +
+                       "On <b>Hard</b> and above, a slight <b>aim wobble</b> adds challenge to every shot.\n\n" +
                        "Use the ballista to pick off dangerous enemies before they reach your walls."
             },
             new TutorialPage
@@ -236,6 +247,8 @@ public class TutorialManager : MonoBehaviour
                        "When enemies die, they drop <b>Treasure</b> on the ground.\n\n" +
                        "<b>Right-click</b> near treasure to send the nearest idle menial to collect it. " +
                        "They will pick up loot along their path, then return it to the fortress.\n\n" +
+                       "In <b>Nightmare</b> mode, right-click dispatches a menial toward your " +
+                       "<b>crosshair</b>.\n\n" +
                        "Spend wisely — there is never enough gold for everything."
             },
             new TutorialPage
@@ -252,12 +265,12 @@ public class TutorialManager : MonoBehaviour
             {
                 title = "The Upgrade Panel",
                 spriteName = "tut_side",
-                body = "Press <b>U</b> to open the <b>Upgrade Panel</b>.\n\n" +
+                body = $"Press <b>{K(GameAction.ToggleUpgrades)}</b> to open the <b>Upgrade Panel</b>.\n\n" +
                        "Here you can spend gold (and menials) on:\n" +
                        "  <b>New Defenders</b> — recruit menials into combat roles\n" +
                        "  <b>Ballista Upgrades</b> — more damage, faster fire rate, or additional ballistas\n\n" +
-                       "Number keys <b>1-9</b> act as hotkeys for each upgrade button.\n" +
-                       "Press <b>U</b> again or <b>Escape</b> to close the panel."
+                       $"Keys <b>{K(GameAction.Upgrade1)}-{K(GameAction.Upgrade9)}</b> act as hotkeys for each upgrade button.\n" +
+                       $"Press <b>{K(GameAction.ToggleUpgrades)}</b> again or <b>{K(GameAction.OpenMenu)}</b> to close the panel."
             },
             new TutorialPage
             {
@@ -270,7 +283,7 @@ public class TutorialManager : MonoBehaviour
                        "  <b>Wizard</b> (100g, 3m) — powerful AoE magic, longest range\n\n" +
                        "Recruit them from the upgrade panel. Costs scale with how many are currently alive. " +
                        "You need at least one <b>Engineer</b> to enter Build Mode.\n\n" +
-                       "Press <b>R</b> or <b>Middle Click</b> to <b>Recall</b> all defenders and menials to the courtyard."
+                       $"Press <b>{K(GameAction.Recall)}</b> or <b>Middle Click</b> to <b>Recall</b> all defenders and menials to the courtyard."
             },
             new TutorialPage
             {
@@ -396,11 +409,15 @@ public class TutorialManager : MonoBehaviour
                 body = "On <b>Nightmare</b> difficulty, you experience the battle from the scorpio itself.\n\n" +
                        "The camera switches to a <b>first-person view</b> mounted on the ballista. " +
                        "Move the mouse to aim — the scorpio rotates and tilts to follow your aim.\n\n" +
-                       "Bolts fire in a <b>gravity arc</b>, so aim above distant targets.\n\n" +
+                       "Bolts fire in a <b>gravity arc</b> and pass through friendly walls, so aim above " +
+                       "distant targets. There are no aim guides — trust your instincts.\n\n" +
+                       "An <b>atmospheric mist</b> obscures the battlefield beyond scorpio range. " +
+                       "Enemies loom out of the fog — watch for movement and fire early.\n\n" +
                        "During <b>Build Mode</b>, the camera switches back to the overhead view " +
                        "for wall placement, then returns to FPS when building ends.\n\n" +
-                       "You start with fewer resources but more menials to compensate. " +
-                       "Press <b>Tab</b> to switch between ballistas."
+                       "Nightmare uses <b>Hard</b> mode enemy stats with aim wobble. " +
+                       $"Press <b>{K(GameAction.SwitchBallista)}</b> to switch between ballistas. " +
+                       "<b>Right-click</b> dispatches menials toward your crosshair."
             },
             new TutorialPage
             {
@@ -410,14 +427,15 @@ public class TutorialManager : MonoBehaviour
                        "  <b>Scroll Wheel</b> — Zoom in/out\n" +
                        "  <b>Left Click</b> — Fire ballista (or place wall in build mode)\n" +
                        "  <b>Right Click</b> — Send menial to collect loot\n" +
-                       "  <b>R / Middle Click</b> — Recall all defenders and menials\n" +
-                       "  <b>Tab</b> — Switch active ballista\n" +
-                       "  <b>U</b> — Open/close upgrade panel\n" +
-                       "  <b>1-9</b> — Upgrade hotkeys\n" +
-                       "  <b>A / D</b> — Rotate wall in build mode\n" +
-                       "  <b>B</b> — Enter/exit build mode\n" +
-                       "  <b>Space</b> — Toggle pause\n" +
-                       "  <b>Escape</b> — Pause menu / exit build mode\n\n" +
+                       $"  <b>{K(GameAction.Recall)} / Middle Click</b> — Recall all defenders and menials\n" +
+                       $"  <b>{K(GameAction.SwitchBallista)}</b> — Switch active ballista\n" +
+                       $"  <b>{K(GameAction.ToggleUpgrades)}</b> — Open/close upgrade panel\n" +
+                       $"  <b>{K(GameAction.Upgrade1)}-{K(GameAction.Upgrade9)}</b> — Upgrade hotkeys\n" +
+                       $"  <b>{K(GameAction.RotateWallLeft)} / {K(GameAction.RotateWallRight)}</b> — Rotate wall in build mode\n" +
+                       $"  <b>{K(GameAction.ToggleBuildMode)}</b> — Enter/exit build mode\n" +
+                       $"  <b>{K(GameAction.Pause)}</b> — Toggle pause\n" +
+                       $"  <b>{K(GameAction.OpenMenu)}</b> — Pause menu / exit build mode\n\n" +
+                       "All controls can be rebound from <b>Options > Input Bindings</b>.\n\n" +
                        "<b>Main Menu Features:</b>\n" +
                        "  COMMANDER — choose a class before starting\n" +
                        "  MUTATORS — toggle game modifiers\n" +
