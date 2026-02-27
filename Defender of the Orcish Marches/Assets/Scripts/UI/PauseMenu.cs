@@ -24,6 +24,8 @@ public class PauseMenu : MonoBehaviour
 
     private bool isOpen;
     private bool optionsOpen;
+    private SaveSlotPicker saveSlotPicker;
+    private Button saveQuitButton;
 
     private void OnEnable()
     {
@@ -31,6 +33,13 @@ public class PauseMenu : MonoBehaviour
         if (optionsButton != null) optionsButton.onClick.AddListener(OnOptions);
         if (mainMenuButton != null) mainMenuButton.onClick.AddListener(OnMainMenu);
         if (optionsBackButton != null) optionsBackButton.onClick.AddListener(OnOptionsBack);
+
+        // Create Save & Quit button programmatically as sibling of mainMenuButton
+        if (saveQuitButton == null && mainMenuButton != null)
+        {
+            CreateSaveQuitButton();
+        }
+        if (saveQuitButton != null) saveQuitButton.onClick.AddListener(OnSaveQuit);
 
         if (sfxVolumeSlider != null)
             sfxVolumeSlider.onValueChanged.AddListener(OnSfxVolumeChanged);
@@ -46,6 +55,7 @@ public class PauseMenu : MonoBehaviour
         if (optionsButton != null) optionsButton.onClick.RemoveListener(OnOptions);
         if (mainMenuButton != null) mainMenuButton.onClick.RemoveListener(OnMainMenu);
         if (optionsBackButton != null) optionsBackButton.onClick.RemoveListener(OnOptionsBack);
+        if (saveQuitButton != null) saveQuitButton.onClick.RemoveListener(OnSaveQuit);
 
         if (sfxVolumeSlider != null)
             sfxVolumeSlider.onValueChanged.RemoveListener(OnSfxVolumeChanged);
@@ -75,6 +85,13 @@ public class PauseMenu : MonoBehaviour
         // If wall placement is active, let it handle ESC
         var wp = FindAnyObjectByType<WallPlacement>();
         if (wp != null && wp.IsPlacing) return;
+
+        // If save slot picker is visible, close it first
+        if (saveSlotPicker != null && saveSlotPicker.IsVisible)
+        {
+            saveSlotPicker.Hide();
+            return;
+        }
 
         if (optionsOpen)
         {
@@ -157,6 +174,77 @@ public class PauseMenu : MonoBehaviour
         Time.timeScale = 1f;
         Debug.Log("[PauseMenu] Quitting to main menu.");
         UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+    }
+
+    private void CreateSaveQuitButton()
+    {
+        if (mainMenuButton == null) return;
+        var parent = mainMenuButton.transform.parent;
+
+        var btnObj = new GameObject("SaveQuitButton");
+        btnObj.transform.SetParent(parent, false);
+        // Place it just before the main menu button
+        btnObj.transform.SetSiblingIndex(mainMenuButton.transform.GetSiblingIndex());
+
+        var btnImage = btnObj.AddComponent<Image>();
+        btnImage.color = new Color(0.3f, 0.2f, 0.1f, 0.9f);
+
+        // Copy LayoutElement from mainMenuButton if it has one
+        var sourceLE = mainMenuButton.GetComponent<LayoutElement>();
+        if (sourceLE != null)
+        {
+            var le = btnObj.AddComponent<LayoutElement>();
+            le.preferredHeight = sourceLE.preferredHeight;
+            le.preferredWidth = sourceLE.preferredWidth;
+            le.minHeight = sourceLE.minHeight;
+        }
+
+        saveQuitButton = btnObj.AddComponent<Button>();
+        var colors = saveQuitButton.colors;
+        colors.normalColor = new Color(0.3f, 0.2f, 0.1f, 0.9f);
+        colors.highlightedColor = new Color(0.5f, 0.35f, 0.15f, 1f);
+        colors.pressedColor = new Color(0.6f, 0.4f, 0.1f, 1f);
+        saveQuitButton.colors = colors;
+
+        var txtObj = new GameObject("Text");
+        txtObj.transform.SetParent(btnObj.transform, false);
+        var tmp = txtObj.AddComponent<TextMeshProUGUI>();
+        tmp.text = "SAVE & QUIT";
+        tmp.fontSize = 24;
+        tmp.fontStyle = FontStyles.Bold;
+        tmp.color = new Color(0.9f, 0.8f, 0.5f);
+        tmp.alignment = TextAlignmentOptions.Center;
+        var txtRect = txtObj.GetComponent<RectTransform>();
+        txtRect.anchorMin = Vector2.zero;
+        txtRect.anchorMax = Vector2.one;
+        txtRect.offsetMin = Vector2.zero;
+        txtRect.offsetMax = Vector2.zero;
+
+        Debug.Log("[PauseMenu] Save & Quit button created.");
+    }
+
+    private void OnSaveQuit()
+    {
+        Debug.Log("[PauseMenu] Save & Quit clicked.");
+
+        // Create or find SaveSlotPicker
+        if (saveSlotPicker == null)
+        {
+            var pickerObj = new GameObject("SaveSlotPicker");
+            saveSlotPicker = pickerObj.AddComponent<SaveSlotPicker>();
+        }
+
+        saveSlotPicker.Show(SaveSlotPicker.Mode.Save, (slot) =>
+        {
+            // Save to selected slot
+            SaveManager.SaveToSlot(slot);
+
+            // Return to main menu
+            isOpen = false;
+            Time.timeScale = 1f;
+            Debug.Log($"[PauseMenu] Saved to slot {slot}, returning to main menu.");
+            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+        });
     }
 
     private void OnSfxVolumeChanged(float value)

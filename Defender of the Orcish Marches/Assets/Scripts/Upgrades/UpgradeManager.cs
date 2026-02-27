@@ -151,7 +151,7 @@ public class UpgradeManager : MonoBehaviour
                type == UpgradeType.SpawnCrossbowman || type == UpgradeType.SpawnWizard;
     }
 
-    private GameObject GetDefenderPrefab(UpgradeType type)
+    public GameObject GetDefenderPrefab(UpgradeType type)
     {
         switch (type)
         {
@@ -274,6 +274,30 @@ public class UpgradeManager : MonoBehaviour
     {
         if (!purchaseCounts.ContainsKey(type)) purchaseCounts[type] = 0;
         purchaseCounts[type]++;
+    }
+
+    /// <summary>Get purchase count for a given upgrade type (for save system).</summary>
+    public int GetPurchaseCountPublic(UpgradeType type)
+    {
+        return GetPurchaseCount(type);
+    }
+
+    /// <summary>Restore purchase counts from a save file.</summary>
+    public void RestorePurchaseCounts(SaveSlotData data)
+    {
+        purchaseCounts.Clear();
+        if (data.upgradeCounts != null)
+        {
+            foreach (var uc in data.upgradeCounts)
+            {
+                if (Enum.TryParse<UpgradeType>(uc.typeName, out var type))
+                {
+                    purchaseCounts[type] = uc.count;
+                    Debug.Log($"[UpgradeManager] Restored: {type}={uc.count}");
+                }
+            }
+        }
+        Debug.Log($"[UpgradeManager] Restored {purchaseCounts.Count} upgrade types.");
     }
 
     /// <summary>

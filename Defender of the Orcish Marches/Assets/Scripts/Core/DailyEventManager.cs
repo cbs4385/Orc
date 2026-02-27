@@ -265,6 +265,26 @@ public class DailyEventManager : MonoBehaviour
         OnEventChanged?.Invoke(evt);
     }
 
+    /// <summary>Restore daily event state from a save file.</summary>
+    public void RestoreState(SaveSlotData data)
+    {
+        lastEventIndex = data.lastEventIndex;
+        LootValueMultiplier = data.lootValueMultiplier;
+        DefenderDamageMultiplier = data.defenderDamageMultiplier;
+        MenialSpeedMultiplier = data.menialSpeedMultiplier;
+        EnemyDamageMultiplier = data.enemyDamageMultiplier;
+        SpawnRateMultiplier = data.spawnRateMultiplier;
+        EnemyHPMultiplier = data.enemyHPMultiplier;
+        EnemySpeedMultiplier = data.enemySpeedMultiplier;
+        DefenderAttackSpeedMultiplier = data.defenderAttackSpeedMultiplier;
+        CurrentEventName = data.eventName ?? "";
+        CurrentEventDescription = data.eventDescription ?? "";
+        CurrentEventCategory = (DailyEventCategory)data.eventCategory;
+        HasActiveEvent = data.hasActiveEvent;
+
+        Debug.Log($"[DailyEventManager] Restored: event={CurrentEventName}, hasActive={HasActiveEvent}");
+    }
+
     private float ApplyChaos(float value)
     {
         if (!MutatorManager.IsActive("chaos_modifiers")) return value;

@@ -82,6 +82,17 @@ public class TreasurePickup : MonoBehaviour
         }
     }
 
+    /// <summary>Restore value directly from save (bypasses multiplier calculations).</summary>
+    public void RestoreValue(int savedValue)
+    {
+        value = savedValue;
+        if (GameManager.Instance != null)
+        {
+            spawnGameTime = GameManager.Instance.GameTime;
+            spawnGameTimeSet = true;
+        }
+    }
+
     public void Collect()
     {
         if (collected) return;

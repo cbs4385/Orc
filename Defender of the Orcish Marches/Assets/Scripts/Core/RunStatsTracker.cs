@@ -255,6 +255,48 @@ public class RunStatsTracker : MonoBehaviour
         VegetationCleared++;
     }
 
+    /// <summary>Restore all stats from a save file.</summary>
+    public void RestoreState(SaveSlotData data)
+    {
+        var rs = data.runStats;
+        if (rs == null) return;
+
+        Days = rs.days;
+        Kills = rs.kills;
+        BossKills = rs.bossKills;
+        GoldEarned = rs.goldEarned;
+        Hires = rs.hires;
+        MenialsLost = rs.menialsLost;
+        GoldSpent = rs.goldSpent;
+        WallsBuilt = rs.wallsBuilt;
+        WallHPRepaired = rs.wallHPRepaired;
+        VegetationCleared = rs.vegetationCleared;
+        RefugeesSaved = rs.refugeesSaved;
+        BallistaShotsFired = rs.ballistaShotsFired;
+        PeakDefendersAlive = rs.peakDefendersAlive;
+        FirstBossKillTime = rs.firstBossKillTime;
+
+        KillsMelee = rs.killsMelee;
+        KillsRanged = rs.killsRanged;
+        KillsWallBreaker = rs.killsWallBreaker;
+        KillsSuicide = rs.killsSuicide;
+        KillsArtillery = rs.killsArtillery;
+
+        KillsOrcGrunt = rs.killsOrcGrunt;
+        KillsBowOrc = rs.killsBowOrc;
+        KillsTroll = rs.killsTroll;
+        KillsSuicideGoblin = rs.killsSuicideGoblin;
+        KillsGoblinCannoneer = rs.killsGoblinCannoneer;
+        KillsOrcWarBoss = rs.killsOrcWarBoss;
+
+        HiresEngineer = rs.hiresEngineer;
+        HiresPikeman = rs.hiresPikeman;
+        HiresCrossbowman = rs.hiresCrossbowman;
+        HiresWizard = rs.hiresWizard;
+
+        Debug.Log($"[RunStatsTracker] Restored: days={Days}, kills={Kills}, gold={GoldEarned}");
+    }
+
     public int ComputeScore()
     {
         int baseScore = (Days * 1000) + (Kills * 10) + (GoldEarned * 2) + (Hires * 50) + (BossKills * 500) - (MenialsLost * 100);

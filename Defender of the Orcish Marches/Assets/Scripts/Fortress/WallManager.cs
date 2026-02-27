@@ -398,4 +398,47 @@ public class WallManager : MonoBehaviour
         OnWallBuilt?.Invoke();
         return go;
     }
+
+    /// <summary>Place a wall with specific HP (for save/load restore). Skips construction state if HP > 0.</summary>
+    public GameObject PlaceWallWithHP(Vector3 position, Quaternion rotation, float scaleX, int currentHP, int maxHP, bool isUnderConstruction)
+    {
+        if (wallPrefab == null) return null;
+        var go = Instantiate(wallPrefab, position, rotation, transform);
+        if (scaleX != 1f)
+            go.transform.localScale = new Vector3(scaleX, 1f, 1f);
+        var wall = go.GetComponent<Wall>();
+        if (wall != null)
+        {
+            RegisterWall(wall);
+            if (isUnderConstruction)
+            {
+                wall.SetUnderConstruction();
+                // Partially repair to the saved HP
+                if (currentHP > 0)
+                    wall.Repair(currentHP);
+            }
+            else
+            {
+                // Complete wall — set to full HP first via Repair, then reduce to saved HP
+                wall.RestoreHP(currentHP, maxHP);
+            }
+
+            if (TowerPositionManager.Instance != null)
+                TowerPositionManager.Instance.RegisterNewWall(wall);
+        }
+        Debug.Log($"[WallManager] Restored wall at {position}, HP={currentHP}/{maxHP}, construction={isUnderConstruction}");
+        return go;
+    }
+
+    /// <summary>Destroy all current walls (for save restore — clear defaults before placing saved walls).</summary>
+    public void DestroyAllWalls()
+    {
+        for (int i = allWalls.Count - 1; i >= 0; i--)
+        {
+            if (allWalls[i] != null)
+                Destroy(allWalls[i].gameObject);
+        }
+        allWalls.Clear();
+        Debug.Log("[WallManager] All walls destroyed for save restore.");
+    }
 }

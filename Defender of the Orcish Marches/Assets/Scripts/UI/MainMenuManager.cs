@@ -16,6 +16,7 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private Button commanderButton;
     [SerializeField] private Button metaProgressionButton;
     [SerializeField] private Button bestiaryButton;
+    [SerializeField] private Button continueButton;
 
     [Header("Bug Report")]
     [SerializeField] private BugReportPanel bugReportPanel;
@@ -46,6 +47,7 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI difficultyLabel;
 
     private SceneLoader sceneLoader;
+    private SaveSlotPicker saveSlotPicker;
 
     private void Awake()
     {
@@ -82,9 +84,21 @@ public class MainMenuManager : MonoBehaviour
             metaProgressionButton.onClick.AddListener(OnMetaProgressionClicked);
         if (bestiaryButton != null)
             bestiaryButton.onClick.AddListener(OnBestiaryClicked);
+        if (continueButton != null)
+        {
+            continueButton.onClick.AddListener(OnContinueClicked);
+            // Disable if no saves exist
+            continueButton.gameObject.SetActive(SaveManager.HasAnySave());
+        }
 
         if (difficultySlider != null)
         {
+            // Nightmare requires mouse delta for FPS freelook — not available on iOS/Android
+            if (PlatformDetector.IsMobile)
+            {
+                difficultySlider.maxValue = 2; // Cap at Hard (index 2)
+                Debug.Log("[MainMenuManager] Mobile detected — Nightmare difficulty disabled, slider capped at Hard.");
+            }
             difficultySlider.value = (int)GameSettings.CurrentDifficulty;
             difficultySlider.onValueChanged.AddListener(OnDifficultyChanged);
             UpdateDifficultyLabel(difficultySlider.value);
@@ -117,6 +131,8 @@ public class MainMenuManager : MonoBehaviour
             metaProgressionButton.onClick.RemoveListener(OnMetaProgressionClicked);
         if (bestiaryButton != null)
             bestiaryButton.onClick.RemoveListener(OnBestiaryClicked);
+        if (continueButton != null)
+            continueButton.onClick.RemoveListener(OnContinueClicked);
         if (difficultySlider != null)
             difficultySlider.onValueChanged.RemoveListener(OnDifficultyChanged);
     }
@@ -228,5 +244,48 @@ public class MainMenuManager : MonoBehaviour
             bestiaryUI.Show();
         else
             Debug.LogWarning("[MainMenuManager] BestiaryUI reference is null.");
+    }
+
+    private void OnContinueClicked()
+    {
+        Debug.Log("[MainMenuManager] Continue clicked.");
+
+        if (saveSlotPicker == null)
+        {
+            var pickerObj = new GameObject("SaveSlotPicker");
+            saveSlotPicker = pickerObj.AddComponent<SaveSlotPicker>();
+        }
+
+        saveSlotPicker.Show(SaveSlotPicker.Mode.Load, (slot) =>
+        {
+            var data = SaveManager.LoadSlot(slot);
+            if (data == null)
+            {
+                Debug.LogError($"[MainMenuManager] Failed to load slot {slot}.");
+                return;
+            }
+
+            // Set pending data and load the game scene
+            SaveManager.PendingSaveData = data;
+            SaveManager.LastUsedSlot = slot;
+
+            // Set difficulty and mutators to match save
+            GameSettings.CurrentDifficulty = (Difficulty)data.difficulty;
+
+            // Restore mutator selections
+            MutatorManager.ClearActive();
+            if (data.activeMutatorIds != null)
+            {
+                foreach (var id in data.activeMutatorIds)
+                    MutatorManager.SetActive(id, true);
+            }
+
+            // Restore commander
+            if (!string.IsNullOrEmpty(data.commanderId))
+                CommanderManager.SelectCommander(data.commanderId);
+
+            Debug.Log($"[MainMenuManager] Loading saved game: Day {data.dayNumber}, Difficulty={(Difficulty)data.difficulty}");
+            sceneLoader.LoadGameScene();
+        });
     }
 }

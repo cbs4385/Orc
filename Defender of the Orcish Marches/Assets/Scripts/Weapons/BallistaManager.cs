@@ -93,6 +93,17 @@ public class BallistaManager : MonoBehaviour
         }
     }
 
+    public int BallistaCount => ballistas.Count;
+
+    /// <summary>Cycle to the next active ballista. Called by on-screen controls overlay.</summary>
+    public void CycleActiveBallista()
+    {
+        if (ballistas.Count <= 1) return;
+        activeBallistaIndex = (activeBallistaIndex + 1) % ballistas.Count;
+        Debug.Log($"[BallistaManager] Switched to ballista {activeBallistaIndex}: {ballistas[activeBallistaIndex].name}");
+        OnActiveBallistaChanged?.Invoke(ballistas[activeBallistaIndex]);
+    }
+
     public bool AddBallista()
     {
         if (ballistaPrefab == null || ballistaSlots == null) return false;
@@ -107,6 +118,31 @@ public class BallistaManager : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    /// <summary>Restore ballista stats and active index from a save file.</summary>
+    public void RestoreState(SaveSlotData data)
+    {
+        if (data.ballistas == null || data.ballistas.Count == 0) return;
+
+        // Ensure enough ballistas exist (add extras if save had more)
+        while (ballistas.Count < data.ballistas.Count)
+        {
+            if (!AddBallista()) break;
+        }
+
+        // Restore stats on each ballista
+        for (int i = 0; i < Mathf.Min(ballistas.Count, data.ballistas.Count); i++)
+        {
+            var sb = data.ballistas[i];
+            ballistas[i].RestoreStats(sb.damage, sb.fireRate, sb.hasDoubleShot, sb.hasBurstDamage);
+        }
+
+        // Restore active index
+        if (data.activeBallistaIndex >= 0 && data.activeBallistaIndex < ballistas.Count)
+            activeBallistaIndex = data.activeBallistaIndex;
+
+        Debug.Log($"[BallistaManager] Restored: {ballistas.Count} ballistas, active={activeBallistaIndex}");
     }
 
     /// <summary>

@@ -176,7 +176,8 @@ public class MenuSceneBuilder : MonoBehaviour
 
         // Main buttons on left
         var playBtn = CreateMenuButton("PlayButton", "PLAY", panelObj.transform);
-        CreateButtonSpacer(panelObj.transform); // half-button gap after PLAY
+        var continueBtn = CreateMenuButton("ContinueButton", "CONTINUE", panelObj.transform);
+        CreateButtonSpacer(panelObj.transform); // half-button gap after PLAY/CONTINUE
         var tutorialBtn = CreateMenuButton("TutorialButton", "TUTORIAL", panelObj.transform);
         var optionsBtn = CreateMenuButton("OptionsButton", "OPTIONS", panelObj.transform);
         var statsBtn = CreateMenuButton("StatsButton", "STATISTICS", panelObj.transform);
@@ -364,6 +365,7 @@ public class MenuSceneBuilder : MonoBehaviour
         // Wire buttons + difficulty + bug report
         var mmSO = new SerializedObject(mainMenu);
         mmSO.FindProperty("playButton").objectReferenceValue = playBtn;
+        mmSO.FindProperty("continueButton").objectReferenceValue = continueBtn;
         mmSO.FindProperty("optionsButton").objectReferenceValue = optionsBtn;
         mmSO.FindProperty("tutorialButton").objectReferenceValue = tutorialBtn;
         mmSO.FindProperty("exitButton").objectReferenceValue = exitBtn;

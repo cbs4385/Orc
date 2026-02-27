@@ -175,6 +175,13 @@ public class Enemy : MonoBehaviour
         Debug.Log($"[Enemy] {data.enemyName} day-scaled: HP={CurrentHP} (base {data.maxHP}), Damage={ScaledDamage} (base {data.damage})");
     }
 
+    /// <summary>Restore HP and damage from a save file (skip scaling, use exact saved values).</summary>
+    public void RestoreHP(int hp, int damage)
+    {
+        CurrentHP = hp;
+        ScaledDamage = damage;
+    }
+
     private void Update()
     {
         if (damageFlashTimer > 0)

@@ -22,9 +22,16 @@ public static class GameSettings
         get => (Difficulty)PlayerPrefs.GetInt(KEY_DIFFICULTY, DEFAULT_DIFFICULTY);
         set
         {
-            PlayerPrefs.SetInt(KEY_DIFFICULTY, (int)value);
+            // Nightmare requires mouse delta for FPS freelook — clamp to Hard on mobile (iOS/Android)
+            Difficulty clamped = value;
+            if (PlatformDetector.IsMobile && clamped == Difficulty.Nightmare)
+            {
+                clamped = Difficulty.Hard;
+                Debug.Log("[GameSettings] Nightmare not available on mobile — clamped to Hard.");
+            }
+            PlayerPrefs.SetInt(KEY_DIFFICULTY, (int)clamped);
             PlayerPrefs.Save();
-            Debug.Log($"[GameSettings] Difficulty set to {value}");
+            Debug.Log($"[GameSettings] Difficulty set to {clamped}");
         }
     }
 

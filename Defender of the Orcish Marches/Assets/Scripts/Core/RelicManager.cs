@@ -346,6 +346,28 @@ public class RelicManager : MonoBehaviour
         return sb.ToString();
     }
 
+    /// <summary>Restore relic/synergy state from a save file.</summary>
+    public void RestoreState(SaveSlotData data)
+    {
+        collectedRelicIds.Clear();
+        activeSynergyIds.Clear();
+        offerPending = false;
+        currentOffering = null;
+
+        if (data.collectedRelicIds != null)
+        {
+            foreach (var id in data.collectedRelicIds)
+                collectedRelicIds.Add(id);
+        }
+        if (data.activeSynergyIds != null)
+        {
+            foreach (var id in data.activeSynergyIds)
+                activeSynergyIds.Add(id);
+        }
+
+        Debug.Log($"[RelicManager] Restored: relics={collectedRelicIds.Count}, synergies={activeSynergyIds.Count}");
+    }
+
     /// <summary>Log collected relics state.</summary>
     public void LogRelicState()
     {

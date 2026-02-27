@@ -71,10 +71,22 @@ public class MenialManager : MonoBehaviour
     {
         if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameManager.GameState.Playing) return;
 
-        // Right-click to send menial to collect loot
+        // Right-click to send menial to collect loot (mouse/desktop)
         if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
         {
             TrySendMenialToLoot();
+        }
+
+        // Touch path: tap in game area while Send Menial mode is active
+        var pointer = PointerInputManager.Instance;
+        if (pointer != null && pointer.IsTouchActive
+            && MobileControlsOverlay.Instance != null
+            && MobileControlsOverlay.Instance.IsSendMenialMode
+            && pointer.WasPointerPressedThisFrame
+            && !pointer.IsPointerOverUI)
+        {
+            TrySendMenialToLoot();
+            MobileControlsOverlay.Instance.DisableSendMenialMode();
         }
 
         // Clean up dead menials and expired banners
@@ -150,7 +162,7 @@ public class MenialManager : MonoBehaviour
         if (Cursor.lockState == CursorLockMode.Locked)
             mousePos = new Vector2(Screen.width / 2f, Screen.height / 2f);
         else
-            mousePos = Mouse.current.position.ReadValue();
+            mousePos = PointerInputManager.Instance != null ? PointerInputManager.Instance.PointerPosition : Vector2.zero;
 
         Ray ray = cam.ScreenPointToRay(new Vector3(mousePos.x, mousePos.y, 0));
         Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
@@ -320,6 +332,20 @@ public class MenialManager : MonoBehaviour
         if (menial != null)
         {
             allMenials.Add(menial);
+        }
+        return menial;
+    }
+
+    /// <summary>Spawn a menial at a specific position (for save/load restore).</summary>
+    public Menial SpawnMenialAtPosition(Vector3 position)
+    {
+        if (menialPrefab == null) return null;
+        var go = Instantiate(menialPrefab, position, Quaternion.identity, transform);
+        var menial = go.GetComponent<Menial>();
+        if (menial != null)
+        {
+            allMenials.Add(menial);
+            Debug.Log($"[MenialManager] Restored menial at {position}");
         }
         return menial;
     }

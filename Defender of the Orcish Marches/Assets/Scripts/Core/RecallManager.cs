@@ -42,7 +42,7 @@ public class RecallManager : MonoBehaviour
         }
     }
 
-    private void RecallAll()
+    public void RecallAll()
     {
         // Play recall sound
         if (SoundManager.Instance != null)

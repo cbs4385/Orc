@@ -99,10 +99,23 @@ public class UpgradePanel : MonoBehaviour
                 costText = go.transform.Find("Cost")?.GetComponent<TextMeshProUGUI>()
             };
 
-            // Show hotkey number in label (1-9)
+            // Show hotkey number in label (1-9) — omit on mobile where keyboard isn't available
             index++;
             if (entry.label != null)
-                entry.label.text = index <= 9 ? $"[{index}] {upgrade.upgradeName}" : upgrade.upgradeName;
+            {
+                bool showHotkeys = !PlatformDetector.IsMobile;
+                entry.label.text = (showHotkeys && index <= 9) ? $"[{index}] {upgrade.upgradeName}" : upgrade.upgradeName;
+            }
+
+            // On mobile, increase button size for easier touch targets
+            if (PlatformDetector.ShowOnScreenControls)
+            {
+                var btnLE = go.GetComponent<LayoutElement>();
+                if (btnLE == null) btnLE = go.AddComponent<LayoutElement>();
+                btnLE.preferredHeight = 60;
+                if (entry.label != null) entry.label.fontSize = Mathf.Max(entry.label.fontSize, 22f);
+                if (entry.costText != null) entry.costText.fontSize = Mathf.Max(entry.costText.fontSize, 18f);
+            }
 
             if (entry.costText != null)
             {
@@ -128,6 +141,13 @@ public class UpgradePanel : MonoBehaviour
 
             buttons.Add(entry);
         }
+    }
+
+    /// <summary>Toggle the upgrade panel open/closed. Called by on-screen controls overlay.</summary>
+    public void TogglePanel()
+    {
+        isOpen = !isOpen;
+        if (panelRoot != null) panelRoot.SetActive(isOpen);
     }
 
     private void OnUpgradeClicked(UpgradeData upgrade)

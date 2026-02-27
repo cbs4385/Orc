@@ -745,6 +745,15 @@ public class Menial : MonoBehaviour
         }
     }
 
+    /// <summary>Current HP (for save system).</summary>
+    public int CurrentHP => currentHP;
+
+    /// <summary>Restore HP from a save file.</summary>
+    public void RestoreHP(int hp)
+    {
+        currentHP = hp > 0 ? hp : maxHP;
+    }
+
     public void TakeDamage(int damage)
     {
         if (IsDead) return;

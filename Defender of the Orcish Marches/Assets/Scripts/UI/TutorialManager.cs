@@ -421,6 +421,24 @@ public class TutorialManager : MonoBehaviour
             },
             new TutorialPage
             {
+                title = "Save & Load",
+                spriteName = "tut_overview",
+                body = "You can <b>save your game</b> mid-run and resume later.\n\n" +
+                       $"Press <b>{K(GameAction.OpenMenu)}</b> to open the pause menu, then select " +
+                       "<b>SAVE & QUIT</b>. Choose one of <b>3 save slots</b> — the game state is saved " +
+                       "and you return to the main menu.\n\n" +
+                       "To resume, press <b>CONTINUE</b> on the main menu and pick your save slot. " +
+                       "Each slot shows the day number, difficulty, gold, and timestamp.\n\n" +
+                       "<b>What gets saved:</b> day/night phase, gold, walls (with HP), ballistas, " +
+                       "enemies, defenders, menials, loot on the ground, upgrades, relics, " +
+                       "mutators, commander, daily events, and run statistics.\n\n" +
+                       "<b>Auto-save:</b> On mobile, the game automatically saves when you switch apps " +
+                       "or go to the home screen — your progress is safe if the OS reclaims memory.\n\n" +
+                       "<b>Note:</b> Menials resume in an <b>idle</b> state after loading. " +
+                       "Right-click loot to re-dispatch them."
+            },
+            new TutorialPage
+            {
                 title = "Ready to Fight!",
                 spriteName = "tut_overview",
                 body = "<b>Hotkey Summary:</b>\n\n" +
@@ -437,6 +455,7 @@ public class TutorialManager : MonoBehaviour
                        $"  <b>{K(GameAction.OpenMenu)}</b> — Pause menu / exit build mode\n\n" +
                        "All controls can be rebound from <b>Options > Input Bindings</b>.\n\n" +
                        "<b>Main Menu Features:</b>\n" +
+                       "  CONTINUE — resume a saved game\n" +
                        "  COMMANDER — choose a class before starting\n" +
                        "  MUTATORS — toggle game modifiers\n" +
                        "  UPGRADES — spend War Trophies on permanent bonuses\n" +

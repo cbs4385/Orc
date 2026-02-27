@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -82,6 +83,23 @@ public class GameManager : MonoBehaviour
         OnMenialsChanged?.Invoke(MenialCount);
         OnKillsChanged?.Invoke(EnemyKills);
         GameSettings.ApplySettings();
+
+        // Check for pending save data (loaded game)
+        if (SaveManager.PendingSaveData != null)
+        {
+            // Delay restore by one frame so all managers finish their Start()
+            StartCoroutine(RestoreNextFrame());
+        }
+    }
+
+    private System.Collections.IEnumerator RestoreNextFrame()
+    {
+        yield return null; // Wait one frame
+        if (SaveManager.PendingSaveData != null)
+        {
+            RestoreGame(SaveManager.PendingSaveData);
+            SaveManager.PendingSaveData = null;
+        }
     }
 
     private void OnDestroy()
@@ -186,6 +204,212 @@ public class GameManager : MonoBehaviour
     {
         Time.timeScale = 1f;
         UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
+    }
+
+    // ─── Auto-Save ───
+
+    private void OnApplicationPause(bool paused)
+    {
+        if (paused && CurrentState != GameState.GameOver && CurrentState != GameState.Paused)
+        {
+            Debug.Log("[GameManager] App backgrounded — auto-saving.");
+            SaveManager.AutoSave();
+        }
+    }
+
+    // ─── Save/Load Restore ───
+
+    /// <summary>
+    /// Restore full game state from a save file. Called after normal init completes.
+    /// Managers have already booted with defaults — we overwrite them here.
+    /// </summary>
+    private void RestoreGame(SaveSlotData data)
+    {
+        Debug.Log($"[GameManager] === RESTORING SAVE: Day {data.dayNumber}, Treasure={data.treasure} ===");
+
+        // 1. Core state
+        Treasure = data.treasure;
+        MenialCount = data.menialCount;
+        _idleMenialCount = data.idleMenialCount;
+        GameTime = data.gameTime;
+        EnemyKills = data.enemyKills;
+
+        // Restore difficulty (it was set at menu before scene load, but just in case)
+        GameSettings.CurrentDifficulty = (Difficulty)data.difficulty;
+
+        // Restore mutators (static, already set before scene load — verify)
+        // Mutators are set per-run before scene load, so they should already match.
+
+        // Restore commander
+        if (!string.IsNullOrEmpty(data.commanderId))
+            CommanderManager.SelectCommander(data.commanderId);
+
+        // 2. Day/Night cycle
+        if (DayNightCycle.Instance != null)
+            DayNightCycle.Instance.RestoreState(data);
+
+        // 3. Daily events (must be before enemy spawning since events affect HP/damage)
+        if (DailyEventManager.Instance != null)
+            DailyEventManager.Instance.RestoreState(data);
+
+        // 4. Upgrade counts (must be before wall/ballista restore since costs depend on counts)
+        if (UpgradeManager.Instance != null)
+            UpgradeManager.Instance.RestorePurchaseCounts(data);
+
+        // 5. Walls — destroy defaults and place saved walls
+        RestoreWalls(data);
+
+        // 6. Ballistas
+        if (BallistaManager.Instance != null)
+            BallistaManager.Instance.RestoreState(data);
+
+        // 7. Enemies — spawn manager restores counters and spawns saved enemies
+        RestoreEnemies(data);
+
+        // 8. Destroy default starting menials and spawn saved menials
+        RestoreMenials(data);
+
+        // 9. Spawn saved defenders
+        RestoreDefenders(data);
+
+        // 10. Spawn saved loot
+        RestoreLoot(data);
+
+        // 11. Relics
+        if (RelicManager.Instance != null)
+            RelicManager.Instance.RestoreState(data);
+
+        // 12. Run stats
+        if (RunStatsTracker.Instance != null)
+            RunStatsTracker.Instance.RestoreState(data);
+
+        // 13. Fire UI update events
+        OnTreasureChanged?.Invoke(Treasure);
+        OnMenialsChanged?.Invoke(MenialCount);
+        OnKillsChanged?.Invoke(EnemyKills);
+
+        // Rebake NavMesh after walls are placed
+        if (WallManager.Instance != null)
+            WallManager.Instance.RebakeEnemyNavMesh();
+
+        Debug.Log("[GameManager] === SAVE RESTORE COMPLETE ===");
+        LogGameSnapshot();
+    }
+
+    private void RestoreWalls(SaveSlotData data)
+    {
+        if (WallManager.Instance == null || data.walls == null) return;
+
+        // Destroy all scene-default walls first
+        WallManager.Instance.DestroyAllWalls();
+
+        foreach (var sw in data.walls)
+        {
+            Vector3 pos = SaveManager.ToVector3(sw.position);
+            Quaternion rot = SaveManager.ToQuaternion(sw.rotation);
+            WallManager.Instance.PlaceWallWithHP(pos, rot, sw.scaleX, sw.currentHP, sw.maxHP, sw.isUnderConstruction);
+        }
+    }
+
+    private void RestoreEnemies(SaveSlotData data)
+    {
+        if (EnemySpawnManager.Instance == null) return;
+
+        // Kill any enemies that spawned during the default Start (unlikely but safe)
+        var defaultEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+        foreach (var e in defaultEnemies)
+        {
+            if (e != null) Destroy(e.gameObject);
+        }
+
+        EnemySpawnManager.Instance.RestoreState(data);
+    }
+
+    private void RestoreMenials(SaveSlotData data)
+    {
+        if (MenialManager.Instance == null || data.menials == null) return;
+
+        // Destroy default starting menials
+        var defaultMenials = FindObjectsByType<Menial>(FindObjectsSortMode.None);
+        foreach (var m in defaultMenials)
+        {
+            if (m != null) Destroy(m.gameObject);
+        }
+
+        // Spawn saved menials at their positions
+        foreach (var sm in data.menials)
+        {
+            Vector3 pos = SaveManager.ToVector3(sm.position);
+            var menial = MenialManager.Instance.SpawnMenialAtPosition(pos);
+            if (menial != null && sm.currentHP > 0)
+                menial.RestoreHP(sm.currentHP);
+        }
+
+        // Update counts to match
+        MenialCount = data.menialCount;
+        _idleMenialCount = data.idleMenialCount;
+    }
+
+    private void RestoreDefenders(SaveSlotData data)
+    {
+        if (UpgradeManager.Instance == null || data.defenders == null) return;
+
+        foreach (var sd in data.defenders)
+        {
+            UpgradeType upgradeType;
+            switch (sd.typeName)
+            {
+                case "Engineer": upgradeType = UpgradeType.SpawnEngineer; break;
+                case "Pikeman": upgradeType = UpgradeType.SpawnPikeman; break;
+                case "Crossbowman": upgradeType = UpgradeType.SpawnCrossbowman; break;
+                case "Wizard": upgradeType = UpgradeType.SpawnWizard; break;
+                default:
+                    Debug.LogWarning($"[GameManager] Unknown defender type: {sd.typeName}");
+                    continue;
+            }
+
+            var prefab = UpgradeManager.Instance.GetDefenderPrefab(upgradeType);
+            if (prefab == null)
+            {
+                Debug.LogError($"[GameManager] No prefab for defender type: {sd.typeName}");
+                continue;
+            }
+
+            Vector3 pos = SaveManager.ToVector3(sd.position);
+            Quaternion rot = SaveManager.ToQuaternion(sd.rotation);
+            var go = Instantiate(prefab, pos, rot);
+            var defender = go.GetComponent<Defender>();
+            if (defender != null)
+            {
+                defender.Initialize(defender.Data);
+                defender.RestoreHP(sd.currentHP);
+                Debug.Log($"[GameManager] Restored defender: {sd.typeName} at {pos}, HP={sd.currentHP}");
+            }
+        }
+    }
+
+    private void RestoreLoot(SaveSlotData data)
+    {
+        if (EnemySpawnManager.Instance == null || data.loot == null) return;
+
+        var treasurePrefab = EnemySpawnManager.Instance.TreasurePrefab;
+        if (treasurePrefab == null)
+        {
+            Debug.LogWarning("[GameManager] No treasure prefab for loot restore.");
+            return;
+        }
+
+        foreach (var sl in data.loot)
+        {
+            Vector3 pos = SaveManager.ToVector3(sl.position);
+            var go = Instantiate(treasurePrefab, pos, Quaternion.identity);
+            var pickup = go.GetComponent<TreasurePickup>();
+            if (pickup != null)
+            {
+                pickup.RestoreValue(sl.value);
+                Debug.Log($"[GameManager] Restored loot: value={sl.value} at {pos}");
+            }
+        }
     }
 
     /// <summary>

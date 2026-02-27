@@ -18,6 +18,7 @@ public class OptionsManager : MonoBehaviour
 
     private SceneLoader sceneLoader;
     private InputBindingsUI bindingsUI;
+    private Toggle onScreenControlsToggle;
 
     private void Awake()
     {
@@ -54,6 +55,9 @@ public class OptionsManager : MonoBehaviour
         if (backButton != null)
             backButton.onClick.AddListener(OnBackClicked);
 
+        // Create on-screen controls toggle programmatically
+        CreateOnScreenControlsToggle();
+
         // Build input bindings UI dynamically
         BuildInputBindingsSection();
     }
@@ -66,6 +70,8 @@ public class OptionsManager : MonoBehaviour
             musicVolumeSlider.onValueChanged.RemoveListener(OnMusicVolumeChanged);
         if (fullscreenToggle != null)
             fullscreenToggle.onValueChanged.RemoveListener(OnFullscreenChanged);
+        if (onScreenControlsToggle != null)
+            onScreenControlsToggle.onValueChanged.RemoveListener(OnOnScreenControlsChanged);
         if (backButton != null)
             backButton.onClick.RemoveListener(OnBackClicked);
     }
@@ -80,7 +86,7 @@ public class OptionsManager : MonoBehaviour
         var scrollObj = new GameObject("OptionsScrollView");
         scrollObj.transform.SetParent(canvas.transform, false);
         var scrollRect = scrollObj.AddComponent<RectTransform>();
-        scrollRect.anchorMin = new Vector2(0.1f, 0.12f);
+        scrollRect.anchorMin = new Vector2(0.1f, 0.18f);
         scrollRect.anchorMax = new Vector2(0.9f, 0.82f);
         scrollRect.offsetMin = Vector2.zero;
         scrollRect.offsetMax = Vector2.zero;
@@ -132,6 +138,8 @@ public class OptionsManager : MonoBehaviour
         // -- Add Video Section --
         AddSectionHeader(contentObj.transform, "VIDEO");
         AddToggleRow(contentObj.transform, "Fullscreen", fullscreenToggle);
+        if (onScreenControlsToggle != null)
+            AddToggleRow(contentObj.transform, "On-Screen Controls", onScreenControlsToggle);
 
         // -- Add spacer --
         AddSpacer(contentObj.transform, 20);
@@ -284,6 +292,53 @@ public class OptionsManager : MonoBehaviour
     private void OnFullscreenChanged(bool isOn)
     {
         GameSettings.Fullscreen = isOn;
+    }
+
+    private void CreateOnScreenControlsToggle()
+    {
+        // Create a Toggle for On-Screen Controls setting
+        var toggleObj = new GameObject("OnScreenControlsToggle");
+        toggleObj.transform.SetParent(transform, false);
+        onScreenControlsToggle = toggleObj.AddComponent<Toggle>();
+
+        // Background
+        var bgObj = new GameObject("Background");
+        bgObj.transform.SetParent(toggleObj.transform, false);
+        var bgRect = bgObj.AddComponent<RectTransform>();
+        bgRect.sizeDelta = new Vector2(30, 30);
+        var bgImage = bgObj.AddComponent<Image>();
+        bgImage.color = new Color(0.2f, 0.2f, 0.2f);
+
+        // Checkmark
+        var checkObj = new GameObject("Checkmark");
+        checkObj.transform.SetParent(bgObj.transform, false);
+        var checkRect = checkObj.AddComponent<RectTransform>();
+        checkRect.anchorMin = Vector2.zero;
+        checkRect.anchorMax = Vector2.one;
+        checkRect.offsetMin = new Vector2(4, 4);
+        checkRect.offsetMax = new Vector2(-4, -4);
+        var checkImage = checkObj.AddComponent<Image>();
+        checkImage.color = new Color(0.8f, 0.7f, 0.5f);
+
+        onScreenControlsToggle.targetGraphic = bgImage;
+        onScreenControlsToggle.graphic = checkImage;
+        onScreenControlsToggle.isOn = PlatformDetector.ShowOnScreenControls;
+        onScreenControlsToggle.onValueChanged.AddListener(OnOnScreenControlsChanged);
+
+        // On mobile, force ON and make non-interactable
+        if (PlatformDetector.IsMobile)
+        {
+            onScreenControlsToggle.isOn = true;
+            onScreenControlsToggle.interactable = false;
+        }
+
+        Debug.Log($"[OptionsManager] On-Screen Controls toggle created. isOn={onScreenControlsToggle.isOn}, interactable={onScreenControlsToggle.interactable}");
+    }
+
+    private void OnOnScreenControlsChanged(bool isOn)
+    {
+        PlatformDetector.ShowOnScreenControls = isOn;
+        Debug.Log($"[OptionsManager] On-Screen Controls changed to {isOn}");
     }
 
     private void OnBackClicked()

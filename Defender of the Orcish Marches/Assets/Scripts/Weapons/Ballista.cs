@@ -126,7 +126,8 @@ public class Ballista : MonoBehaviour
         RotateTowardsMouse();
         if (!isNightmareMode) UpdateAimLines();
 
-        if (Mouse.current != null && Mouse.current.leftButton.isPressed && fireCooldown <= 0f)
+        var pointer = PointerInputManager.Instance;
+        if (pointer != null && pointer.IsPointerDown && !pointer.IsPointerOverUI && fireCooldown <= 0f)
         {
             Fire();
         }
@@ -179,8 +180,9 @@ public class Ballista : MonoBehaviour
 
     private void RotateFPS()
     {
-        if (Mouse.current == null) return;
-        Vector2 delta = Mouse.current.delta.ReadValue();
+        var pointer = PointerInputManager.Instance;
+        if (pointer == null) return;
+        Vector2 delta = pointer.PointerDelta;
         yaw += delta.x * 0.2f;
         // Read pitch from NightmareCamera so the ballista model visually tilts
         float pitch = NightmareCamera.Instance != null ? NightmareCamera.Instance.Pitch : 0f;
@@ -251,7 +253,7 @@ public class Ballista : MonoBehaviour
 
     private Vector3 GetMouseWorldPosition()
     {
-        Vector2 mousePos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+        Vector2 mousePos = PointerInputManager.Instance != null ? PointerInputManager.Instance.PointerPosition : Vector2.zero;
         Ray ray = mainCam.ScreenPointToRay(new Vector3(mousePos.x, mousePos.y, 0));
         Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
         if (groundPlane.Raycast(ray, out float distance))
@@ -283,5 +285,15 @@ public class Ballista : MonoBehaviour
     {
         hasBurstDamage = true;
         Debug.Log("[Ballista] Burst damage enabled.");
+    }
+
+    /// <summary>Restore stats from a save file.</summary>
+    public void RestoreStats(int savedDamage, float savedFireRate, bool savedDoubleShot, bool savedBurstDamage)
+    {
+        damage = savedDamage;
+        fireRate = savedFireRate;
+        hasDoubleShot = savedDoubleShot;
+        hasBurstDamage = savedBurstDamage;
+        Debug.Log($"[Ballista] Restored: damage={damage}, fireRate={fireRate}, doubleShot={hasDoubleShot}, burst={hasBurstDamage}");
     }
 }

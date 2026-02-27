@@ -34,11 +34,30 @@ public class GameHUD : MonoBehaviour
     private TextMeshProUGUI buildPanelCostText;
     private TextMeshProUGUI buildPanelGoldText;
 
+    // Reference to build hint TMP so we can update it dynamically
+    private TextMeshProUGUI buildHintTMP;
+
     private void Awake()
     {
         Instance = this;
         CreateBannerUI();
         CreateBuildPanel();
+
+        // Instantiate on-screen touch controls overlay if enabled
+        if (PlatformDetector.ShowOnScreenControls && MobileControlsOverlay.Instance == null)
+        {
+            var overlayObj = new GameObject("MobileControlsOverlay");
+            overlayObj.AddComponent<MobileControlsOverlay>();
+            Debug.Log("[GameHUD] MobileControlsOverlay instantiated.");
+        }
+
+        // On mobile, enlarge pause button touch target
+        if (PlatformDetector.ShowOnScreenControls && pauseButton != null)
+        {
+            var rect = pauseButton.GetComponent<RectTransform>();
+            if (rect != null && rect.sizeDelta.x < 80f)
+                rect.sizeDelta = new Vector2(80f, 80f);
+        }
     }
 
     private void Start()
@@ -285,6 +304,7 @@ public class GameHUD : MonoBehaviour
         hintTMP.color = new Color(0.7f, 0.7f, 0.7f);
         hintTMP.alignment = TextAlignmentOptions.Center;
         hintTMP.raycastTarget = false;
+        buildHintTMP = hintTMP;
 
         buildPanelRoot.SetActive(false);
         Debug.Log("[GameHUD] Build mode panel created (top-right).");
@@ -306,6 +326,16 @@ public class GameHUD : MonoBehaviour
         buildPanelCostText.text = string.Format("Wall cost: {0}g", wallCost);
         buildPanelGoldText.text = string.Format("Gold: {0}g", gold);
         buildPanelGoldText.color = canAfford ? new Color(0.4f, 1f, 0.4f) : new Color(1f, 0.4f, 0.4f);
+
+        // Update hint text based on active input method
+        if (buildHintTMP != null)
+        {
+            var pointer = PointerInputManager.Instance;
+            if (pointer != null && pointer.IsTouchActive)
+                buildHintTMP.text = "Drag to position, lift to place";
+            else
+                buildHintTMP.text = GetBuildHintText();
+        }
     }
 
     // --- Existing HUD ---

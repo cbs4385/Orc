@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.17.0
+
+### Mid-Game Save & Load System
+- Added 3-slot save system — save mid-run and resume later from the pause menu or main menu
+- Save & Quit button in pause menu opens a slot picker, saves full game state, and returns to main menu
+- Continue button on main menu lets you load any saved game (hidden when no saves exist)
+- Save slot picker shows metadata per slot: day number, difficulty, gold, and timestamp
+- Overwrite and delete confirmations prevent accidental data loss
+- Auto-save triggers when the app is backgrounded (OnApplicationPause) — prevents mobile OS kill data loss
+- Full game state captured: day/night phase, treasure, walls (with HP), ballistas (with upgrades), enemies (with HP and position), defenders, menials, loot on ground, upgrade purchase history, relics, synergies, daily event multipliers, active mutators, commander, and run statistics
+- Enemies and defenders re-acquire targets naturally after load via existing AI Update loops
+- Menials reset to Idle state on load — task assignments are too complex to serialize
+- Save files stored as JSON in Application.persistentDataPath/saves/ (no size limit, survives app updates)
+
+### Tutorial
+- Added Save & Load tutorial page explaining save slots, Save & Quit, Continue, auto-save, and what gets restored (25 pages total)
+- Added CONTINUE to the main menu features list on the hotkey summary page
+
 ## 0.16.2
 
 ### Bug Fixes

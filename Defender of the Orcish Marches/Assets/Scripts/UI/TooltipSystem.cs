@@ -10,6 +10,12 @@ public class TooltipSystem : MonoBehaviour
 
     private UnityEngine.Camera mainCam;
 
+    // Touch tap-and-hold tracking
+    private float pointerHoldTime;
+    private Vector2 pointerHoldStartPos;
+    private const float TOUCH_HOLD_THRESHOLD = 0.4f;
+    private const float TOUCH_MOVE_TOLERANCE = 20f; // pixels
+
     private void Start()
     {
         mainCam = UnityEngine.Camera.main;
@@ -18,17 +24,58 @@ public class TooltipSystem : MonoBehaviour
 
     private void Update()
     {
-        if (mainCam == null || Mouse.current == null) return;
+        if (mainCam == null) return;
 
-        Vector2 mousePos = Mouse.current.position.ReadValue();
-        Ray ray = mainCam.ScreenPointToRay(new Vector3(mousePos.x, mousePos.y, 0));
+        var pointer = PointerInputManager.Instance;
+        if (pointer == null) return;
+
+        Vector2 pointerPos = pointer.PointerPosition;
+
+        // Touch: show tooltips on tap-and-hold only
+        if (pointer.IsTouchActive)
+        {
+            if (pointer.WasPointerPressedThisFrame)
+            {
+                pointerHoldTime = 0f;
+                pointerHoldStartPos = pointerPos;
+            }
+
+            if (pointer.IsPointerDown)
+            {
+                float drift = Vector2.Distance(pointerPos, pointerHoldStartPos);
+                if (drift > TOUCH_MOVE_TOLERANCE)
+                {
+                    // Finger moved too far — reset hold and hide tooltip
+                    pointerHoldTime = 0f;
+                    HideTooltip();
+                    return;
+                }
+
+                pointerHoldTime += Time.deltaTime;
+                if (pointerHoldTime < TOUCH_HOLD_THRESHOLD)
+                {
+                    HideTooltip();
+                    return;
+                }
+            }
+            else
+            {
+                // Finger lifted — hide
+                pointerHoldTime = 0f;
+                HideTooltip();
+                return;
+            }
+        }
+
+        // Raycast from pointer position
+        Ray ray = mainCam.ScreenPointToRay(new Vector3(pointerPos.x, pointerPos.y, 0));
 
         if (Physics.Raycast(ray, out RaycastHit hit, 100f))
         {
             string tooltip = GetTooltipForObject(hit.collider.gameObject);
             if (!string.IsNullOrEmpty(tooltip))
             {
-                ShowTooltip(tooltip, mousePos);
+                ShowTooltip(tooltip, pointerPos);
                 return;
             }
         }

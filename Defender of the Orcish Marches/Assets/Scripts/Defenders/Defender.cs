@@ -920,6 +920,16 @@ public class Defender : MonoBehaviour
         Debug.Log($"[Defender] {(data != null ? data.defenderName : name)} recalled to courtyard");
     }
 
+    /// <summary>Current HP (for save system).</summary>
+    public int CurrentHP => currentHP;
+
+    /// <summary>Restore HP from a save file.</summary>
+    public void RestoreHP(int hp)
+    {
+        currentHP = hp > 0 ? hp : (data != null ? data.maxHP : 40);
+        Debug.Log($"[Defender] Restored HP={currentHP} for {(data != null ? data.defenderName : name)}");
+    }
+
     // --- Damage & Death ---
 
     public void TakeDamage(int damage)

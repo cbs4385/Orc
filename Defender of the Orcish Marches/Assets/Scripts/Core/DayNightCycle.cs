@@ -125,6 +125,17 @@ public class DayNightCycle : MonoBehaviour
         OnNewDay?.Invoke(DayNumber);
     }
 
+    /// <summary>Restore day/night state from a save file.</summary>
+    public void RestoreState(SaveSlotData data)
+    {
+        DayNumber = data.dayNumber;
+        CurrentPhase = (Phase)data.phase;
+        phaseTimer = data.phaseTimer;
+        isFirstDay = data.isFirstDay;
+        UpdateLighting();
+        Debug.Log($"[DayNightCycle] Restored: Day {DayNumber}, phase={CurrentPhase}, timer={phaseTimer:F1}, isFirstDay={isFirstDay}");
+    }
+
     private void UpdateLighting()
     {
         if (directionalLight == null) return;

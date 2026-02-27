@@ -72,10 +72,9 @@ public class WallPlacement : MonoBehaviour
         }
 
         if (!isPlacing) return;
-        if (Mouse.current == null) return;
 
         // Right-click or exit build mode key to exit
-        bool exitPressed = Mouse.current.rightButton.wasPressedThisFrame;
+        bool exitPressed = Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame;
         if (!exitPressed && InputBindingManager.Instance != null)
             exitPressed = InputBindingManager.Instance.WasPressedThisFrame(GameAction.ExitBuildMode);
         if (exitPressed)
@@ -141,11 +140,27 @@ public class WallPlacement : MonoBehaviour
         // Tint ghost red/green based on affordability
         UpdateGhostTint();
 
-        // Left-click to purchase and place wall
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        // Left-click/tap to purchase and place wall
+        var pointer = PointerInputManager.Instance;
+        if (pointer != null && !pointer.IsPointerOverUI)
         {
-            TryPurchaseAndPlace(new Vector3(finalPos.x, 1f, finalPos.z), finalRot, currentSnapScaleX);
+            // Touch: lift to place (prevents placing before ghost moves). Mouse: click to place.
+            bool placeTriggered = pointer.IsTouchActive
+                ? pointer.WasPointerReleasedThisFrame
+                : pointer.WasPointerPressedThisFrame;
+            if (placeTriggered)
+            {
+                TryPurchaseAndPlace(new Vector3(finalPos.x, 1f, finalPos.z), finalRot, currentSnapScaleX);
+            }
         }
+    }
+
+    /// <summary>Rotate the ghost wall by the given degrees. Called by MobileControlsOverlay.</summary>
+    public void RotateGhost(float degrees)
+    {
+        if (!isPlacing) return;
+        ghostRotationY += degrees;
+        Debug.Log($"[WallPlacement] Ghost rotated by {degrees}. New rotation={ghostRotationY}");
     }
 
     /// <summary>Called by BuildModeManager when entering build mode.</summary>
@@ -269,7 +284,7 @@ public class WallPlacement : MonoBehaviour
     private Vector3 GetMouseWorldPosition()
     {
         if (mainCam == null) mainCam = UnityEngine.Camera.main;
-        Vector2 mousePos = Mouse.current.position.ReadValue();
+        Vector2 mousePos = PointerInputManager.Instance != null ? PointerInputManager.Instance.PointerPosition : Vector2.zero;
         Ray ray = mainCam.ScreenPointToRay(new Vector3(mousePos.x, mousePos.y, 0));
         Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
         if (groundPlane.Raycast(ray, out float distance))

@@ -249,6 +249,17 @@ public class Wall : MonoBehaviour
         UpdateVisual();
     }
 
+    /// <summary>Restore exact HP values from a save file (bypasses scaling/construction).</summary>
+    public void RestoreHP(int hp, int savedMaxHP)
+    {
+        // maxHP was already set in Awake via commander/meta multipliers — trust that.
+        // But use saved HP directly.
+        CurrentHP = Mathf.Clamp(hp, 0, maxHP);
+        IsUnderConstruction = false;
+        UpdateVisual();
+        Debug.Log($"[Wall] Restored HP: {CurrentHP}/{maxHP} at {transform.position}");
+    }
+
     private void UpdateConstructionVisual()
     {
         if (renderers == null) return;

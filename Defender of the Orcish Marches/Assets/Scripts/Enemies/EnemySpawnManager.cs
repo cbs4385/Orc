@@ -495,6 +495,76 @@ public class EnemySpawnManager : MonoBehaviour
         Debug.Log("[EnemySpawnManager] === END SPAWN STATE ===");
     }
 
+    /// <summary>Look up an EnemyData asset by its enemyName string.</summary>
+    public EnemyData GetEnemyDataByName(string enemyName)
+    {
+        if (orcGruntData != null && orcGruntData.enemyName == enemyName) return orcGruntData;
+        if (bowOrcData != null && bowOrcData.enemyName == enemyName) return bowOrcData;
+        if (trollData != null && trollData.enemyName == enemyName) return trollData;
+        if (suicideGoblinData != null && suicideGoblinData.enemyName == enemyName) return suicideGoblinData;
+        if (goblinCannoneerData != null && goblinCannoneerData.enemyName == enemyName) return goblinCannoneerData;
+        if (orcWarBossData != null && orcWarBossData.enemyName == enemyName) return orcWarBossData;
+        Debug.LogWarning($"[EnemySpawnManager] No EnemyData found for '{enemyName}'");
+        return orcGruntData; // Fallback
+    }
+
+    /// <summary>Restore spawn state and spawn saved enemies from a save file.</summary>
+    public void RestoreState(SaveSlotData data)
+    {
+        // Restore spawn counters — set to 0 so no new spawns happen until next day
+        regularSpawnsRemaining = 0;
+        dayTotalEnemies = data.dayTotalEnemies;
+        dayKills = 0;
+        bossSpawnedThisDay = data.bossSpawnedThisDay;
+        clearedFiredThisDay = data.clearedFiredThisDay;
+        spawnTimer = 0f;
+        dawnGraceTimer = 0f;
+
+        // Restore remnant enemies
+        remnantEnemies.Clear();
+        if (data.remnantEnemyNames != null)
+        {
+            foreach (var name in data.remnantEnemyNames)
+            {
+                var enemyData = GetEnemyDataByName(name);
+                if (enemyData != null) remnantEnemies.Add(enemyData);
+            }
+        }
+
+        // Spawn saved enemies at their positions with saved HP
+        if (data.enemies != null)
+        {
+            foreach (var se in data.enemies)
+            {
+                if (enemyPrefab == null) continue;
+                var enemyData = GetEnemyDataByName(se.dataName);
+                if (enemyData == null) continue;
+
+                Vector3 pos = SaveManager.ToVector3(se.position);
+                Quaternion rot = SaveManager.ToQuaternion(se.rotation);
+                var go = UnityEngine.Object.Instantiate(enemyPrefab, pos, rot);
+                var enemy = go.GetComponent<Enemy>();
+                if (enemy != null)
+                {
+                    enemy.Initialize(enemyData);
+                    enemy.RestoreHP(se.currentHP, se.scaledDamage);
+                    activeEnemies.Add(enemy);
+                    Debug.Log($"[EnemySpawnManager] Restored enemy: {se.dataName} at {pos}, HP={se.currentHP}");
+                }
+            }
+        }
+
+        // Ensure DNC subscription for future day/night events
+        if (!dncSubscribed && DayNightCycle.Instance != null)
+        {
+            DayNightCycle.Instance.OnDayStarted += HandleDayStarted;
+            DayNightCycle.Instance.OnNightStarted += HandleNightStarted;
+            dncSubscribed = true;
+        }
+
+        Debug.Log($"[EnemySpawnManager] Restored: enemies={activeEnemies.Count}, remnants={remnantEnemies.Count}, dayTotal={dayTotalEnemies}");
+    }
+
     /// <summary>
     /// Returns a preview of the wave for the given day number.
     /// </summary>

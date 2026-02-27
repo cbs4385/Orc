@@ -266,6 +266,13 @@ public class InputBindingManager : MonoBehaviour
 
     public void ResetToDefaults()
     {
+        // Clear all saved binding keys so stale entries don't persist
+        foreach (GameAction action in Enum.GetValues(typeof(GameAction)))
+        {
+            PlayerPrefs.DeleteKey(PREFS_PREFIX + "KB_" + action);
+            PlayerPrefs.DeleteKey(PREFS_PREFIX + "GP_" + action);
+        }
+
         keyboardBindings = new Dictionary<GameAction, Key>(DefaultKeyboard);
         gamepadBindings = new Dictionary<GameAction, GamepadBinding>(DefaultGamepad);
         SaveBindings();
@@ -427,8 +434,6 @@ public class InputBindingManager : MonoBehaviour
             GameAction.Upgrade5,
             GameAction.Upgrade6,
             GameAction.Upgrade7,
-            GameAction.Upgrade8,
-            GameAction.Upgrade9,
         };
     }
 

@@ -68,7 +68,7 @@ public class InputBindingsUI : MonoBehaviour
     private void BuildColumnHeaders()
     {
         var rowObj = CreateRowObject("ColumnHeaders");
-        CreateCellText(rowObj.transform, "Action", 0.35f, TextAlignmentOptions.MidlineLeft, true);
+        CreateCellText(rowObj.transform, "Action", 0.4f, TextAlignmentOptions.MidlineLeft, true);
         CreateCellText(rowObj.transform, "Keyboard", 0.3f, TextAlignmentOptions.Center, true);
         CreateCellText(rowObj.transform, "Gamepad", 0.3f, TextAlignmentOptions.Center, true);
 
@@ -91,7 +91,7 @@ public class InputBindingsUI : MonoBehaviour
 
             // Action label
             CreateCellText(rowObj.transform, InputBindingManager.GetActionDisplayName(action),
-                0.35f, TextAlignmentOptions.MidlineLeft, false);
+                0.4f, TextAlignmentOptions.MidlineLeft, false);
 
             // Keyboard rebind button
             var kbBtn = CreateRebindButton(rowObj.transform, 0.3f, out var kbLabel);
@@ -210,6 +210,7 @@ public class InputBindingsUI : MonoBehaviour
         hlg.childAlignment = TextAnchor.MiddleCenter;
         hlg.childControlWidth = true;
         hlg.childControlHeight = true;
+        hlg.childForceExpandWidth = false;
         hlg.childForceExpandHeight = true;
         return rowObj;
     }
@@ -228,6 +229,7 @@ public class InputBindingsUI : MonoBehaviour
         tmp.raycastTarget = false;
         var le = obj.AddComponent<LayoutElement>();
         le.flexibleWidth = flexWidth;
+        le.preferredWidth = 0;
     }
 
     private Button CreateRebindButton(Transform parent, float flexWidth, out TextMeshProUGUI label)
@@ -238,6 +240,7 @@ public class InputBindingsUI : MonoBehaviour
         btnImg.color = new Color(0.25f, 0.2f, 0.15f, 0.9f);
         var le = btnObj.AddComponent<LayoutElement>();
         le.flexibleWidth = flexWidth;
+        le.preferredWidth = 0;
         var btn = btnObj.AddComponent<Button>();
         var colors = btn.colors;
         colors.normalColor = new Color(0.25f, 0.2f, 0.15f, 0.9f);
