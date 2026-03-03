@@ -1,4 +1,5 @@
 using UnityEngine;
+using static LocalizationManager;
 
 /// <summary>
 /// Manages commander class selection (per-run) and provides multiplier queries.
@@ -47,7 +48,7 @@ public static class CommanderManager
     public static string GetActiveDisplayName()
     {
         var def = ActiveCommander;
-        return def != null ? def.Value.name : "None";
+        return def != null ? CommanderDefs.GetLocalizedName(def.Value.id) : L("common.none");
     }
 
     // --- Multiplier queries used by gameplay systems ---

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static LocalizationManager;
 
 [Serializable]
 public struct MutatorDef
@@ -109,5 +110,15 @@ public static class MutatorDefs
             if (m.id == id) return m;
         }
         return null;
+    }
+
+    public static string GetLocalizedName(string id)
+    {
+        return L($"mutator.{id}.name");
+    }
+
+    public static string GetLocalizedDesc(string id)
+    {
+        return L($"mutator.{id}.desc");
     }
 }

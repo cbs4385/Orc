@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using static LocalizationManager;
 
 /// <summary>
 /// Builds and manages the two-column input binding section in the Options screen.
@@ -16,9 +17,17 @@ public class InputBindingsUI : MonoBehaviour
     private GameObject overlayRoot;
     private Button resetButton;
 
+    // Localized label references for language refresh
+    private TextMeshProUGUI headerLabel;
+    private TextMeshProUGUI colActionLabel;
+    private TextMeshProUGUI colKeyboardLabel;
+    private TextMeshProUGUI colGamepadLabel;
+    private TextMeshProUGUI resetButtonLabel;
+
     private struct BindingRow
     {
         public GameAction action;
+        public TextMeshProUGUI actionNameLabel;
         public Button keyboardButton;
         public TextMeshProUGUI keyboardLabel;
         public Button gamepadButton;
@@ -42,25 +51,27 @@ public class InputBindingsUI : MonoBehaviour
     {
         if (InputBindingManager.Instance != null)
             InputBindingManager.Instance.OnBindingsChanged += RefreshAllLabels;
+        LocalizationManager.OnLanguageChanged += RefreshLocalizedLabels;
     }
 
     private void OnDisable()
     {
         if (InputBindingManager.Instance != null)
             InputBindingManager.Instance.OnBindingsChanged -= RefreshAllLabels;
+        LocalizationManager.OnLanguageChanged -= RefreshLocalizedLabels;
     }
 
     private void BuildHeader()
     {
         var headerObj = new GameObject("InputHeader");
         headerObj.transform.SetParent(container, false);
-        var tmp = headerObj.AddComponent<TextMeshProUGUI>();
-        tmp.text = "INPUT BINDINGS";
-        tmp.fontSize = 36;
-        tmp.fontStyle = FontStyles.Bold;
-        tmp.color = new Color(0.8f, 0.7f, 0.5f);
-        tmp.alignment = TextAlignmentOptions.Center;
-        tmp.raycastTarget = false;
+        headerLabel = headerObj.AddComponent<TextMeshProUGUI>();
+        headerLabel.text = L("input.ui.title");
+        headerLabel.fontSize = 36;
+        headerLabel.fontStyle = FontStyles.Bold;
+        headerLabel.color = new Color(0.8f, 0.7f, 0.5f);
+        headerLabel.alignment = TextAlignmentOptions.Center;
+        headerLabel.raycastTarget = false;
         var le = headerObj.AddComponent<LayoutElement>();
         le.preferredHeight = 50;
     }
@@ -68,9 +79,9 @@ public class InputBindingsUI : MonoBehaviour
     private void BuildColumnHeaders()
     {
         var rowObj = CreateRowObject("ColumnHeaders");
-        CreateCellText(rowObj.transform, "Action", 0.4f, TextAlignmentOptions.MidlineLeft, true);
-        CreateCellText(rowObj.transform, "Keyboard", 0.3f, TextAlignmentOptions.Center, true);
-        CreateCellText(rowObj.transform, "Gamepad", 0.3f, TextAlignmentOptions.Center, true);
+        colActionLabel = CreateCellText(rowObj.transform, L("input.ui.action"), 0.4f, TextAlignmentOptions.MidlineLeft, true);
+        colKeyboardLabel = CreateCellText(rowObj.transform, L("input.ui.keyboard"), 0.3f, TextAlignmentOptions.Center, true);
+        colGamepadLabel = CreateCellText(rowObj.transform, L("input.ui.gamepad"), 0.3f, TextAlignmentOptions.Center, true);
 
         var divider = new GameObject("Divider");
         divider.transform.SetParent(container, false);
@@ -90,7 +101,7 @@ public class InputBindingsUI : MonoBehaviour
             var rowObj = CreateRowObject($"Row_{action}");
 
             // Action label
-            CreateCellText(rowObj.transform, InputBindingManager.GetActionDisplayName(action),
+            row.actionNameLabel = CreateCellText(rowObj.transform, GetLocalizedActionName(action),
                 0.4f, TextAlignmentOptions.MidlineLeft, false);
 
             // Keyboard rebind button
@@ -146,12 +157,12 @@ public class InputBindingsUI : MonoBehaviour
 
         var txtObj = new GameObject("Text");
         txtObj.transform.SetParent(btnObj.transform, false);
-        var tmp = txtObj.AddComponent<TextMeshProUGUI>();
-        tmp.text = "RESET TO DEFAULTS";
-        tmp.fontSize = 20;
-        tmp.fontStyle = FontStyles.Bold;
-        tmp.color = Color.white;
-        tmp.alignment = TextAlignmentOptions.Center;
+        resetButtonLabel = txtObj.AddComponent<TextMeshProUGUI>();
+        resetButtonLabel.text = L("input.ui.reset");
+        resetButtonLabel.fontSize = 20;
+        resetButtonLabel.fontStyle = FontStyles.Bold;
+        resetButtonLabel.color = Color.white;
+        resetButtonLabel.alignment = TextAlignmentOptions.Center;
         var txtRect = txtObj.GetComponent<RectTransform>();
         txtRect.anchorMin = Vector2.zero;
         txtRect.anchorMax = Vector2.one;
@@ -183,7 +194,7 @@ public class InputBindingsUI : MonoBehaviour
         var textObj = new GameObject("OverlayText");
         textObj.transform.SetParent(overlayRoot.transform, false);
         listeningOverlay = textObj.AddComponent<TextMeshProUGUI>();
-        listeningOverlay.text = "Press a key to bind...\n\n<size=20>Press Escape to cancel</size>";
+        listeningOverlay.text = L("input.ui.listening_key");
         listeningOverlay.fontSize = 36;
         listeningOverlay.fontStyle = FontStyles.Bold;
         listeningOverlay.color = new Color(1f, 0.85f, 0.2f);
@@ -215,7 +226,7 @@ public class InputBindingsUI : MonoBehaviour
         return rowObj;
     }
 
-    private void CreateCellText(Transform parent, string text, float flexWidth,
+    private TextMeshProUGUI CreateCellText(Transform parent, string text, float flexWidth,
         TextAlignmentOptions align, bool isHeader)
     {
         var obj = new GameObject("Cell");
@@ -230,6 +241,7 @@ public class InputBindingsUI : MonoBehaviour
         var le = obj.AddComponent<LayoutElement>();
         le.flexibleWidth = flexWidth;
         le.preferredWidth = 0;
+        return tmp;
     }
 
     private Button CreateRebindButton(Transform parent, float flexWidth, out TextMeshProUGUI label)
@@ -251,7 +263,7 @@ public class InputBindingsUI : MonoBehaviour
         var textObj = new GameObject("Text");
         textObj.transform.SetParent(btnObj.transform, false);
         label = textObj.AddComponent<TextMeshProUGUI>();
-        label.text = "---";
+        label.text = L("input.ui.unset");
         label.fontSize = 20;
         label.color = new Color(1f, 0.9f, 0.6f);
         label.alignment = TextAlignmentOptions.Center;
@@ -270,8 +282,9 @@ public class InputBindingsUI : MonoBehaviour
     {
         if (InputBindingManager.Instance == null) return;
 
-        string deviceName = forGamepad ? "gamepad button" : "key";
-        listeningOverlay.text = $"Press a {deviceName} for:\n<b>{InputBindingManager.GetActionDisplayName(action)}</b>\n\n<size=20>Press Escape to cancel</size>";
+        listeningOverlay.text = forGamepad
+            ? L("input.ui.listening_gamepad")
+            : L("input.ui.listening_key");
         overlayRoot.SetActive(true);
 
         InputBindingManager.Instance.StartRebind(action, forGamepad, (success) =>
@@ -279,6 +292,50 @@ public class InputBindingsUI : MonoBehaviour
             overlayRoot.SetActive(false);
             if (success) RefreshAllLabels();
         });
+    }
+
+    private static string GetLocalizedActionName(GameAction action)
+    {
+        switch (action)
+        {
+            case GameAction.Pause: return L("input.action.pause");
+            case GameAction.OpenMenu: return L("input.action.open_menu");
+            case GameAction.ToggleBuildMode: return L("input.action.toggle_build");
+            case GameAction.RotateWallLeft: return L("input.action.rotate_left");
+            case GameAction.RotateWallRight: return L("input.action.rotate_right");
+            case GameAction.ExitBuildMode: return L("input.action.exit_build");
+            case GameAction.ToggleUpgrades: return L("input.action.toggle_upgrades");
+            case GameAction.Recall: return L("input.action.recall");
+            case GameAction.SwitchBallista: return L("input.action.switch_ballista");
+            case GameAction.Upgrade1: return L("input.action.upgrade_slot", 1);
+            case GameAction.Upgrade2: return L("input.action.upgrade_slot", 2);
+            case GameAction.Upgrade3: return L("input.action.upgrade_slot", 3);
+            case GameAction.Upgrade4: return L("input.action.upgrade_slot", 4);
+            case GameAction.Upgrade5: return L("input.action.upgrade_slot", 5);
+            case GameAction.Upgrade6: return L("input.action.upgrade_slot", 6);
+            case GameAction.Upgrade7: return L("input.action.upgrade_slot", 7);
+            case GameAction.Upgrade8: return L("input.action.upgrade_slot", 8);
+            case GameAction.Upgrade9: return L("input.action.upgrade_slot", 9);
+            default: return action.ToString();
+        }
+    }
+
+    private void RefreshLocalizedLabels()
+    {
+        if (headerLabel != null) headerLabel.text = L("input.ui.title");
+        if (colActionLabel != null) colActionLabel.text = L("input.ui.action");
+        if (colKeyboardLabel != null) colKeyboardLabel.text = L("input.ui.keyboard");
+        if (colGamepadLabel != null) colGamepadLabel.text = L("input.ui.gamepad");
+        if (resetButtonLabel != null) resetButtonLabel.text = L("input.ui.reset");
+
+        foreach (var row in rows)
+        {
+            if (row.actionNameLabel != null)
+                row.actionNameLabel.text = GetLocalizedActionName(row.action);
+        }
+
+        // Also refresh binding display names (key/button names are localized too)
+        RefreshAllLabels();
     }
 
     private void OnResetClicked()

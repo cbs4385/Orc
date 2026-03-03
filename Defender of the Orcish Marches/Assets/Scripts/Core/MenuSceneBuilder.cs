@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -146,7 +147,7 @@ public class MenuSceneBuilder : MonoBehaviour
         var titleObj = new GameObject("TitleText");
         titleObj.transform.SetParent(canvasObj.transform, false);
         var titleTmp = titleObj.AddComponent<TextMeshProUGUI>();
-        titleTmp.text = "DEFENDER OF THE\nORCISH MARCHES";
+        titleTmp.text = L("menu.title");
         titleTmp.fontSize = 72;
         titleTmp.fontStyle = FontStyles.Bold;
         titleTmp.color = new Color(0.9f, 0.75f, 0.3f); // gold
@@ -175,23 +176,23 @@ public class MenuSceneBuilder : MonoBehaviour
         vlg.childForceExpandHeight = false;
 
         // Main buttons on left
-        var playBtn = CreateMenuButton("PlayButton", "PLAY", panelObj.transform);
-        var continueBtn = CreateMenuButton("ContinueButton", "CONTINUE", panelObj.transform);
+        var playBtn = CreateMenuButton("PlayButton", L("menu.play"), panelObj.transform);
+        var continueBtn = CreateMenuButton("ContinueButton", L("menu.continue"), panelObj.transform);
         CreateButtonSpacer(panelObj.transform); // half-button gap after PLAY/CONTINUE
-        var tutorialBtn = CreateMenuButton("TutorialButton", "TUTORIAL", panelObj.transform);
-        var optionsBtn = CreateMenuButton("OptionsButton", "OPTIONS", panelObj.transform);
-        var statsBtn = CreateMenuButton("StatsButton", "STATISTICS", panelObj.transform);
-        var mutatorsBtn = CreateMenuButton("MutatorsButton", "MUTATORS", panelObj.transform);
-        var achievementsBtn = CreateMenuButton("AchievementsButton", "ACHIEVEMENTS", panelObj.transform);
-        var legacyBtn = CreateMenuButton("LegacyButton", "LEGACY", panelObj.transform);
-        var commanderBtn = CreateMenuButton("CommanderButton", "COMMANDER", panelObj.transform);
-        var metaProgressionBtn = CreateMenuButton("MetaProgressionButton", "UPGRADES", panelObj.transform);
-        var bestiaryBtn = CreateMenuButton("BestiaryButton", "BESTIARY", panelObj.transform);
+        var tutorialBtn = CreateMenuButton("TutorialButton", L("menu.tutorial"), panelObj.transform);
+        var optionsBtn = CreateMenuButton("OptionsButton", L("menu.options"), panelObj.transform);
+        var statsBtn = CreateMenuButton("StatsButton", L("menu.statistics"), panelObj.transform);
+        var mutatorsBtn = CreateMenuButton("MutatorsButton", L("menu.mutators"), panelObj.transform);
+        var achievementsBtn = CreateMenuButton("AchievementsButton", L("menu.achievements"), panelObj.transform);
+        var legacyBtn = CreateMenuButton("LegacyButton", L("menu.legacy"), panelObj.transform);
+        var commanderBtn = CreateMenuButton("CommanderButton", L("menu.commander"), panelObj.transform);
+        var metaProgressionBtn = CreateMenuButton("MetaProgressionButton", L("menu.upgrades"), panelObj.transform);
+        var bestiaryBtn = CreateMenuButton("BestiaryButton", L("menu.bestiary"), panelObj.transform);
         CreateButtonSpacer(panelObj.transform); // half-button gap before EXIT
-        var exitBtn = CreateMenuButton("ExitButton", "EXIT", panelObj.transform);
+        var exitBtn = CreateMenuButton("ExitButton", L("menu.exit"), panelObj.transform);
 
         // Bug report button (top-right corner)
-        var bugReportBtn = CreateMenuButton("BugReportButton", "REPORT BUG", canvasObj.transform);
+        var bugReportBtn = CreateMenuButton("BugReportButton", L("menu.report_bug"), canvasObj.transform);
         var bugRect = bugReportBtn.GetComponent<RectTransform>();
         bugRect.anchorMin = new Vector2(1f, 1f);
         bugRect.anchorMax = new Vector2(1f, 1f);
@@ -213,7 +214,7 @@ public class MenuSceneBuilder : MonoBehaviour
         var diffHeaderObj = new GameObject("DifficultyHeader");
         diffHeaderObj.transform.SetParent(diffPanel.transform, false);
         var diffHeaderTmp = diffHeaderObj.AddComponent<TextMeshProUGUI>();
-        diffHeaderTmp.text = "DIFFICULTY";
+        diffHeaderTmp.text = L("menu.difficulty");
         diffHeaderTmp.fontSize = 26;
         diffHeaderTmp.fontStyle = FontStyles.Bold;
         diffHeaderTmp.color = new Color(0.9f, 0.75f, 0.3f);
@@ -296,7 +297,7 @@ public class MenuSceneBuilder : MonoBehaviour
         diffSlider.value = 1; // Normal
 
         // Difficulty level labels to the left of the slider with drop shadows
-        string[] diffNames = { "Easy", "Normal", "Hard", "Nightmare" };
+        string[] diffNames = { L("difficulty.easy"), L("difficulty.normal"), L("difficulty.hard"), L("difficulty.nightmare") };
         float sliderBottom = 0.05f;
         float sliderTop = 0.90f;
         float sliderRange = sliderTop - sliderBottom;
@@ -328,7 +329,7 @@ public class MenuSceneBuilder : MonoBehaviour
         var diffValObj = new GameObject("DifficultyValueText");
         diffValObj.transform.SetParent(diffPanel.transform, false);
         var diffValTmp = diffValObj.AddComponent<TextMeshProUGUI>();
-        diffValTmp.text = "Normal";
+        diffValTmp.text = L("difficulty.normal");
         diffValTmp.fontSize = 24;
         diffValTmp.fontStyle = FontStyles.Bold;
         diffValTmp.color = new Color(0.9f, 0.75f, 0.3f);
@@ -441,7 +442,7 @@ public class MenuSceneBuilder : MonoBehaviour
         var titleObj = new GameObject("TitleText");
         titleObj.transform.SetParent(canvasObj.transform, false);
         var titleTmp = titleObj.AddComponent<TextMeshProUGUI>();
-        titleTmp.text = "OPTIONS";
+        titleTmp.text = L("menu.options");
         titleTmp.fontSize = 56;
         titleTmp.fontStyle = FontStyles.Bold;
         titleTmp.color = new Color(0.9f, 0.75f, 0.3f);
@@ -453,7 +454,7 @@ public class MenuSceneBuilder : MonoBehaviour
         titleRect.anchoredPosition = Vector2.zero;
 
         // --- Audio section ---
-        var audioHeader = CreateLabel("AudioHeader", "AUDIO", canvasObj.transform,
+        var audioHeader = CreateLabel("AudioHeader", L("options.audio"), canvasObj.transform,
             new Vector2(0.5f, 0.72f), 36, new Color(0.8f, 0.7f, 0.5f));
 
         // SFX Volume row
@@ -475,7 +476,7 @@ public class MenuSceneBuilder : MonoBehaviour
         var sfxLabelObj = new GameObject("SfxLabel");
         sfxLabelObj.transform.SetParent(sfxRow.transform, false);
         var sfxLabelTmp = sfxLabelObj.AddComponent<TextMeshProUGUI>();
-        sfxLabelTmp.text = "SFX Volume";
+        sfxLabelTmp.text = L("options.sfx_volume");
         sfxLabelTmp.fontSize = 28;
         sfxLabelTmp.color = Color.white;
         sfxLabelTmp.alignment = TextAlignmentOptions.MidlineRight;
@@ -517,7 +518,7 @@ public class MenuSceneBuilder : MonoBehaviour
         var musicLabelObj = new GameObject("MusicLabel");
         musicLabelObj.transform.SetParent(musicRow.transform, false);
         var musicLabelTmp = musicLabelObj.AddComponent<TextMeshProUGUI>();
-        musicLabelTmp.text = "Music Volume";
+        musicLabelTmp.text = L("options.music_volume");
         musicLabelTmp.fontSize = 28;
         musicLabelTmp.color = Color.white;
         musicLabelTmp.alignment = TextAlignmentOptions.MidlineRight;
@@ -540,7 +541,7 @@ public class MenuSceneBuilder : MonoBehaviour
         musicValLE.preferredWidth = 80;
 
         // --- Video section ---
-        var videoHeader = CreateLabel("VideoHeader", "VIDEO", canvasObj.transform,
+        var videoHeader = CreateLabel("VideoHeader", L("options.video"), canvasObj.transform,
             new Vector2(0.5f, 0.38f), 36, new Color(0.8f, 0.7f, 0.5f));
 
         // Fullscreen toggle row
@@ -561,7 +562,7 @@ public class MenuSceneBuilder : MonoBehaviour
         var fsLabelObj = new GameObject("FullscreenLabel");
         fsLabelObj.transform.SetParent(fsRow.transform, false);
         var fsLabelTmp = fsLabelObj.AddComponent<TextMeshProUGUI>();
-        fsLabelTmp.text = "Fullscreen";
+        fsLabelTmp.text = L("options.fullscreen");
         fsLabelTmp.fontSize = 28;
         fsLabelTmp.color = Color.white;
         fsLabelTmp.alignment = TextAlignmentOptions.MidlineRight;
@@ -571,7 +572,7 @@ public class MenuSceneBuilder : MonoBehaviour
         var fsToggleObj = CreateToggle("FullscreenToggle", fsRow.transform);
 
         // --- Back button ---
-        var backBtnObj = CreateMenuButton("BackButton", "BACK", canvasObj.transform);
+        var backBtnObj = CreateMenuButton("BackButton", L("menu.back"), canvasObj.transform);
         var backRect = backBtnObj.GetComponent<RectTransform>();
         backRect.anchorMin = new Vector2(0.5f, 0.1f);
         backRect.anchorMax = new Vector2(0.5f, 0.1f);

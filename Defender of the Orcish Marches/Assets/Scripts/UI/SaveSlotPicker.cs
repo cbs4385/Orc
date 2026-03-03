@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 /// <summary>
 /// Modal overlay showing 3 save slots. Used by both main menu (Load) and pause menu (Save).
@@ -79,7 +80,7 @@ public class SaveSlotPicker : MonoBehaviour
 
         // Title
         var titleObj = CreateText("Title",
-            currentMode == Mode.Save ? "SAVE GAME" : "LOAD GAME",
+            currentMode == Mode.Save ? L("save.title_save") : L("save.title_load"),
             container.transform, 36, new Color(0.9f, 0.75f, 0.3f));
         var titleRect = titleObj.GetComponent<RectTransform>();
         titleRect.anchorMin = new Vector2(0f, 0.85f);
@@ -94,7 +95,7 @@ public class SaveSlotPicker : MonoBehaviour
         }
 
         // Cancel button
-        var cancelBtn = CreateButton("Cancel", "CANCEL", container.transform, () =>
+        var cancelBtn = CreateButton("Cancel", L("save.cancel"), container.transform, () =>
         {
             Hide();
         });
@@ -129,12 +130,12 @@ public class SaveSlotPicker : MonoBehaviour
         string infoText;
         if (hasData)
         {
-            string diffName = ((Difficulty)meta.metaDifficulty).ToString();
-            infoText = $"Slot {slotIndex + 1}: Day {meta.metaDayNumber} - {diffName} - {meta.metaTreasure}g\n{meta.timestamp}";
+            string diffName = L($"difficulty.{((Difficulty)meta.metaDifficulty).ToString().ToLower()}");
+            infoText = L("save.slot_info", slotIndex + 1, meta.metaDayNumber, diffName, meta.metaTreasure, meta.timestamp);
         }
         else
         {
-            infoText = $"Slot {slotIndex + 1}: Empty";
+            infoText = L("save.slot_empty", slotIndex + 1);
         }
 
         var infoObj = CreateText($"Info_{slotIndex}", infoText, row.transform, 22, Color.white);
@@ -148,7 +149,7 @@ public class SaveSlotPicker : MonoBehaviour
 
         // Action button (Save/Load)
         int capturedSlot = slotIndex;
-        string actionLabel = currentMode == Mode.Save ? "SAVE" : "LOAD";
+        string actionLabel = currentMode == Mode.Save ? L("save.save") : L("save.load");
         bool actionEnabled = currentMode == Mode.Save || hasData;
 
         var actionBtn = CreateButton($"Action_{slotIndex}", actionLabel, row.transform, () =>
@@ -171,7 +172,7 @@ public class SaveSlotPicker : MonoBehaviour
         // Delete button (only if slot has data)
         if (hasData)
         {
-            var deleteBtn = CreateButton($"Delete_{slotIndex}", "DEL", row.transform, () =>
+            var deleteBtn = CreateButton($"Delete_{slotIndex}", L("save.delete"), row.transform, () =>
             {
                 OnDeleteSlot(capturedSlot);
             });
@@ -209,7 +210,7 @@ public class SaveSlotPicker : MonoBehaviour
 
     private void ShowConfirmOverwrite(int slot)
     {
-        ShowConfirmDialog($"Overwrite Slot {slot + 1}?", () =>
+        ShowConfirmDialog(L("save.confirm_overwrite", slot + 1), () =>
         {
             Debug.Log($"[SaveSlotPicker] Overwriting slot {slot}.");
             DismissConfirm();
@@ -220,7 +221,7 @@ public class SaveSlotPicker : MonoBehaviour
 
     private void ShowConfirmDelete(int slot)
     {
-        ShowConfirmDialog($"Delete Slot {slot + 1}?", () =>
+        ShowConfirmDialog(L("save.confirm_delete", slot + 1), () =>
         {
             SaveManager.DeleteSlot(slot);
             Debug.Log($"[SaveSlotPicker] Deleted slot {slot}.");
@@ -266,7 +267,7 @@ public class SaveSlotPicker : MonoBehaviour
         msgRect.offsetMax = Vector2.zero;
 
         // Yes button
-        var yesBtn = CreateButton("ConfirmYes", "YES", dialogBox.transform, onConfirm);
+        var yesBtn = CreateButton("ConfirmYes", L("save.yes"), dialogBox.transform, onConfirm);
         var yesRect = yesBtn.GetComponent<RectTransform>();
         yesRect.anchorMin = new Vector2(0.1f, 0.08f);
         yesRect.anchorMax = new Vector2(0.45f, 0.42f);
@@ -274,7 +275,7 @@ public class SaveSlotPicker : MonoBehaviour
         yesRect.offsetMax = Vector2.zero;
 
         // No button
-        var noBtn = CreateButton("ConfirmNo", "NO", dialogBox.transform, DismissConfirm);
+        var noBtn = CreateButton("ConfirmNo", L("save.no"), dialogBox.transform, DismissConfirm);
         var noRect = noBtn.GetComponent<RectTransform>();
         noRect.anchorMin = new Vector2(0.55f, 0.08f);
         noRect.anchorMax = new Vector2(0.9f, 0.42f);

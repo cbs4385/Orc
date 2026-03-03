@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 public class DayNightWheel : MonoBehaviour
 {
@@ -41,7 +42,7 @@ public class DayNightWheel : MonoBehaviour
     private void UpdateDayText()
     {
         if (dayNumberText == null) return;
-        dayNumberText.text = "Day " + DayNightCycle.Instance.DayNumber;
+        dayNumberText.text = L("hud.day", DayNightCycle.Instance.DayNumber);
     }
 
     private void GenerateWheelTexture()

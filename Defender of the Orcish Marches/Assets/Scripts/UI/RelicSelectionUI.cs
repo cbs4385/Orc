@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 /// <summary>
 /// UI panel shown during night phase for relic/boon selection.
@@ -79,7 +80,7 @@ public class RelicSelectionUI : MonoBehaviour
         panelRoot.SetActive(true);
 
         if (titleText != null)
-            titleText.text = "CHOOSE A RELIC";
+            titleText.text = L("relic.ui.title");
 
         // Show choices with synergy hints
         SetupChoice(choices, 0, choice1Button, choice1Name, choice1Desc);
@@ -94,10 +95,10 @@ public class RelicSelectionUI : MonoBehaviour
         {
             int count = RelicManager.Instance.CollectedCount;
             string synText = RelicManager.Instance.ActiveSynergyCount > 0
-                ? $" | Synergies: {RelicManager.Instance.GetActiveSynergiesDisplay()}"
+                ? L("relic.ui.synergies_count", RelicManager.Instance.GetActiveSynergiesDisplay())
                 : "";
             collectedText.text = count > 0
-                ? $"Relics: {RelicManager.Instance.GetCollectedNamesDisplay()}{synText}"
+                ? L("relic.ui.relics_count", RelicManager.Instance.GetCollectedNamesDisplay()) + synText
                 : "";
         }
 
@@ -109,10 +110,10 @@ public class RelicSelectionUI : MonoBehaviour
         if (index < choices.Length)
         {
             if (button != null) button.gameObject.SetActive(true);
-            if (nameText != null) nameText.text = choices[index].name;
+            if (nameText != null) nameText.text = RelicDefs.GetLocalizedName(choices[index].id);
             if (descText != null)
             {
-                string desc = choices[index].description;
+                string desc = RelicDefs.GetLocalizedDesc(choices[index].id);
 
                 // Check for synergy hints — show when picking this relic would complete a synergy
                 if (RelicManager.Instance != null)
@@ -120,9 +121,9 @@ public class RelicSelectionUI : MonoBehaviour
                     var pending = RelicManager.Instance.GetPendingSynergiesFor(choices[index].id);
                     if (pending.Count > 0)
                     {
-                        desc += $"\n<color=#FFD700>>>> Synergy: {pending[0].name}</color>";
+                        desc += $"<color=#FFD700>{L("relic.ui.synergy_hint", RelicSynergyDefs.GetLocalizedName(pending[0].id))}</color>";
                         if (pending.Count > 1)
-                            desc += $" <color=#FFD700>(+{pending.Count - 1} more)</color>";
+                            desc += $" <color=#FFD700>{L("relic.ui.synergy_more", pending.Count - 1)}</color>";
                     }
                 }
 
@@ -173,10 +174,10 @@ public class RelicSelectionUI : MonoBehaviour
 
         // Build title with synergy names
         var titleSb = new System.Text.StringBuilder();
-        titleSb.Append("<color=#FFD700>SYNERGY UNLOCKED!</color>");
+        titleSb.AppendFormat("<color=#FFD700>{0}</color>", L("relic.ui.synergy_unlocked"));
         foreach (var syn in synergies)
         {
-            titleSb.AppendFormat("\n<size=80%>{0}</size>", syn.name);
+            titleSb.AppendFormat("\n<size=80%>{0}</size>", RelicSynergyDefs.GetLocalizedName(syn.id));
         }
         if (titleText != null)
             titleText.text = titleSb.ToString();
@@ -186,7 +187,7 @@ public class RelicSelectionUI : MonoBehaviour
         foreach (var syn in synergies)
         {
             if (descSb.Length > 0) descSb.Append("\n");
-            descSb.AppendFormat("<color=#CCCCCC>{0}</color>", syn.description);
+            descSb.AppendFormat("<color=#CCCCCC>{0}</color>", RelicSynergyDefs.GetLocalizedDesc(syn.id));
         }
         if (collectedText != null)
             collectedText.text = descSb.ToString();

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using static LocalizationManager;
 
 /// <summary>
 /// Displays milestone completion notifications on the game over screen.
@@ -31,21 +32,23 @@ public class MilestoneNotificationUI : MonoBehaviour
         panelRoot.SetActive(true);
         var sb = new System.Text.StringBuilder();
 
-        sb.AppendLine($"<color=#FFD700>+{trophiesEarned} War Trophies earned!</color>");
+        sb.AppendLine($"<color=#FFD700>{L("milestone.ui.trophies_earned", trophiesEarned)}</color>");
 
         if (milestones.Count > 0)
         {
             sb.AppendLine();
-            sb.AppendLine("<b>Milestones Completed:</b>");
+            sb.AppendLine($"<b>{L("milestone.ui.completed_header")}</b>");
             foreach (var m in milestones)
             {
-                sb.AppendLine($"  <color=#00FF00>{m.name}</color> — {m.description} (+{m.trophyReward} Trophies)");
+                string mName = MilestoneManager.GetLocalizedName(m.id);
+                string mDesc = MilestoneManager.GetLocalizedDesc(m.id);
+                sb.AppendLine(L("milestone.ui.entry", mName, mDesc, m.trophyReward));
             }
         }
 
         sb.AppendLine();
-        sb.AppendLine($"Total War Trophies: {MetaProgressionManager.WarTrophies}");
-        sb.AppendLine($"Milestones: {MilestoneManager.CompletedCount}/{MilestoneManager.TotalCount}");
+        sb.AppendLine(L("milestone.ui.total_trophies", MetaProgressionManager.WarTrophies));
+        sb.AppendLine(L("milestone.ui.progress", MilestoneManager.CompletedCount, MilestoneManager.TotalCount));
 
         milestoneText.text = sb.ToString();
         Debug.Log($"[MilestoneNotificationUI] Displayed {milestones.Count} new milestones, {trophiesEarned} trophies earned.");

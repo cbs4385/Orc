@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using static LocalizationManager;
 
 [Serializable]
 public struct RelicSynergyDef
@@ -205,5 +206,15 @@ public static class RelicSynergyDefs
             if (s.id == id) return s;
         }
         return null;
+    }
+
+    public static string GetLocalizedName(string id)
+    {
+        return L($"synergy.{id}.name");
+    }
+
+    public static string GetLocalizedDesc(string id)
+    {
+        return L($"synergy.{id}.desc");
     }
 }

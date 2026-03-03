@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 /// <summary>
 /// Code-generated commander selection panel for the main menu.
@@ -46,15 +47,15 @@ public class CommanderSelectionUI : MonoBehaviour
             Destroy(contentContainer.GetChild(i).gameObject);
 
         if (selectedText != null)
-            selectedText.text = $"Active Commander: {CommanderManager.GetActiveDisplayName()}";
+            selectedText.text = L("commander.ui.active", CommanderManager.GetActiveDisplayName());
 
         // "None" option
-        CreateCommanderRow(CommanderDefs.NONE_ID, "None", "No commander selected. Play with default settings.");
+        CreateCommanderRow(CommanderDefs.NONE_ID, L("commander.none.name"), L("commander.none.desc"));
 
         // Commander classes
         foreach (var def in CommanderDefs.All)
         {
-            CreateCommanderRow(def.id, def.name, def.description);
+            CreateCommanderRow(def.id, CommanderDefs.GetLocalizedName(def.id), CommanderDefs.GetLocalizedDesc(def.id));
         }
 
         if (scrollRect != null) scrollRect.verticalNormalizedPosition = 1f;
@@ -134,7 +135,8 @@ public class CommanderSelectionUI : MonoBehaviour
         btnImg.color = isActive ? new Color(0.4f, 0.55f, 0.3f, 0.9f) : new Color(0.3f, 0.2f, 0.1f, 0.9f);
         var btn = btnObj.AddComponent<Button>();
         var btnLe = btnObj.AddComponent<LayoutElement>();
-        btnLe.preferredWidth = 100;
+        btnLe.preferredWidth = 120;
+        btnLe.minWidth = 120;
         btnLe.preferredHeight = 40;
 
         var btnColors = btn.colors;
@@ -147,7 +149,7 @@ public class CommanderSelectionUI : MonoBehaviour
         var btnTextObj = new GameObject("Text");
         btnTextObj.transform.SetParent(btnObj.transform, false);
         var btnTmp = btnTextObj.AddComponent<TextMeshProUGUI>();
-        btnTmp.text = isActive ? "ACTIVE" : "SELECT";
+        btnTmp.text = isActive ? L("commander.ui.active_btn") : L("commander.ui.select");
         btnTmp.fontSize = 18;
         btnTmp.fontStyle = FontStyles.Bold;
         btnTmp.color = isActive ? new Color(0.9f, 1f, 0.9f) : goldColor;
@@ -218,7 +220,7 @@ public class CommanderSelectionUI : MonoBehaviour
         var titleObj = new GameObject("Title");
         titleObj.transform.SetParent(dialogPanel.transform, false);
         var titleTmp = titleObj.AddComponent<TextMeshProUGUI>();
-        titleTmp.text = "COMMANDER";
+        titleTmp.text = L("commander.ui.title");
         titleTmp.fontSize = 36;
         titleTmp.fontStyle = FontStyles.Bold;
         titleTmp.color = goldColor;
@@ -234,7 +236,7 @@ public class CommanderSelectionUI : MonoBehaviour
         var selectedObj = new GameObject("SelectedText");
         selectedObj.transform.SetParent(dialogPanel.transform, false);
         selectedText = selectedObj.AddComponent<TextMeshProUGUI>();
-        selectedText.text = $"Active Commander: {CommanderManager.GetActiveDisplayName()}";
+        selectedText.text = L("commander.ui.active", CommanderManager.GetActiveDisplayName());
         selectedText.fontSize = 20;
         selectedText.color = textColor;
         selectedText.alignment = TextAlignmentOptions.Center;
@@ -309,7 +311,7 @@ public class CommanderSelectionUI : MonoBehaviour
         var closeTxtObj = new GameObject("Text");
         closeTxtObj.transform.SetParent(closeObj.transform, false);
         var closeTmp = closeTxtObj.AddComponent<TextMeshProUGUI>();
-        closeTmp.text = "CLOSE";
+        closeTmp.text = L("commander.ui.close");
         closeTmp.fontSize = 26;
         closeTmp.fontStyle = FontStyles.Bold;
         closeTmp.color = goldColor;

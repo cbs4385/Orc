@@ -7,6 +7,21 @@ public enum Difficulty { Easy, Normal, Hard, Nightmare }
 /// </summary>
 public static class GameSettings
 {
+    // --- Language ---
+    private const string KEY_LANGUAGE = "Language";
+    private const int DEFAULT_LANGUAGE = (int)LocalizationManager.Language.English;
+
+    public static LocalizationManager.Language CurrentLanguage
+    {
+        get => (LocalizationManager.Language)PlayerPrefs.GetInt(KEY_LANGUAGE, DEFAULT_LANGUAGE);
+        set
+        {
+            PlayerPrefs.SetInt(KEY_LANGUAGE, (int)value);
+            PlayerPrefs.Save();
+            Debug.Log($"[GameSettings] Language set to {value}");
+        }
+    }
+
     // --- Audio ---
     private const string KEY_SFX_VOLUME = "SfxVolume";
     private const float DEFAULT_SFX_VOLUME = 0.5f;
@@ -128,11 +143,11 @@ public static class GameSettings
     {
         switch (CurrentDifficulty)
         {
-            case Difficulty.Easy:      return "Easy";
-            case Difficulty.Normal:    return "Normal";
-            case Difficulty.Hard:      return "Hard";
-            case Difficulty.Nightmare: return "Nightmare";
-            default:                   return "Normal";
+            case Difficulty.Easy:      return LocalizationManager.L("difficulty.easy");
+            case Difficulty.Normal:    return LocalizationManager.L("difficulty.normal");
+            case Difficulty.Hard:      return LocalizationManager.L("difficulty.hard");
+            case Difficulty.Nightmare: return LocalizationManager.L("difficulty.nightmare");
+            default:                   return LocalizationManager.L("difficulty.normal");
         }
     }
 

@@ -1,4 +1,5 @@
 using System;
+using static LocalizationManager;
 
 [Serializable]
 public struct RelicDef
@@ -181,5 +182,15 @@ public static class RelicDefs
             if (r.id == id) return r;
         }
         return null;
+    }
+
+    public static string GetLocalizedName(string id)
+    {
+        return L($"relic.{id}.name");
+    }
+
+    public static string GetLocalizedDesc(string id)
+    {
+        return L($"relic.{id}.desc");
     }
 }

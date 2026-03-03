@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 /// <summary>
 /// Code-generated mutator selection panel for the main menu.
@@ -53,7 +54,7 @@ public class MutatorUI : MonoBehaviour
 
         // Update combined multiplier display
         float combined = MutatorManager.GetScoreMultiplier();
-        multiplierText.text = $"Score Multiplier: {combined:F2}x";
+        multiplierText.text = L("mutator.ui.score_multiplier", $"{combined:F2}");
         Debug.Log($"[MutatorUI] Combined score multiplier: {combined:F2}x");
 
         // Reset scroll to top
@@ -103,7 +104,7 @@ public class MutatorUI : MonoBehaviour
         var checkObj = new GameObject("Checkmark");
         checkObj.transform.SetParent(toggleObj.transform, false);
         var checkTmp = checkObj.AddComponent<TextMeshProUGUI>();
-        checkTmp.text = "\u2714"; // checkmark unicode
+        checkTmp.text = "X";
         checkTmp.fontSize = 24;
         checkTmp.fontStyle = FontStyles.Bold;
         checkTmp.color = goldColor;
@@ -154,7 +155,7 @@ public class MutatorUI : MonoBehaviour
         var nameObj = new GameObject("Name");
         nameObj.transform.SetParent(textCol.transform, false);
         var nameTmp = nameObj.AddComponent<TextMeshProUGUI>();
-        nameTmp.text = def.name;
+        nameTmp.text = MutatorDefs.GetLocalizedName(def.id);
         nameTmp.fontSize = 20;
         nameTmp.fontStyle = FontStyles.Bold;
         nameTmp.color = unlocked ? goldColor : dimTextColor;
@@ -166,66 +167,41 @@ public class MutatorUI : MonoBehaviour
         var descObj = new GameObject("Description");
         descObj.transform.SetParent(textCol.transform, false);
         var descTmp = descObj.AddComponent<TextMeshProUGUI>();
-        descTmp.text = def.description;
+        descTmp.text = MutatorDefs.GetLocalizedDesc(def.id);
         descTmp.fontSize = 15;
         descTmp.color = dimTextColor;
         descTmp.alignment = TextAlignmentOptions.Left;
         var descLe = descObj.AddComponent<LayoutElement>();
         descLe.preferredHeight = 20;
 
-        // --- Right-side info column ---
+        // --- Right-side column (matches Commander/Upgrades button style) ---
         var rightCol = new GameObject("RightColumn");
         rightCol.transform.SetParent(rowObj.transform, false);
+        var rightColImg = rightCol.AddComponent<Image>();
+        rightColImg.color = unlocked
+            ? new Color(0.3f, 0.2f, 0.1f, 0.9f)
+            : new Color(0.2f, 0.15f, 0.1f, 0.6f);
         var rightColLe = rightCol.AddComponent<LayoutElement>();
-        rightColLe.preferredWidth = 90;
-        rightColLe.preferredHeight = 50;
+        rightColLe.preferredWidth = 120;
+        rightColLe.minWidth = 120;
 
-        var rightColVlg = rightCol.AddComponent<VerticalLayoutGroup>();
-        rightColVlg.spacing = 2;
-        rightColVlg.childAlignment = TextAnchor.MiddleCenter;
-        rightColVlg.childControlWidth = true;
-        rightColVlg.childControlHeight = true;
-        rightColVlg.childForceExpandWidth = true;
-        rightColVlg.childForceExpandHeight = false;
-
-        // Score multiplier badge
-        var badgeObj = new GameObject("Badge");
-        badgeObj.transform.SetParent(rightCol.transform, false);
-
-        var badgeBg = badgeObj.AddComponent<Image>();
-        badgeBg.color = new Color(0.25f, 0.2f, 0.1f, 0.8f);
-
-        var badgeLe = badgeObj.AddComponent<LayoutElement>();
-        badgeLe.preferredHeight = 24;
-
+        // Multiplier text (fills full right column)
         var badgeTextObj = new GameObject("BadgeText");
-        badgeTextObj.transform.SetParent(badgeObj.transform, false);
+        badgeTextObj.transform.SetParent(rightCol.transform, false);
         var badgeTmp = badgeTextObj.AddComponent<TextMeshProUGUI>();
-        badgeTmp.text = $"{def.scoreMultiplier:F1}x";
-        badgeTmp.fontSize = 18;
+        if (!unlocked)
+            badgeTmp.text = L("mutator.ui.locked");
+        else
+            badgeTmp.text = L("mutator.ui.badge", $"{def.scoreMultiplier:F1}");
+        badgeTmp.fontSize = 20;
         badgeTmp.fontStyle = FontStyles.Bold;
-        badgeTmp.color = goldColor;
+        badgeTmp.color = unlocked ? goldColor : lockedColor;
         badgeTmp.alignment = TextAlignmentOptions.Center;
         var badgeTextRect = badgeTextObj.GetComponent<RectTransform>();
         badgeTextRect.anchorMin = Vector2.zero;
         badgeTextRect.anchorMax = Vector2.one;
         badgeTextRect.offsetMin = Vector2.zero;
         badgeTextRect.offsetMax = Vector2.zero;
-
-        // Locked indicator (if locked)
-        if (!unlocked)
-        {
-            var lockedObj = new GameObject("LockedText");
-            lockedObj.transform.SetParent(rightCol.transform, false);
-            var lockedTmp = lockedObj.AddComponent<TextMeshProUGUI>();
-            lockedTmp.text = "Locked";
-            lockedTmp.fontSize = 15;
-            lockedTmp.fontStyle = FontStyles.Bold;
-            lockedTmp.color = lockedColor;
-            lockedTmp.alignment = TextAlignmentOptions.Center;
-            var lockedLe = lockedObj.AddComponent<LayoutElement>();
-            lockedLe.preferredHeight = 20;
-        }
     }
 
     // ===================== BUILD UI =====================
@@ -257,24 +233,26 @@ public class MutatorUI : MonoBehaviour
         dimRect.anchorMax = Vector2.one;
         dimRect.offsetMin = Vector2.zero;
         dimRect.offsetMax = Vector2.zero;
+        var dimBtn = dimObj.AddComponent<Button>();
+        dimBtn.onClick.AddListener(Hide);
 
-        // Dialog panel (900x700)
+        // Dialog panel
         var panelObj = new GameObject("DialogPanel");
         panelObj.transform.SetParent(canvasObj.transform, false);
         dialogPanel = panelObj;
         var panelImg = panelObj.AddComponent<Image>();
         panelImg.color = bgColor;
         var panelRect = panelObj.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(900, 700);
-        panelRect.anchoredPosition = Vector2.zero;
+        panelRect.anchorMin = new Vector2(0.12f, 0.05f);
+        panelRect.anchorMax = new Vector2(0.88f, 0.95f);
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
 
         // Title
         var titleObj = new GameObject("Title");
         titleObj.transform.SetParent(panelObj.transform, false);
         var titleTmp = titleObj.AddComponent<TextMeshProUGUI>();
-        titleTmp.text = "MUTATORS";
+        titleTmp.text = L("mutator.ui.title");
         titleTmp.fontSize = 36;
         titleTmp.fontStyle = FontStyles.Bold;
         titleTmp.color = goldColor;
@@ -287,7 +265,7 @@ public class MutatorUI : MonoBehaviour
         titleRect.anchoredPosition = new Vector2(0, -10);
 
         // "UNLOCK ALL" debug button (small, top-right corner)
-        var unlockAllBtn = CreateSmallButton("UnlockAllButton", "UNLOCK ALL", panelObj.transform);
+        var unlockAllBtn = CreateSmallButton("UnlockAllButton", L("mutator.ui.unlock_all"), panelObj.transform);
         var unlockAllRect = unlockAllBtn.GetComponent<RectTransform>();
         unlockAllRect.anchorMin = new Vector2(1, 1);
         unlockAllRect.anchorMax = new Vector2(1, 1);
@@ -301,12 +279,27 @@ public class MutatorUI : MonoBehaviour
             RefreshAll();
         });
 
+        // Combined multiplier display (between title and scroll area)
+        var multiplierObj = new GameObject("MultiplierDisplay");
+        multiplierObj.transform.SetParent(panelObj.transform, false);
+        multiplierText = multiplierObj.AddComponent<TextMeshProUGUI>();
+        multiplierText.text = L("mutator.ui.score_multiplier_default");
+        multiplierText.fontSize = 22;
+        multiplierText.fontStyle = FontStyles.Bold;
+        multiplierText.color = goldColor;
+        multiplierText.alignment = TextAlignmentOptions.Center;
+        var multiplierRect = multiplierObj.GetComponent<RectTransform>();
+        multiplierRect.anchorMin = new Vector2(0.05f, 0.88f);
+        multiplierRect.anchorMax = new Vector2(0.95f, 0.93f);
+        multiplierRect.offsetMin = Vector2.zero;
+        multiplierRect.offsetMax = Vector2.zero;
+
         // ScrollRect area
         var scrollObj = new GameObject("ScrollArea");
         scrollObj.transform.SetParent(panelObj.transform, false);
         var scrollRectTransform = scrollObj.AddComponent<RectTransform>();
-        scrollRectTransform.anchorMin = new Vector2(0.03f, 0.15f);
-        scrollRectTransform.anchorMax = new Vector2(0.97f, 0.9f);
+        scrollRectTransform.anchorMin = new Vector2(0.03f, 0.1f);
+        scrollRectTransform.anchorMax = new Vector2(0.97f, 0.87f);
         scrollRectTransform.offsetMin = Vector2.zero;
         scrollRectTransform.offsetMax = Vector2.zero;
         scrollObj.AddComponent<Image>().color = new Color(0, 0, 0, 0.2f);
@@ -344,23 +337,8 @@ public class MutatorUI : MonoBehaviour
 
         scrollRect.content = contentContainer;
 
-        // Combined multiplier display (bottom bar, above close button)
-        var multiplierObj = new GameObject("MultiplierDisplay");
-        multiplierObj.transform.SetParent(panelObj.transform, false);
-        multiplierText = multiplierObj.AddComponent<TextMeshProUGUI>();
-        multiplierText.text = "Score Multiplier: 1.00x";
-        multiplierText.fontSize = 24;
-        multiplierText.fontStyle = FontStyles.Bold;
-        multiplierText.color = goldColor;
-        multiplierText.alignment = TextAlignmentOptions.Center;
-        var multiplierRect = multiplierObj.GetComponent<RectTransform>();
-        multiplierRect.anchorMin = new Vector2(0.1f, 0.08f);
-        multiplierRect.anchorMax = new Vector2(0.9f, 0.14f);
-        multiplierRect.offsetMin = Vector2.zero;
-        multiplierRect.offsetMax = Vector2.zero;
-
         // Close button
-        var closeBtn = CreateDialogButton("CloseButton", "CLOSE", panelObj.transform);
+        var closeBtn = CreateDialogButton("CloseButton", L("mutator.ui.close"), panelObj.transform);
         var closeBtnRect = closeBtn.GetComponent<RectTransform>();
         closeBtnRect.anchorMin = new Vector2(0.35f, 0.01f);
         closeBtnRect.anchorMax = new Vector2(0.65f, 0.07f);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
+using static LocalizationManager;
 
 /// <summary>
 /// All rebindable game actions. Mouse aim/scroll/left-click/right-click are NOT rebindable
@@ -363,18 +364,18 @@ public class InputBindingManager : MonoBehaviour
     {
         switch (key)
         {
-            case Key.Space: return "Space";
-            case Key.Escape: return "Esc";
-            case Key.Tab: return "Tab";
-            case Key.LeftShift: return "L Shift";
-            case Key.RightShift: return "R Shift";
-            case Key.LeftCtrl: return "L Ctrl";
-            case Key.RightCtrl: return "R Ctrl";
-            case Key.LeftAlt: return "L Alt";
-            case Key.RightAlt: return "R Alt";
-            case Key.Enter: return "Enter";
-            case Key.Backspace: return "Backspace";
-            case Key.Delete: return "Delete";
+            case Key.Space: return L("key.space");
+            case Key.Escape: return L("key.escape");
+            case Key.Tab: return L("key.tab");
+            case Key.LeftShift: return L("key.left_shift");
+            case Key.RightShift: return L("key.right_shift");
+            case Key.LeftCtrl: return L("key.left_ctrl");
+            case Key.RightCtrl: return L("key.right_ctrl");
+            case Key.LeftAlt: return L("key.left_alt");
+            case Key.RightAlt: return L("key.right_alt");
+            case Key.Enter: return L("key.enter");
+            case Key.Backspace: return L("key.backspace");
+            case Key.Delete: return L("key.delete");
             case Key.Digit0: return "0";
             case Key.Digit1: return "1";
             case Key.Digit2: return "2";
@@ -393,22 +394,22 @@ public class InputBindingManager : MonoBehaviour
     {
         switch (button)
         {
-            case GamepadButton.South: return "A / Cross";
-            case GamepadButton.North: return "Y / Triangle";
-            case GamepadButton.East: return "B / Circle";
-            case GamepadButton.West: return "X / Square";
-            case GamepadButton.Start: return "Start";
-            case GamepadButton.Select: return "Select";
-            case GamepadButton.LeftShoulder: return "LB";
-            case GamepadButton.RightShoulder: return "RB";
-            case GamepadButton.LeftTrigger: return "LT";
-            case GamepadButton.RightTrigger: return "RT";
-            case GamepadButton.LeftStick: return "L Stick";
-            case GamepadButton.RightStick: return "R Stick";
-            case GamepadButton.DpadUp: return "D-Up";
-            case GamepadButton.DpadDown: return "D-Down";
-            case GamepadButton.DpadLeft: return "D-Left";
-            case GamepadButton.DpadRight: return "D-Right";
+            case GamepadButton.South: return L("gamepad.south");
+            case GamepadButton.North: return L("gamepad.north");
+            case GamepadButton.East: return L("gamepad.east");
+            case GamepadButton.West: return L("gamepad.west");
+            case GamepadButton.Start: return L("gamepad.start");
+            case GamepadButton.Select: return L("gamepad.select");
+            case GamepadButton.LeftShoulder: return L("gamepad.lb");
+            case GamepadButton.RightShoulder: return L("gamepad.rb");
+            case GamepadButton.LeftTrigger: return L("gamepad.lt");
+            case GamepadButton.RightTrigger: return L("gamepad.rt");
+            case GamepadButton.LeftStick: return L("gamepad.left_stick");
+            case GamepadButton.RightStick: return L("gamepad.right_stick");
+            case GamepadButton.DpadUp: return L("gamepad.dpad_up");
+            case GamepadButton.DpadDown: return L("gamepad.dpad_down");
+            case GamepadButton.DpadLeft: return L("gamepad.dpad_left");
+            case GamepadButton.DpadRight: return L("gamepad.dpad_right");
             default: return button.ToString();
         }
     }
@@ -442,24 +443,24 @@ public class InputBindingManager : MonoBehaviour
     {
         switch (action)
         {
-            case GameAction.Pause: return "Pause";
-            case GameAction.OpenMenu: return "Pause Menu";
-            case GameAction.ToggleBuildMode: return "Toggle Build Mode";
-            case GameAction.RotateWallLeft: return "Rotate Wall Left";
-            case GameAction.RotateWallRight: return "Rotate Wall Right";
-            case GameAction.ExitBuildMode: return "Exit Build Mode";
-            case GameAction.ToggleUpgrades: return "Toggle Upgrades";
-            case GameAction.Recall: return "Recall Units";
-            case GameAction.SwitchBallista: return "Switch Ballista";
-            case GameAction.Upgrade1: return "Upgrade Slot 1";
-            case GameAction.Upgrade2: return "Upgrade Slot 2";
-            case GameAction.Upgrade3: return "Upgrade Slot 3";
-            case GameAction.Upgrade4: return "Upgrade Slot 4";
-            case GameAction.Upgrade5: return "Upgrade Slot 5";
-            case GameAction.Upgrade6: return "Upgrade Slot 6";
-            case GameAction.Upgrade7: return "Upgrade Slot 7";
-            case GameAction.Upgrade8: return "Upgrade Slot 8";
-            case GameAction.Upgrade9: return "Upgrade Slot 9";
+            case GameAction.Pause: return L("input.action.pause");
+            case GameAction.OpenMenu: return L("input.action.open_menu");
+            case GameAction.ToggleBuildMode: return L("input.action.toggle_build");
+            case GameAction.RotateWallLeft: return L("input.action.rotate_left");
+            case GameAction.RotateWallRight: return L("input.action.rotate_right");
+            case GameAction.ExitBuildMode: return L("input.action.exit_build");
+            case GameAction.ToggleUpgrades: return L("input.action.toggle_upgrades");
+            case GameAction.Recall: return L("input.action.recall");
+            case GameAction.SwitchBallista: return L("input.action.switch_ballista");
+            case GameAction.Upgrade1: return L("input.action.upgrade_slot", 1);
+            case GameAction.Upgrade2: return L("input.action.upgrade_slot", 2);
+            case GameAction.Upgrade3: return L("input.action.upgrade_slot", 3);
+            case GameAction.Upgrade4: return L("input.action.upgrade_slot", 4);
+            case GameAction.Upgrade5: return L("input.action.upgrade_slot", 5);
+            case GameAction.Upgrade6: return L("input.action.upgrade_slot", 6);
+            case GameAction.Upgrade7: return L("input.action.upgrade_slot", 7);
+            case GameAction.Upgrade8: return L("input.action.upgrade_slot", 8);
+            case GameAction.Upgrade9: return L("input.action.upgrade_slot", 9);
             default: return action.ToString();
         }
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static LocalizationManager;
 
 [Serializable]
 public class LifetimeStatsData
@@ -240,12 +241,12 @@ public static class LifetimeStatsManager
     {
         var data = Load();
         int max = 0;
-        string favorite = "N/A";
+        string favorite = L("stats.na");
 
-        if (data.hiresEngineer > max) { max = data.hiresEngineer; favorite = "Engineer"; }
-        if (data.hiresPikeman > max) { max = data.hiresPikeman; favorite = "Pikeman"; }
-        if (data.hiresCrossbowman > max) { max = data.hiresCrossbowman; favorite = "Crossbowman"; }
-        if (data.hiresWizard > max) { max = data.hiresWizard; favorite = "Wizard"; }
+        if (data.hiresEngineer > max) { max = data.hiresEngineer; favorite = L("defender.engineer.name"); }
+        if (data.hiresPikeman > max) { max = data.hiresPikeman; favorite = L("defender.pikeman.name"); }
+        if (data.hiresCrossbowman > max) { max = data.hiresCrossbowman; favorite = L("defender.crossbowman.name"); }
+        if (data.hiresWizard > max) { max = data.hiresWizard; favorite = L("defender.wizard.name"); }
 
         return favorite;
     }
@@ -257,13 +258,13 @@ public static class LifetimeStatsManager
     {
         var data = Load();
         int max = 0;
-        string dangerous = "N/A";
+        string dangerous = L("stats.na");
 
-        if (data.gameOversWithMelee > max) { max = data.gameOversWithMelee; dangerous = "Melee"; }
-        if (data.gameOversWithRanged > max) { max = data.gameOversWithRanged; dangerous = "Ranged"; }
-        if (data.gameOversWithWallBreaker > max) { max = data.gameOversWithWallBreaker; dangerous = "Wall Breaker"; }
-        if (data.gameOversWithSuicide > max) { max = data.gameOversWithSuicide; dangerous = "Suicide"; }
-        if (data.gameOversWithArtillery > max) { max = data.gameOversWithArtillery; dangerous = "Artillery"; }
+        if (data.gameOversWithMelee > max) { max = data.gameOversWithMelee; dangerous = L("enemy.type.melee"); }
+        if (data.gameOversWithRanged > max) { max = data.gameOversWithRanged; dangerous = L("enemy.type.ranged"); }
+        if (data.gameOversWithWallBreaker > max) { max = data.gameOversWithWallBreaker; dangerous = L("enemy.type.wallbreaker"); }
+        if (data.gameOversWithSuicide > max) { max = data.gameOversWithSuicide; dangerous = L("enemy.type.suicide"); }
+        if (data.gameOversWithArtillery > max) { max = data.gameOversWithArtillery; dangerous = L("enemy.type.artillery"); }
 
         return dangerous;
     }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 public class GameOverScreen : MonoBehaviour
 {
@@ -91,14 +92,14 @@ public class GameOverScreen : MonoBehaviour
         }
     }
 
-    private const string NEW_BEST = " <color=#FFD700>NEW BEST!</color>";
+    private static string NEW_BEST => " " + L("gameover.new_best");
 
     private void ShowGameOver()
     {
         if (panelRoot != null) panelRoot.SetActive(true);
 
         if (titleText != null)
-            titleText.text = "WALLS BREACHED!\nGAME OVER";
+            titleText.text = L("gameover.title");
 
         // Get previous bests BEFORE saving this run
         var prevBest = RunHistoryManager.GetBestByCategory();
@@ -164,23 +165,22 @@ public class GameOverScreen : MonoBehaviour
             int minutes = Mathf.FloorToInt(time / 60);
             int seconds = Mathf.FloorToInt(time % 60);
 
-            sb.AppendFormat("{0}:{1:00}  |  Days: {2}", minutes, seconds, current.days);
+            string timeStr = $"{minutes}:{seconds:D2}";
+            sb.Append(L("gameover.time_days", timeStr, current.days));
             if (hasPrevRuns && current.days > prevBest.days) sb.Append(NEW_BEST);
             sb.AppendLine();
 
-            sb.AppendFormat("Kills: {0}", current.kills);
+            sb.Append(L("gameover.kills", current.kills));
             if (hasPrevRuns && current.kills > prevBest.kills) sb.Append(NEW_BEST);
             if (current.bossKills > 0)
             {
-                sb.AppendFormat("  |  Bosses: {0}", current.bossKills);
+                sb.Append(L("gameover.bosses", current.bossKills));
                 if (hasPrevRuns && current.bossKills > prevBest.bossKills) sb.Append(NEW_BEST);
             }
             sb.AppendLine();
 
-            sb.AppendFormat("Gold: {0}", current.goldEarned);
+            sb.Append(L("gameover.gold_hires_lost", current.goldEarned, current.hires, current.menialsLost));
             if (hasPrevRuns && current.goldEarned > prevBest.goldEarned) sb.Append(NEW_BEST);
-            sb.AppendFormat("  |  Hires: {0}", current.hires);
-            sb.AppendFormat("  |  Lost: {0}", current.menialsLost);
 
             statsText.text = sb.ToString();
         }
@@ -190,30 +190,30 @@ public class GameOverScreen : MonoBehaviour
         {
             var sb = new System.Text.StringBuilder();
 
-            sb.AppendFormat("<size=130%>SCORE: {0:N0}</size>", current.compositeScore);
+            sb.Append(string.Format(L("gameover.score"), current.compositeScore.ToString("N0")));
             if (hasPrevRuns && current.compositeScore > prevBest.compositeScore) sb.Append(NEW_BEST);
             sb.AppendLine();
 
             // Rank and best on one line
             if (rank >= 0)
             {
-                sb.AppendFormat("<size=85%>Rank #{0}/{1}", rank + 1, RunHistoryManager.GetRunCount());
+                sb.AppendFormat("<size=85%>{0}", L("gameover.rank", rank + 1, RunHistoryManager.GetRunCount()));
                 if (hasPrevRuns && current.compositeScore <= prevBest.compositeScore)
-                    sb.AppendFormat("  |  Best: {0:N0}", prevBest.compositeScore);
+                    sb.AppendFormat("  |  {0}", L("gameover.best", prevBest.compositeScore.ToString("N0")));
                 sb.Append("</size>");
             }
 
             // Modifiers line — mutators, commander, relics all on one line
             var modParts = new System.Collections.Generic.List<string>();
             if (MutatorManager.ActiveCount > 0)
-                modParts.Add($"Mutators ({MutatorManager.GetScoreMultiplier():F1}x)");
+                modParts.Add(L("gameover.mutators", MutatorManager.GetScoreMultiplier().ToString("F1")));
             if (CommanderManager.HasCommander)
                 modParts.Add(CommanderManager.GetActiveDisplayName());
             if (RelicManager.Instance != null && RelicManager.Instance.CollectedCount > 0)
             {
-                string relicStr = $"Relics x{RelicManager.Instance.CollectedCount}";
+                string relicStr = L("gameover.relics", RelicManager.Instance.CollectedCount);
                 if (RelicManager.Instance.ActiveSynergyCount > 0)
-                    relicStr += $" <color=#FFD700>[{RelicManager.Instance.ActiveSynergyCount} Synergy]</color>";
+                    relicStr += " <color=#FFD700>" + L("gameover.synergy", RelicManager.Instance.ActiveSynergyCount) + "</color>";
                 modParts.Add(relicStr);
             }
             if (modParts.Count > 0)
@@ -221,7 +221,7 @@ public class GameOverScreen : MonoBehaviour
 
             // Legacy points
             if (legacyEarned > 0)
-                sb.AppendFormat("\n<size=85%><color=#B89030>+{0} Legacy</color> ({1})</size>", legacyEarned, LegacyProgressionManager.GetCurrentRankTitle());
+                sb.AppendFormat("\n<size=85%><color=#B89030>{0}</color> ({1})</size>", L("gameover.legacy", legacyEarned), LegacyProgressionManager.GetCurrentRankTitle());
 
             // Achievements — inline, capped at 3 on one line
             if (newAchievements.Count > 0)
@@ -237,12 +237,12 @@ public class GameOverScreen : MonoBehaviour
                         string tierColor = achTier == AchievementTier.Gold ? "#FFD700" :
                                            achTier == AchievementTier.Silver ? "#C0C0CC" : "#CD7F32";
                         if (shown > 0) sb.Append("  ");
-                        sb.AppendFormat("<color={0}>[{1}]</color> {2}", tierColor, achTier, achDef.Value.name);
+                        sb.AppendFormat("<color={0}>[{1}]</color> {2}", tierColor, L($"achievement.tier.{achTier.ToString().ToLower()}"), AchievementDefs.GetLocalizedName(achDef.Value.id));
                         shown++;
                     }
                 }
                 if (newAchievements.Count > 3)
-                    sb.AppendFormat(" +{0} more", newAchievements.Count - 3);
+                    sb.AppendFormat(" {0}", L("gameover.more", newAchievements.Count - 3));
                 sb.Append("</size>");
             }
 

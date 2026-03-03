@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 public class UpgradePanel : MonoBehaviour
 {
@@ -22,10 +23,20 @@ public class UpgradePanel : MonoBehaviour
     }
 
     private bool buttonsCreated;
+    private TextMeshProUGUI hintText;
 
     private void Start()
     {
         TryCreateButtons();
+        // Find and localize the serialized hint text
+        var hintTransform = transform.Find("HintText");
+        if (hintTransform == null && panelRoot != null)
+            hintTransform = panelRoot.transform.Find("HintText");
+        if (hintTransform != null)
+        {
+            hintText = hintTransform.GetComponent<TextMeshProUGUI>();
+            UpdateHintText();
+        }
     }
 
     // Upgrade slot actions mapped to button indices
@@ -104,7 +115,8 @@ public class UpgradePanel : MonoBehaviour
             if (entry.label != null)
             {
                 bool showHotkeys = !PlatformDetector.IsMobile;
-                entry.label.text = (showHotkeys && index <= 9) ? $"[{index}] {upgrade.upgradeName}" : upgrade.upgradeName;
+                string localName = GetLocalizedUpgradeName(upgrade);
+                entry.label.text = (showHotkeys && index <= 9) ? $"[{index}] {localName}" : localName;
             }
 
             // On mobile, increase button size for easier touch targets
@@ -120,8 +132,8 @@ public class UpgradePanel : MonoBehaviour
             if (entry.costText != null)
             {
                 string cost = "";
-                if (upgrade.treasureCost > 0) cost += upgrade.treasureCost + "g";
-                if (upgrade.menialCost > 0) cost += " " + upgrade.menialCost + "m";
+                if (upgrade.treasureCost > 0) cost += L("upgrade.cost_gold", upgrade.treasureCost);
+                if (upgrade.menialCost > 0) cost += " " + L("upgrade.cost_menial", upgrade.menialCost);
                 entry.costText.text = cost.Trim();
             }
 
@@ -176,11 +188,41 @@ public class UpgradePanel : MonoBehaviour
             {
                 var (treasure, menial) = UpgradeManager.Instance.GetCurrentCost(entry.data);
                 string cost = "";
-                if (treasure > 0) cost += treasure + "g";
-                if (menial > 0) cost += " " + menial + "m";
+                if (treasure > 0) cost += L("upgrade.cost_gold", treasure);
+                if (menial > 0) cost += " " + L("upgrade.cost_menial", menial);
                 entry.costText.text = cost.Trim();
             }
         }
+    }
+
+    private static string GetLocalizedUpgradeName(UpgradeData upgrade)
+    {
+        string slug;
+        switch (upgrade.upgradeType)
+        {
+            case UpgradeType.WallRepair:        slug = "wall_repair"; break;
+            case UpgradeType.NewBallista:        slug = "new_ballista"; break;
+            case UpgradeType.BallistaDamage:     slug = "ballista_damage"; break;
+            case UpgradeType.BallistaFireRate:    slug = "ballista_speed"; break;
+            case UpgradeType.NewWall:            slug = "build_wall"; break;
+            case UpgradeType.SpawnEngineer:      slug = "hire_engineer"; break;
+            case UpgradeType.SpawnPikeman:       slug = "hire_pikeman"; break;
+            case UpgradeType.SpawnCrossbowman:   slug = "hire_crossbowman"; break;
+            case UpgradeType.SpawnWizard:        slug = "hire_wizard"; break;
+            default:                             return upgrade.upgradeName;
+        }
+        string key = "upgrade." + slug + ".name";
+        string localized = L(key);
+        return localized == key ? upgrade.upgradeName : localized;
+    }
+
+    private void UpdateHintText()
+    {
+        if (hintText == null) return;
+        string key = InputBindingManager.Instance != null
+            ? InputBindingManager.Instance.GetKeyboardDisplayName(GameAction.ToggleUpgrades)
+            : "U";
+        hintText.text = L("hud.upgrade_hint", key);
     }
 
     private Color? GetButtonColor(UpgradeType type)

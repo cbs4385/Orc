@@ -1,4 +1,5 @@
 using System;
+using static LocalizationManager;
 
 [Serializable]
 public struct CommanderDef
@@ -104,5 +105,15 @@ public static class CommanderDefs
             if (c.id == id) return c;
         }
         return null;
+    }
+
+    public static string GetLocalizedName(string id)
+    {
+        return L($"commander.{id}.name");
+    }
+
+    public static string GetLocalizedDesc(string id)
+    {
+        return L($"commander.{id}.desc");
     }
 }

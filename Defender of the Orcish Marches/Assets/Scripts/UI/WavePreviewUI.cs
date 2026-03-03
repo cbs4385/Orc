@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using static LocalizationManager;
 
 public class WavePreviewUI : MonoBehaviour
 {
@@ -97,9 +98,9 @@ public class WavePreviewUI : MonoBehaviour
         if (headerText != null)
         {
             if (waveData.HasValue && waveData.Value.hasBoss)
-                headerText.text = string.Format("DAY {0} - BOSS WAVE", dayNumber);
+                headerText.text = L("wave.day_boss", dayNumber);
             else
-                headerText.text = string.Format("DAY {0}", dayNumber);
+                headerText.text = L("wave.day", dayNumber);
         }
 
         // Body
@@ -133,15 +134,22 @@ public class WavePreviewUI : MonoBehaviour
                 // Spawn direction
                 sb.AppendLine(data.spawnDirection);
 
-                // Enemy types
-                sb.Append("Enemies: ");
-                sb.AppendLine(string.Join(", ", data.enemyTypes));
+                // Enemy types (localize names)
+                sb.Append(L("wave.enemies"));
+                var localEnemyTypes = new string[data.enemyTypes.Length];
+                for (int i = 0; i < data.enemyTypes.Length; i++)
+                    localEnemyTypes[i] = BestiaryManager.GetLocalizedEnemyName(data.enemyTypes[i]);
+                sb.AppendLine(string.Join(", ", localEnemyTypes));
 
                 // Highlight new enemy types
                 if (data.newEnemyTypes != null && data.newEnemyTypes.Length > 0)
                 {
-                    sb.Append("<color=#FF6644>NEW: ");
-                    sb.Append(string.Join(", ", data.newEnemyTypes));
+                    sb.Append("<color=#FF6644>");
+                    sb.Append(L("wave.new"));
+                    var localNewTypes = new string[data.newEnemyTypes.Length];
+                    for (int j = 0; j < data.newEnemyTypes.Length; j++)
+                        localNewTypes[j] = BestiaryManager.GetLocalizedEnemyName(data.newEnemyTypes[j]);
+                    sb.Append(string.Join(", ", localNewTypes));
                     sb.AppendLine("</color>");
                 }
 
@@ -149,7 +157,7 @@ public class WavePreviewUI : MonoBehaviour
                 if (data.hasBoss && !string.IsNullOrEmpty(data.bossName))
                 {
                     sb.AppendLine();
-                    sb.AppendFormat("<color=#FF3333>{0} approaches!</color>", data.bossName);
+                    sb.AppendFormat("<color=#FF3333>{0}</color>", L("wave.boss_approaches", BestiaryManager.GetLocalizedEnemyName(data.bossName)));
                 }
             }
 

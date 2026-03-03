@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static LocalizationManager;
 
 /// <summary>
 /// Manages per-run relic collection. Relics stack multiplicatively.
@@ -279,7 +280,7 @@ public class RelicManager : MonoBehaviour
     /// <summary>Returns a display-friendly list of collected relic names.</summary>
     public string GetCollectedNamesDisplay()
     {
-        if (collectedRelicIds.Count == 0) return "None";
+        if (collectedRelicIds.Count == 0) return L("common.none");
         var sb = new System.Text.StringBuilder();
         foreach (var id in collectedRelicIds)
         {
@@ -287,7 +288,7 @@ public class RelicManager : MonoBehaviour
             if (def != null)
             {
                 if (sb.Length > 0) sb.Append(", ");
-                sb.Append(def.Value.name);
+                sb.Append(RelicDefs.GetLocalizedName(id));
             }
         }
         return sb.ToString();
@@ -332,7 +333,7 @@ public class RelicManager : MonoBehaviour
     /// <summary>Returns a display-friendly list of active synergy names.</summary>
     public string GetActiveSynergiesDisplay()
     {
-        if (activeSynergyIds.Count == 0) return "None";
+        if (activeSynergyIds.Count == 0) return L("common.none");
         var sb = new System.Text.StringBuilder();
         foreach (var id in activeSynergyIds)
         {
@@ -340,7 +341,7 @@ public class RelicManager : MonoBehaviour
             if (syn != null)
             {
                 if (sb.Length > 0) sb.Append(", ");
-                sb.Append(syn.Value.name);
+                sb.Append(RelicSynergyDefs.GetLocalizedName(id));
             }
         }
         return sb.ToString();

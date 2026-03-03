@@ -80,12 +80,21 @@ public static class BuildScript
         Build(BuildTarget.StandaloneOSX, path);
     }
 
-    [MenuItem("Build/Build All (Windows + macOS)", priority = 0)]
+    [MenuItem("Build/Build Linux", priority = 3)]
+    public static void BuildLinux()
+    {
+        SyncVersionFromGit();
+        string path = Path.Combine(BuildRoot, "Linux", ProductName);
+        Build(BuildTarget.StandaloneLinux64, path);
+    }
+
+    [MenuItem("Build/Build All (Windows + macOS + Linux)", priority = 0)]
     public static void BuildAll()
     {
         SyncVersionFromGit();
         BuildWindows();
         BuildMacOS();
+        BuildLinux();
     }
 
     private static void Build(BuildTarget target, string locationPathName)

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 public class PauseMenu : MonoBehaviour
 {
@@ -209,7 +210,7 @@ public class PauseMenu : MonoBehaviour
         var txtObj = new GameObject("Text");
         txtObj.transform.SetParent(btnObj.transform, false);
         var tmp = txtObj.AddComponent<TextMeshProUGUI>();
-        tmp.text = "SAVE & QUIT";
+        tmp.text = L("pause.save_quit");
         tmp.fontSize = 24;
         tmp.fontStyle = FontStyles.Bold;
         tmp.color = new Color(0.9f, 0.8f, 0.5f);
@@ -258,7 +259,7 @@ public class PauseMenu : MonoBehaviour
     private void UpdateSfxText(float value)
     {
         if (sfxValueText != null)
-            sfxValueText.text = Mathf.RoundToInt(value * 100) + "%";
+            sfxValueText.text = L("options.volume_pct", Mathf.RoundToInt(value * 100));
     }
 
     private void OnMusicVolumeChanged(float value)
@@ -272,7 +273,7 @@ public class PauseMenu : MonoBehaviour
     private void UpdateMusicText(float value)
     {
         if (musicValueText != null)
-            musicValueText.text = Mathf.RoundToInt(value * 100) + "%";
+            musicValueText.text = L("options.volume_pct", Mathf.RoundToInt(value * 100));
     }
 
     private void OnFullscreenChanged(bool isOn)

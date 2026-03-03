@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 /// <summary>
 /// Code-generated meta-progression panel for the main menu.
@@ -49,7 +50,7 @@ public class MetaProgressionUI : MonoBehaviour
             Destroy(contentContainer.GetChild(i).gameObject);
 
         if (trophyText != null)
-            trophyText.text = $"War Trophies: {MetaProgressionManager.WarTrophies}  (Lifetime: {MetaProgressionManager.TotalWarTrophiesEarned})";
+            trophyText.text = L("meta.ui.trophies", MetaProgressionManager.WarTrophies, MetaProgressionManager.TotalWarTrophiesEarned);
 
         foreach (var upgradeDef in MetaProgressionManager.AllUpgrades)
         {
@@ -101,9 +102,10 @@ public class MetaProgressionUI : MonoBehaviour
         var nameObj = new GameObject("Name");
         nameObj.transform.SetParent(infoObj.transform, false);
         var nameTmp = nameObj.AddComponent<TextMeshProUGUI>();
+        string upgradeName = MetaProgressionManager.GetLocalizedName(def.id);
         nameTmp.text = maxed
-            ? $"{def.name} <color=#7FBF50>(MAX)</color>"
-            : $"{def.name} ({currentLevel}/{def.maxLevel})";
+            ? $"{upgradeName} <color=#7FBF50>({L("meta.ui.maxed")})</color>"
+            : $"{upgradeName} ({currentLevel}/{def.maxLevel})";
         nameTmp.fontSize = 20;
         nameTmp.fontStyle = FontStyles.Bold;
         nameTmp.color = maxed ? goldColor : textColor;
@@ -116,7 +118,7 @@ public class MetaProgressionUI : MonoBehaviour
         var descObj = new GameObject("Desc");
         descObj.transform.SetParent(infoObj.transform, false);
         var descTmp = descObj.AddComponent<TextMeshProUGUI>();
-        descTmp.text = def.description;
+        descTmp.text = MetaProgressionManager.GetLocalizedDesc(def.id);
         descTmp.fontSize = 15;
         descTmp.color = dimTextColor;
         descTmp.alignment = TextAlignmentOptions.Left;
@@ -160,7 +162,7 @@ public class MetaProgressionUI : MonoBehaviour
             var maxTxtObj = new GameObject("Text");
             maxTxtObj.transform.SetParent(buyObj.transform, false);
             var maxTmp = maxTxtObj.AddComponent<TextMeshProUGUI>();
-            maxTmp.text = "MAXED";
+            maxTmp.text = L("meta.ui.maxed");
             maxTmp.fontSize = 20;
             maxTmp.fontStyle = FontStyles.Bold;
             maxTmp.color = new Color(0.5f, 0.7f, 0.35f);
@@ -188,7 +190,7 @@ public class MetaProgressionUI : MonoBehaviour
             var buyTxtObj = new GameObject("Text");
             buyTxtObj.transform.SetParent(buyObj.transform, false);
             var buyTmp = buyTxtObj.AddComponent<TextMeshProUGUI>();
-            buyTmp.text = $"BUY ({cost})";
+            buyTmp.text = L("meta.ui.buy", cost);
             buyTmp.fontSize = 20;
             buyTmp.fontStyle = FontStyles.Bold;
             buyTmp.color = canAfford ? goldColor : dimTextColor;
@@ -260,7 +262,7 @@ public class MetaProgressionUI : MonoBehaviour
         var titleObj = new GameObject("Title");
         titleObj.transform.SetParent(dialogPanel.transform, false);
         var titleTmp = titleObj.AddComponent<TextMeshProUGUI>();
-        titleTmp.text = "UPGRADES";
+        titleTmp.text = L("meta.ui.title");
         titleTmp.fontSize = 36;
         titleTmp.fontStyle = FontStyles.Bold;
         titleTmp.color = goldColor;
@@ -276,7 +278,7 @@ public class MetaProgressionUI : MonoBehaviour
         var trophyObj = new GameObject("TrophyText");
         trophyObj.transform.SetParent(dialogPanel.transform, false);
         trophyText = trophyObj.AddComponent<TextMeshProUGUI>();
-        trophyText.text = $"War Trophies: {MetaProgressionManager.WarTrophies}";
+        trophyText.text = L("meta.ui.trophies", MetaProgressionManager.WarTrophies, MetaProgressionManager.TotalWarTrophiesEarned);
         trophyText.fontSize = 22;
         trophyText.color = goldColor;
         trophyText.alignment = TextAlignmentOptions.Center;
@@ -351,7 +353,7 @@ public class MetaProgressionUI : MonoBehaviour
         var closeTxtObj = new GameObject("Text");
         closeTxtObj.transform.SetParent(closeObj.transform, false);
         var closeTmp = closeTxtObj.AddComponent<TextMeshProUGUI>();
-        closeTmp.text = "CLOSE";
+        closeTmp.text = L("meta.ui.close");
         closeTmp.fontSize = 26;
         closeTmp.fontStyle = FontStyles.Bold;
         closeTmp.color = goldColor;

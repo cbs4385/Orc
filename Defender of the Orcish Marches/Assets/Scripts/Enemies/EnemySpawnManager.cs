@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using static LocalizationManager;
 
 public class EnemySpawnManager : MonoBehaviour
 {
@@ -621,12 +622,12 @@ public class EnemySpawnManager : MonoBehaviour
 
     private string DescribeSpawnArc(float halfSpread)
     {
-        if (halfSpread <= 15f) return "From the West";
-        if (halfSpread <= 45f) return "From the West (wide arc)";
-        if (halfSpread <= 75f) return "From Northwest to Southwest";
-        if (halfSpread <= 105f) return "From North to South";
-        if (halfSpread <= 150f) return "Nearly surrounded";
-        return "From all directions";
+        if (halfSpread <= 15f) return L("wave.direction.west");
+        if (halfSpread <= 45f) return L("wave.direction.west_wide");
+        if (halfSpread <= 75f) return L("wave.direction.nw_sw");
+        if (halfSpread <= 105f) return L("wave.direction.n_s");
+        if (halfSpread <= 150f) return L("wave.direction.nearly_surrounded");
+        return L("wave.direction.all");
     }
 }
 

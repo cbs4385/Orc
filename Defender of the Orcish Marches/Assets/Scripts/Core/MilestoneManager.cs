@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static LocalizationManager;
 
 [Serializable]
 public struct MilestoneDef
@@ -188,6 +189,16 @@ public static class MilestoneManager
                 return;
             }
         }
+    }
+
+    public static string GetLocalizedName(string id)
+    {
+        return L($"milestone.{id}.name");
+    }
+
+    public static string GetLocalizedDesc(string id)
+    {
+        return L($"milestone.{id}.desc");
     }
 
     public static void ClearAll()

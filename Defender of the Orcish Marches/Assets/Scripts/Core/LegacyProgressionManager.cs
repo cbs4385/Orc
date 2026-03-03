@@ -1,4 +1,5 @@
 using UnityEngine;
+using static LocalizationManager;
 
 /// <summary>
 /// Legacy rank / meta-progression system. Cumulative play earns Legacy Points
@@ -60,7 +61,8 @@ public static class LegacyProgressionManager
     public static string GetCurrentRankTitle()
     {
         int rank = GetCurrentRank();
-        return rank < RankTitles.Length ? RankTitles[rank] : RankTitles[RankTitles.Length - 1];
+        string key = rank < RankTitles.Length ? RankTitles[rank] : RankTitles[RankTitles.Length - 1];
+        return L($"legacy.rank.{key.ToLower().Replace(" ", "_")}");
     }
 
     public static int GetMaxRank()
@@ -148,23 +150,23 @@ public static class LegacyProgressionManager
     public static string GetBonusSummary()
     {
         int rank = GetCurrentRank();
-        if (rank == 0) return "No bonuses yet.";
+        if (rank == 0) return L("legacy.no_bonuses");
 
         var sb = new System.Text.StringBuilder();
         int gold = GetBonusStartingGold();
-        if (gold > 0) sb.AppendLine($"+{gold} starting gold");
+        if (gold > 0) sb.AppendLine(L("legacy.starting_gold", gold));
         int menials = GetBonusStartingMenials();
-        if (menials > 0) sb.AppendLine($"+{menials} starting menial{(menials > 1 ? "s" : "")}");
+        if (menials > 0) sb.AppendLine(L("legacy.starting_menials", menials));
         float menialSpd = (GetMenialSpeedMultiplier() - 1f) * 100f;
-        if (menialSpd > 0) sb.AppendLine($"+{menialSpd:F0}% menial speed");
+        if (menialSpd > 0) sb.AppendLine(L("legacy.menial_speed", menialSpd));
         float balDmg = (GetBallistaDamageMultiplier() - 1f) * 100f;
-        if (balDmg > 0) sb.AppendLine($"+{balDmg:F0}% ballista damage");
+        if (balDmg > 0) sb.AppendLine(L("legacy.ballista_damage", balDmg));
         float defSpd = (GetDefenderAttackSpeedMultiplier() - 1f) * 100f;
-        if (defSpd > 0) sb.AppendLine($"+{defSpd:F0}% defender attack speed");
+        if (defSpd > 0) sb.AppendLine(L("legacy.defender_attack_speed", defSpd));
         float wallHP = (GetWallHPMultiplier() - 1f) * 100f;
-        if (wallHP > 0) sb.AppendLine($"+{wallHP:F0}% wall HP");
+        if (wallHP > 0) sb.AppendLine(L("legacy.wall_hp", wallHP));
         float loot = (GetLootValueMultiplier() - 1f) * 100f;
-        if (loot > 0) sb.AppendLine($"+{loot:F0}% loot value");
+        if (loot > 0) sb.AppendLine(L("legacy.loot_value", loot));
         return sb.ToString().TrimEnd();
     }
 

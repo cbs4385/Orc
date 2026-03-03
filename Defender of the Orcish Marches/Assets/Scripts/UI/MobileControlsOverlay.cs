@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 /// <summary>
 /// On-screen touch button overlay for mobile and hybrid touch devices.
@@ -155,24 +156,24 @@ public class MobileControlsOverlay : MonoBehaviour
     private void CreateButtons()
     {
         // Always visible buttons
-        pauseButton = CreateButton("Pause", new Vector2(0f, 1f), new Vector2(0f, 1f),
+        pauseButton = CreateButton(L("mobile.pause"), new Vector2(0f, 1f), new Vector2(0f, 1f),
             new Vector2(0f, 1f), new Vector2(10, -10), new Vector2(80, 80), OnPauseClicked);
 
-        buildButton = CreateButton("Build", new Vector2(1f, 0f), new Vector2(1f, 0f),
+        buildButton = CreateButton(L("mobile.build"), new Vector2(1f, 0f), new Vector2(1f, 0f),
             new Vector2(1f, 0f), new Vector2(-10, 170), new Vector2(100, 50), OnBuildClicked);
 
-        upgradeButton = CreateButton("Upgrade", new Vector2(1f, 0f), new Vector2(1f, 0f),
+        upgradeButton = CreateButton(L("mobile.upgrade"), new Vector2(1f, 0f), new Vector2(1f, 0f),
             new Vector2(1f, 0f), new Vector2(-10, 110), new Vector2(100, 50), OnUpgradeClicked);
 
-        recallButton = CreateButton("Recall", new Vector2(1f, 0f), new Vector2(1f, 0f),
+        recallButton = CreateButton(L("mobile.recall"), new Vector2(1f, 0f), new Vector2(1f, 0f),
             new Vector2(1f, 0f), new Vector2(-10, 50), new Vector2(100, 50), OnRecallClicked);
 
-        switchBallistaButton = CreateButton("Switch", new Vector2(1f, 1f), new Vector2(1f, 1f),
+        switchBallistaButton = CreateButton(L("mobile.switch"), new Vector2(1f, 1f), new Vector2(1f, 1f),
             new Vector2(1f, 1f), new Vector2(-10, -10), new Vector2(100, 50), OnSwitchBallistaClicked);
         switchBallistaButton.gameObject.SetActive(false);
 
         // Send Menial toggle (bottom-left)
-        sendMenialButton = CreateButton("Menial", new Vector2(0f, 0f), new Vector2(0f, 0f),
+        sendMenialButton = CreateButton(L("mobile.menial"), new Vector2(0f, 0f), new Vector2(0f, 0f),
             new Vector2(0f, 0f), new Vector2(10, 50), new Vector2(100, 50), OnSendMenialClicked);
         sendMenialImage = sendMenialButton.GetComponent<Image>();
 
@@ -196,9 +197,9 @@ public class MobileControlsOverlay : MonoBehaviour
 
         buildModeGroup = groupObj;
 
-        rotateLeftButton = CreateButtonInParent("RotL", groupObj.transform, OnRotateLeftClicked);
-        rotateRightButton = CreateButtonInParent("RotR", groupObj.transform, OnRotateRightClicked);
-        exitBuildButton = CreateButtonInParent("Exit", groupObj.transform, OnExitBuildClicked);
+        rotateLeftButton = CreateButtonInParent(L("mobile.rotate_left"), groupObj.transform, OnRotateLeftClicked);
+        rotateRightButton = CreateButtonInParent(L("mobile.rotate_right"), groupObj.transform, OnRotateRightClicked);
+        exitBuildButton = CreateButtonInParent(L("mobile.exit"), groupObj.transform, OnExitBuildClicked);
 
         buildModeGroup.SetActive(false);
 

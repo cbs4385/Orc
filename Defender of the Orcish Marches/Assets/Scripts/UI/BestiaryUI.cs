@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 /// <summary>
 /// Code-generated bestiary panel for the main menu.
@@ -50,7 +51,7 @@ public class BestiaryUI : MonoBehaviour
 
         int unlocked = BestiaryManager.UnlockedLoreCount();
         if (summaryText != null)
-            summaryText.text = $"Lore Unlocked: {unlocked}/6  |  Kill enemies to reveal tactical tips";
+            summaryText.text = L("bestiary.ui.summary", unlocked);
 
         var entries = BestiaryManager.GetAllEntries();
         foreach (var entry in entries)
@@ -98,7 +99,7 @@ public class BestiaryUI : MonoBehaviour
         var nameObj = new GameObject("Name");
         nameObj.transform.SetParent(headerObj.transform, false);
         var nameTmp = nameObj.AddComponent<TextMeshProUGUI>();
-        nameTmp.text = entry.enemyName;
+        nameTmp.text = BestiaryManager.GetLocalizedEnemyName(entry.enemyName);
         nameTmp.fontSize = 22;
         nameTmp.fontStyle = FontStyles.Bold;
         nameTmp.color = entry.loreUnlocked ? goldColor : textColor;
@@ -110,23 +111,25 @@ public class BestiaryUI : MonoBehaviour
         var typeObj = new GameObject("Type");
         typeObj.transform.SetParent(headerObj.transform, false);
         var typeTmp = typeObj.AddComponent<TextMeshProUGUI>();
-        typeTmp.text = $"[{entry.enemyType}]";
+        typeTmp.text = L("bestiary.ui.type_badge", BestiaryManager.GetLocalizedEnemyType(entry.enemyType));
         typeTmp.fontSize = 16;
         typeTmp.color = typeColor;
         typeTmp.alignment = TextAlignmentOptions.Right;
         var typeLe = typeObj.AddComponent<LayoutElement>();
         typeLe.preferredWidth = 120;
+        typeLe.minWidth = 120;
 
         // Kill count
         var killObj = new GameObject("Kills");
         killObj.transform.SetParent(headerObj.transform, false);
         var killTmp = killObj.AddComponent<TextMeshProUGUI>();
-        killTmp.text = $"Kills: {entry.killCount}";
+        killTmp.text = L("bestiary.ui.kills", entry.killCount);
         killTmp.fontSize = 16;
         killTmp.color = textColor;
         killTmp.alignment = TextAlignmentOptions.Right;
         var killLe = killObj.AddComponent<LayoutElement>();
-        killLe.preferredWidth = 100;
+        killLe.preferredWidth = 120;
+        killLe.minWidth = 120;
 
         // Lore progress bar
         float progress = BestiaryManager.GetUnlockProgress(entry.enemyName);
@@ -146,7 +149,7 @@ public class BestiaryUI : MonoBehaviour
         var progLabelObj = new GameObject("Label");
         progLabelObj.transform.SetParent(progRowObj.transform, false);
         var progLabelTmp = progLabelObj.AddComponent<TextMeshProUGUI>();
-        progLabelTmp.text = "Lore:";
+        progLabelTmp.text = L("bestiary.ui.lore");
         progLabelTmp.fontSize = 13;
         progLabelTmp.color = dimTextColor;
         progLabelTmp.alignment = TextAlignmentOptions.Left;
@@ -177,12 +180,13 @@ public class BestiaryUI : MonoBehaviour
         var progPctObj = new GameObject("Pct");
         progPctObj.transform.SetParent(progRowObj.transform, false);
         var progPctTmp = progPctObj.AddComponent<TextMeshProUGUI>();
-        progPctTmp.text = entry.loreUnlocked ? "UNLOCKED" : $"{progress:P0}";
+        progPctTmp.text = entry.loreUnlocked ? L("bestiary.ui.unlocked") : L("bestiary.ui.progress_pct", Mathf.RoundToInt(progress * 100));
         progPctTmp.fontSize = 13;
         progPctTmp.color = entry.loreUnlocked ? goldColor : dimTextColor;
         progPctTmp.alignment = TextAlignmentOptions.Right;
         var progPctLe = progPctObj.AddComponent<LayoutElement>();
-        progPctLe.preferredWidth = 80;
+        progPctLe.preferredWidth = 120;
+        progPctLe.minWidth = 120;
 
         // Lore tip (shown if unlocked, or locked message)
         var tipObj = new GameObject("Tip");
@@ -190,7 +194,7 @@ public class BestiaryUI : MonoBehaviour
         var tipTmp = tipObj.AddComponent<TextMeshProUGUI>();
         if (entry.loreUnlocked)
         {
-            tipTmp.text = $"<color=#{ColorUtility.ToHtmlStringRGB(tipColor)}>TIP:</color> {entry.loreTip}";
+            tipTmp.text = $"<color=#{ColorUtility.ToHtmlStringRGB(tipColor)}>{L("bestiary.ui.tip_prefix")}</color> {BestiaryManager.GetLocalizedLore(entry.enemyName)}";
             tipTmp.richText = true;
         }
         else
@@ -249,7 +253,7 @@ public class BestiaryUI : MonoBehaviour
         var titleObj = new GameObject("Title");
         titleObj.transform.SetParent(dialogPanel.transform, false);
         var titleTmp = titleObj.AddComponent<TextMeshProUGUI>();
-        titleTmp.text = "BESTIARY";
+        titleTmp.text = L("bestiary.ui.title");
         titleTmp.fontSize = 36;
         titleTmp.fontStyle = FontStyles.Bold;
         titleTmp.color = goldColor;
@@ -339,7 +343,7 @@ public class BestiaryUI : MonoBehaviour
         var closeTxtObj = new GameObject("Text");
         closeTxtObj.transform.SetParent(closeObj.transform, false);
         var closeTmp = closeTxtObj.AddComponent<TextMeshProUGUI>();
-        closeTmp.text = "CLOSE";
+        closeTmp.text = L("bestiary.ui.close");
         closeTmp.fontSize = 26;
         closeTmp.fontStyle = FontStyles.Bold;
         closeTmp.color = goldColor;

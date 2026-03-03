@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using static LocalizationManager;
 
 public enum DailyEventCategory { Beneficial, Detrimental, Mixed }
 
@@ -251,8 +252,8 @@ public class DailyEventManager : MonoBehaviour
         EnemySpeedMultiplier = ApplyChaos(evt.enemySpeedMultiplier);
         DefenderAttackSpeedMultiplier = ApplyChaos(evt.defenderAttackSpeedMultiplier);
 
-        CurrentEventName = evt.name;
-        CurrentEventDescription = evt.description;
+        CurrentEventName = GetLocalizedName(evt.name);
+        CurrentEventDescription = GetLocalizedDesc(evt.name);
         CurrentEventCategory = evt.category;
         HasActiveEvent = true;
 
@@ -289,6 +290,21 @@ public class DailyEventManager : MonoBehaviour
     {
         if (!MutatorManager.IsActive("chaos_modifiers")) return value;
         return 1f + (value - 1f) * 2f;
+    }
+
+    private static string SanitizeEventId(string eventName)
+    {
+        return eventName.ToLower().Replace(" ", "_").Replace("'", "");
+    }
+
+    public static string GetLocalizedName(string eventName)
+    {
+        return L($"event.{SanitizeEventId(eventName)}.name");
+    }
+
+    public static string GetLocalizedDesc(string eventName)
+    {
+        return L($"event.{SanitizeEventId(eventName)}.desc");
     }
 
     private void RefreshMenialSpeeds()

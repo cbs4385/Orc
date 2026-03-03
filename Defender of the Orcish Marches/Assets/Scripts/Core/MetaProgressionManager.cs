@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static LocalizationManager;
 
 /// <summary>
 /// Defines the meta-upgrade tree — permanent bonuses purchased with War Trophies between runs.
@@ -286,6 +287,16 @@ public static class MetaProgressionManager
         {
             Debug.Log($"[MetaProgressionManager] Upgrade: {entry}");
         }
+    }
+
+    public static string GetLocalizedName(string id)
+    {
+        return L($"meta.{id}.name");
+    }
+
+    public static string GetLocalizedDesc(string id)
+    {
+        return L($"meta.{id}.desc");
     }
 
     public static void ClearAll()

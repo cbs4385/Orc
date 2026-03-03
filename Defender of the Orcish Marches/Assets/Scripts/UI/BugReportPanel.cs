@@ -8,6 +8,7 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Mail;
 using System.Threading;
+using static LocalizationManager;
 
 public class BugReportPanel : MonoBehaviour
 {
@@ -73,7 +74,7 @@ public class BugReportPanel : MonoBehaviour
                 if (sendingOverlay != null) sendingOverlay.SetActive(false);
                 if (statusText != null)
                 {
-                    statusText.text = "Bug report sent successfully!";
+                    statusText.text = L("bug.ui.success");
                     statusText.color = new Color(0.3f, 0.9f, 0.3f);
                 }
                 Debug.Log("[BugReportPanel] Bug report sent successfully.");
@@ -86,7 +87,7 @@ public class BugReportPanel : MonoBehaviour
                 if (submitButton != null) submitButton.interactable = true;
                 if (statusText != null)
                 {
-                    statusText.text = $"Failed: {errorMessage}";
+                    statusText.text = L("bug.ui.failed", errorMessage);
                     statusText.color = new Color(0.9f, 0.3f, 0.3f);
                 }
                 Debug.LogError($"[BugReportPanel] Failed to send bug report: {errorMessage}");
@@ -110,7 +111,7 @@ public class BugReportPanel : MonoBehaviour
             Debug.LogError("[BugReportPanel] BugReportConfig is null! Cannot send report.");
             if (statusText != null)
             {
-                statusText.text = "Error: No config assigned.";
+                statusText.text = L("bug.ui.no_config");
                 statusText.color = new Color(0.9f, 0.3f, 0.3f);
             }
             return;
@@ -121,7 +122,7 @@ public class BugReportPanel : MonoBehaviour
             Debug.LogError("[BugReportPanel] SMTP credentials not configured in BugReportConfig asset.");
             if (statusText != null)
             {
-                statusText.text = "Error: SMTP credentials not configured.";
+                statusText.text = L("bug.ui.no_credentials");
                 statusText.color = new Color(0.9f, 0.3f, 0.3f);
             }
             return;
@@ -132,7 +133,7 @@ public class BugReportPanel : MonoBehaviour
         if (sendingOverlay != null) sendingOverlay.SetActive(true);
         if (statusText != null)
         {
-            statusText.text = "Sending...";
+            statusText.text = L("bug.ui.sending");
             statusText.color = Color.white;
         }
 
@@ -227,7 +228,7 @@ public class BugReportPanel : MonoBehaviour
                         if (totalEmails > 1)
                         {
                             subject += $" (Part {i + 1}/{totalEmails})";
-                            progressMessage = $"Sending part {i + 1}/{totalEmails}...";
+                            progressMessage = L("bug.ui.sending_part", i + 1, totalEmails);
                         }
 
                         using (var mail = new MailMessage(senderEmail, recipientEmail, subject, body))
@@ -303,7 +304,7 @@ public class BugReportPanel : MonoBehaviour
         var titleObj = new GameObject("Title");
         titleObj.transform.SetParent(panelObj.transform, false);
         var titleTmp = titleObj.AddComponent<TextMeshProUGUI>();
-        titleTmp.text = "REPORT BUG";
+        titleTmp.text = L("bug.ui.title");
         titleTmp.fontSize = 36;
         titleTmp.fontStyle = FontStyles.Bold;
         titleTmp.color = new Color(0.9f, 0.75f, 0.3f);
@@ -319,7 +320,7 @@ public class BugReportPanel : MonoBehaviour
         var versionObj = new GameObject("VersionLabel");
         versionObj.transform.SetParent(panelObj.transform, false);
         versionLabel = versionObj.AddComponent<TextMeshProUGUI>();
-        versionLabel.text = $"v{Application.version} | {GameSettings.GetDifficultyName()}";
+        versionLabel.text = L("bug.ui.version", Application.version, GameSettings.GetDifficultyName());
         versionLabel.fontSize = 20;
         versionLabel.color = new Color(0.6f, 0.6f, 0.6f);
         versionLabel.alignment = TextAlignmentOptions.Center;
@@ -354,7 +355,7 @@ public class BugReportPanel : MonoBehaviour
         var placeholderObj = new GameObject("Placeholder");
         placeholderObj.transform.SetParent(textAreaObj.transform, false);
         var placeholderTmp = placeholderObj.AddComponent<TextMeshProUGUI>();
-        placeholderTmp.text = "Describe the bug... What were you doing? What happened vs what you expected?";
+        placeholderTmp.text = L("bug.ui.placeholder");
         placeholderTmp.fontSize = 20;
         placeholderTmp.fontStyle = FontStyles.Italic;
         placeholderTmp.color = new Color(0.4f, 0.4f, 0.4f);
@@ -416,11 +417,11 @@ public class BugReportPanel : MonoBehaviour
         hlg.childForceExpandHeight = true;
 
         // Submit button
-        submitButton = CreateDialogButton("SubmitButton", "SUBMIT", btnRowObj.transform);
+        submitButton = CreateDialogButton("SubmitButton", L("bug.ui.submit"), btnRowObj.transform);
         submitButton.onClick.AddListener(OnSubmitClicked);
 
         // Cancel button
-        cancelButton = CreateDialogButton("CancelButton", "CANCEL", btnRowObj.transform);
+        cancelButton = CreateDialogButton("CancelButton", L("bug.ui.cancel"), btnRowObj.transform);
         cancelButton.onClick.AddListener(Hide);
 
         // Sending overlay
@@ -438,7 +439,7 @@ public class BugReportPanel : MonoBehaviour
         var sendingTextObj = new GameObject("SendingText");
         sendingTextObj.transform.SetParent(sendingOverlay.transform, false);
         var sendingTmp = sendingTextObj.AddComponent<TextMeshProUGUI>();
-        sendingTmp.text = "Sending...";
+        sendingTmp.text = L("bug.ui.sending");
         sendingTmp.fontSize = 32;
         sendingTmp.fontStyle = FontStyles.Bold;
         sendingTmp.color = new Color(0.9f, 0.75f, 0.3f);

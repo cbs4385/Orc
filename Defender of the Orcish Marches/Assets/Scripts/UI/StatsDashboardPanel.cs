@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 /// <summary>
 /// Code-generated stats dashboard panel accessible from the main menu.
@@ -81,35 +82,35 @@ public class StatsDashboardPanel : MonoBehaviour
     {
         var data = LifetimeStatsManager.GetData();
 
-        AddSectionHeader("OVERVIEW");
-        AddStatRow("Total Runs", data.totalRuns.ToString("N0"));
-        AddStatRow("Total Days Survived", data.totalDays.ToString("N0"));
-        AddStatRow("Total Gold Earned", data.totalGoldEarned.ToString("N0"));
-        AddStatRow("Total Gold Spent", data.totalGoldSpent.ToString("N0"));
+        AddSectionHeader(L("stats.section.overview"));
+        AddStatRow(L("stats.total_runs"), data.totalRuns.ToString("N0"));
+        AddStatRow(L("stats.total_days"), data.totalDays.ToString("N0"));
+        AddStatRow(L("stats.total_gold_earned"), data.totalGoldEarned.ToString("N0"));
+        AddStatRow(L("stats.total_gold_spent"), data.totalGoldSpent.ToString("N0"));
 
-        AddSectionHeader("ENEMY KILLS");
-        AddStatRow("Total Kills", data.totalKills.ToString("N0"));
-        AddStatRow("Orc Grunts", data.killsOrcGrunt.ToString("N0"));
-        AddStatRow("Bow Orcs", data.killsBowOrc.ToString("N0"));
-        AddStatRow("Trolls", data.killsTroll.ToString("N0"));
-        AddStatRow("Suicide Goblins", data.killsSuicideGoblin.ToString("N0"));
-        AddStatRow("Goblin Cannoneers", data.killsGoblinCannoneer.ToString("N0"));
-        AddStatRow("Orc War Bosses", data.killsOrcWarBoss.ToString("N0"));
+        AddSectionHeader(L("stats.section.enemy_kills"));
+        AddStatRow(L("stats.total_kills"), data.totalKills.ToString("N0"));
+        AddStatRow(L("stats.orc_grunts"), data.killsOrcGrunt.ToString("N0"));
+        AddStatRow(L("stats.bow_orcs"), data.killsBowOrc.ToString("N0"));
+        AddStatRow(L("stats.trolls"), data.killsTroll.ToString("N0"));
+        AddStatRow(L("stats.suicide_goblins"), data.killsSuicideGoblin.ToString("N0"));
+        AddStatRow(L("stats.goblin_cannoneers"), data.killsGoblinCannoneer.ToString("N0"));
+        AddStatRow(L("stats.orc_war_bosses"), data.killsOrcWarBoss.ToString("N0"));
 
-        AddSectionHeader("DEFENDERS");
-        AddStatRow("Total Hires", data.totalHires.ToString("N0"));
-        AddStatRow("Engineers Hired", data.hiresEngineer.ToString("N0"));
-        AddStatRow("Pikemen Hired", data.hiresPikeman.ToString("N0"));
-        AddStatRow("Crossbowmen Hired", data.hiresCrossbowman.ToString("N0"));
-        AddStatRow("Wizards Hired", data.hiresWizard.ToString("N0"));
-        AddStatRow("Menials Lost", data.totalMenialsLost.ToString("N0"));
+        AddSectionHeader(L("stats.section.defenders"));
+        AddStatRow(L("stats.total_hires"), data.totalHires.ToString("N0"));
+        AddStatRow(L("stats.engineers_hired"), data.hiresEngineer.ToString("N0"));
+        AddStatRow(L("stats.pikemen_hired"), data.hiresPikeman.ToString("N0"));
+        AddStatRow(L("stats.crossbowmen_hired"), data.hiresCrossbowman.ToString("N0"));
+        AddStatRow(L("stats.wizards_hired"), data.hiresWizard.ToString("N0"));
+        AddStatRow(L("stats.menials_lost"), data.totalMenialsLost.ToString("N0"));
 
-        AddSectionHeader("FORTRESS & OTHER");
-        AddStatRow("Walls Built", data.totalWallsBuilt.ToString("N0"));
-        AddStatRow("Wall HP Repaired", data.totalWallHPRepaired.ToString("N0"));
-        AddStatRow("Vegetation Cleared", data.totalVegetationCleared.ToString("N0"));
-        AddStatRow("Refugees Saved", data.totalRefugeesSaved.ToString("N0"));
-        AddStatRow("Ballista Shots Fired", data.totalBallistaShotsFired.ToString("N0"));
+        AddSectionHeader(L("stats.section.fortress"));
+        AddStatRow(L("stats.walls_built"), data.totalWallsBuilt.ToString("N0"));
+        AddStatRow(L("stats.wall_hp_repaired"), data.totalWallHPRepaired.ToString("N0"));
+        AddStatRow(L("stats.vegetation_cleared"), data.totalVegetationCleared.ToString("N0"));
+        AddStatRow(L("stats.refugees_saved"), data.totalRefugeesSaved.ToString("N0"));
+        AddStatRow(L("stats.ballista_shots"), data.totalBallistaShotsFired.ToString("N0"));
 
         AddSpacer();
     }
@@ -120,29 +121,29 @@ public class StatsDashboardPanel : MonoBehaviour
     {
         var data = LifetimeStatsManager.GetData();
 
-        AddSectionHeader("OVERALL BESTS");
-        AddStatRow("Longest Run", data.recordLongestRun > 0 ? $"{data.recordLongestRun} days" : "N/A");
-        AddStatRow("Highest Score", data.recordHighestScore > 0 ? data.recordHighestScore.ToString("N0") : "N/A");
-        AddStatRow("Most Kills", data.recordMostKills > 0 ? data.recordMostKills.ToString("N0") : "N/A");
-        AddStatRow("Most Gold Earned", data.recordMostGold > 0 ? data.recordMostGold.ToString("N0") : "N/A");
-        AddStatRow("Most Defenders Alive", data.recordMostDefendersAlive > 0 ? data.recordMostDefendersAlive.ToString() : "N/A");
+        AddSectionHeader(L("stats.section.bests"));
+        AddStatRow(L("stats.longest_run"), data.recordLongestRun > 0 ? L("stats.days_fmt", data.recordLongestRun) : L("stats.na"));
+        AddStatRow(L("stats.highest_score"), data.recordHighestScore > 0 ? data.recordHighestScore.ToString("N0") : L("stats.na"));
+        AddStatRow(L("stats.most_kills"), data.recordMostKills > 0 ? data.recordMostKills.ToString("N0") : L("stats.na"));
+        AddStatRow(L("stats.most_gold"), data.recordMostGold > 0 ? data.recordMostGold.ToString("N0") : L("stats.na"));
+        AddStatRow(L("stats.most_defenders"), data.recordMostDefendersAlive > 0 ? data.recordMostDefendersAlive.ToString() : L("stats.na"));
 
         if (data.recordFastestBossKill > 0)
         {
             int mins = Mathf.FloorToInt(data.recordFastestBossKill / 60);
             int secs = Mathf.FloorToInt(data.recordFastestBossKill % 60);
-            AddStatRow("Fastest Boss Kill", $"{mins}:{secs:D2}");
+            AddStatRow(L("stats.fastest_boss"), L("stats.time_fmt", mins, secs.ToString("D2")));
         }
         else
         {
-            AddStatRow("Fastest Boss Kill", "N/A");
+            AddStatRow(L("stats.fastest_boss"), L("stats.na"));
         }
 
-        AddSectionHeader("PER-DIFFICULTY BESTS");
-        AddStatRow("Longest Run (Easy)", data.recordLongestRunEasy > 0 ? $"{data.recordLongestRunEasy} days" : "N/A");
-        AddStatRow("Longest Run (Normal)", data.recordLongestRunNormal > 0 ? $"{data.recordLongestRunNormal} days" : "N/A");
-        AddStatRow("Longest Run (Hard)", data.recordLongestRunHard > 0 ? $"{data.recordLongestRunHard} days" : "N/A");
-        AddStatRow("Longest Run (Nightmare)", data.recordLongestRunNightmare > 0 ? $"{data.recordLongestRunNightmare} days" : "N/A");
+        AddSectionHeader(L("stats.section.difficulty_bests"));
+        AddStatRow(L("stats.longest_easy"), data.recordLongestRunEasy > 0 ? L("stats.days_fmt", data.recordLongestRunEasy) : L("stats.na"));
+        AddStatRow(L("stats.longest_normal"), data.recordLongestRunNormal > 0 ? L("stats.days_fmt", data.recordLongestRunNormal) : L("stats.na"));
+        AddStatRow(L("stats.longest_hard"), data.recordLongestRunHard > 0 ? L("stats.days_fmt", data.recordLongestRunHard) : L("stats.na"));
+        AddStatRow(L("stats.longest_nightmare"), data.recordLongestRunNightmare > 0 ? L("stats.days_fmt", data.recordLongestRunNightmare) : L("stats.na"));
 
         AddSpacer();
     }
@@ -153,41 +154,41 @@ public class StatsDashboardPanel : MonoBehaviour
     {
         var data = LifetimeStatsManager.GetData();
 
-        AddSectionHeader("AVERAGES");
+        AddSectionHeader(L("stats.section.averages"));
         float avgDays = LifetimeStatsManager.GetAverageDays();
         float avgKills = LifetimeStatsManager.GetAverageKills();
         float avgGold = LifetimeStatsManager.GetAverageGold();
-        AddStatRow("Avg Days per Run", data.totalRuns > 0 ? avgDays.ToString("F1") : "N/A");
-        AddStatRow("Avg Kills per Run", data.totalRuns > 0 ? avgKills.ToString("F1") : "N/A");
-        AddStatRow("Avg Gold per Run", data.totalRuns > 0 ? avgGold.ToString("F0") : "N/A");
+        AddStatRow(L("stats.avg_days"), data.totalRuns > 0 ? avgDays.ToString("F1") : L("stats.na"));
+        AddStatRow(L("stats.avg_kills"), data.totalRuns > 0 ? avgKills.ToString("F1") : L("stats.na"));
+        AddStatRow(L("stats.avg_gold"), data.totalRuns > 0 ? avgGold.ToString("F0") : L("stats.na"));
 
-        AddSectionHeader("RATIOS");
+        AddSectionHeader(L("stats.section.ratios"));
         float kd = LifetimeStatsManager.GetKDRatio();
-        AddStatRow("Kill/Death Ratio", data.totalMenialsLost > 0 ? kd.ToString("F1") : "N/A");
+        AddStatRow(L("stats.kd_ratio"), data.totalMenialsLost > 0 ? kd.ToString("F1") : L("stats.na"));
 
         if (data.totalGoldEarned > 0)
         {
             float spendRate = (float)data.totalGoldSpent / data.totalGoldEarned * 100f;
-            AddStatRow("Gold Spend Rate", $"{spendRate:F0}%");
+            AddStatRow(L("stats.gold_spend_rate"), $"{spendRate:F0}%");
         }
         else
         {
-            AddStatRow("Gold Spend Rate", "N/A");
+            AddStatRow(L("stats.gold_spend_rate"), L("stats.na"));
         }
 
-        AddSectionHeader("FAVORITES & TRENDS");
-        AddStatRow("Favorite Defender", LifetimeStatsManager.GetFavoriteDefender());
-        AddStatRow("Most Dangerous Enemy", LifetimeStatsManager.GetMostDangerousEnemy());
+        AddSectionHeader(L("stats.section.favorites"));
+        AddStatRow(L("stats.favorite_defender"), LifetimeStatsManager.GetFavoriteDefender());
+        AddStatRow(L("stats.most_dangerous"), LifetimeStatsManager.GetMostDangerousEnemy());
 
         float trend = LifetimeStatsManager.GetScoreTrend();
         if (data.recentScores.Count >= 6)
         {
             string trendStr = trend >= 0 ? $"+{trend:F0}%" : $"{trend:F0}%";
-            AddStatRow("Score Trend (last 10)", trendStr);
+            AddStatRow(L("stats.score_trend"), trendStr);
         }
         else
         {
-            AddStatRow("Score Trend", $"Need {6 - data.recentScores.Count} more runs");
+            AddStatRow(L("stats.score_trend_short"), L("stats.need_more_runs", 6 - data.recentScores.Count));
         }
 
         AddSpacer();
@@ -259,7 +260,8 @@ public class StatsDashboardPanel : MonoBehaviour
         valTmp.color = textColor;
         valTmp.alignment = TextAlignmentOptions.Right;
         var valLe = valObj.AddComponent<LayoutElement>();
-        valLe.preferredWidth = 200;
+        valLe.preferredWidth = 120;
+        valLe.minWidth = 120;
     }
 
     private void AddSpacer()
@@ -314,7 +316,7 @@ public class StatsDashboardPanel : MonoBehaviour
         var titleObj = new GameObject("Title");
         titleObj.transform.SetParent(panelObj.transform, false);
         var titleTmp = titleObj.AddComponent<TextMeshProUGUI>();
-        titleTmp.text = "STATISTICS";
+        titleTmp.text = L("stats.ui.title");
         titleTmp.fontSize = 36;
         titleTmp.fontStyle = FontStyles.Bold;
         titleTmp.color = goldColor;
@@ -342,9 +344,9 @@ public class StatsDashboardPanel : MonoBehaviour
         tabHlg.childForceExpandWidth = true;
         tabHlg.childForceExpandHeight = true;
 
-        lifetimeTabBtn = CreateTabButton("LIFETIME", tabBar.transform, out lifetimeUnderline);
-        recordsTabBtn = CreateTabButton("RECORDS", tabBar.transform, out recordsUnderline);
-        computedTabBtn = CreateTabButton("COMPUTED", tabBar.transform, out computedUnderline);
+        lifetimeTabBtn = CreateTabButton(L("stats.tab.lifetime"), tabBar.transform, out lifetimeUnderline);
+        recordsTabBtn = CreateTabButton(L("stats.tab.records"), tabBar.transform, out recordsUnderline);
+        computedTabBtn = CreateTabButton(L("stats.tab.computed"), tabBar.transform, out computedUnderline);
 
         lifetimeTabBtn.onClick.AddListener(() => SetActiveTab(0));
         recordsTabBtn.onClick.AddListener(() => SetActiveTab(1));
@@ -394,7 +396,7 @@ public class StatsDashboardPanel : MonoBehaviour
         scrollRect.content = contentContainer;
 
         // Close button
-        var closeBtn = CreateDialogButton("CloseButton", "CLOSE", panelObj.transform);
+        var closeBtn = CreateDialogButton("CloseButton", L("stats.ui.close"), panelObj.transform);
         var closeBtnRect = closeBtn.GetComponent<RectTransform>();
         closeBtnRect.anchorMin = new Vector2(0.35f, 0.02f);
         closeBtnRect.anchorMax = new Vector2(0.65f, 0.08f);

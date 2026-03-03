@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static LocalizationManager;
 
 [Serializable]
 public struct BestiaryEntry
@@ -165,6 +166,21 @@ public static class BestiaryManager
         return Mathf.Clamp01((float)GetKillCount(enemyId) / KILLS_TO_UNLOCK);
     }
 
+    private static string SanitizeEnemyId(string enemyName)
+    {
+        return enemyName.ToLower().Replace(" ", "_");
+    }
+
+    public static string GetLocalizedLore(string enemyName)
+    {
+        return L($"bestiary.{SanitizeEnemyId(enemyName)}.lore");
+    }
+
+    public static string GetLocalizedTip(string enemyName)
+    {
+        return L($"bestiary.{SanitizeEnemyId(enemyName)}.tip");
+    }
+
     /// <summary>Get a bestiary display entry for an enemy type.</summary>
     public static BestiaryEntry GetEntry(string enemyId)
     {
@@ -173,10 +189,10 @@ public static class BestiaryManager
 
         string lore = "";
         string tip = "";
-        if (unlocked && LoreEntries.TryGetValue(enemyId, out var loreDef))
+        if (unlocked && LoreEntries.ContainsKey(enemyId))
         {
-            lore = loreDef.description;
-            tip = loreDef.tacticalTip;
+            lore = GetLocalizedLore(enemyId);
+            tip = GetLocalizedTip(enemyId);
         }
 
         return new BestiaryEntry
@@ -185,7 +201,7 @@ public static class BestiaryManager
             enemyType = GetEnemyTypeForId(enemyId),
             killCount = kills,
             loreUnlocked = unlocked,
-            loreTip = unlocked ? tip : $"Kill {KILLS_TO_UNLOCK - kills} more to unlock lore"
+            loreTip = unlocked ? tip : L("bestiary.kill_to_unlock", KILLS_TO_UNLOCK - kills)
         };
     }
 
@@ -225,6 +241,20 @@ public static class BestiaryManager
             case "Orc War Boss": return "Boss";
             default: return "Unknown";
         }
+    }
+
+    /// <summary>Returns the localized display name for an enemy given its internal ID.</summary>
+    public static string GetLocalizedEnemyName(string enemyId)
+    {
+        string key = "bestiary.enemy." + enemyId.ToLower().Replace(" ", "_");
+        return L(key);
+    }
+
+    /// <summary>Returns the localized enemy type string (e.g. "Melee" -> localized).</summary>
+    public static string GetLocalizedEnemyType(string typeId)
+    {
+        string key = "enemy.type." + typeId.ToLower();
+        return L(key);
     }
 
     public static void ClearAll()

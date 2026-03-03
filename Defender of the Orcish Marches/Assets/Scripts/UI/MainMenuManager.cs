@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 public class MainMenuManager : MonoBehaviour
 {
@@ -48,6 +49,7 @@ public class MainMenuManager : MonoBehaviour
 
     private SceneLoader sceneLoader;
     private SaveSlotPicker saveSlotPicker;
+    private TextMeshProUGUI versionLabel;
 
     private void Awake()
     {
@@ -55,6 +57,7 @@ public class MainMenuManager : MonoBehaviour
         if (sceneLoader == null)
             sceneLoader = gameObject.AddComponent<SceneLoader>();
 
+        CreateVersionLabel();
         Debug.Log("[MainMenuManager] Initialized.");
     }
 
@@ -103,6 +106,19 @@ public class MainMenuManager : MonoBehaviour
             difficultySlider.onValueChanged.AddListener(OnDifficultyChanged);
             UpdateDifficultyLabel(difficultySlider.value);
         }
+
+        // Apply current language to all labels (scene was built with English baked in)
+        RefreshLabels();
+    }
+
+    private void OnEnable()
+    {
+        LocalizationManager.OnLanguageChanged += RefreshLabels;
+    }
+
+    private void OnDisable()
+    {
+        LocalizationManager.OnLanguageChanged -= RefreshLabels;
     }
 
     private void OnDestroy()
@@ -135,6 +151,99 @@ public class MainMenuManager : MonoBehaviour
             continueButton.onClick.RemoveListener(OnContinueClicked);
         if (difficultySlider != null)
             difficultySlider.onValueChanged.RemoveListener(OnDifficultyChanged);
+    }
+
+    private void RefreshLabels()
+    {
+        SetButtonLabel(playButton, L("menu.play"));
+        SetButtonLabel(continueButton, L("menu.continue"));
+        SetButtonLabel(tutorialButton, L("menu.tutorial"));
+        SetButtonLabel(optionsButton, L("menu.options"));
+        SetButtonLabel(statsButton, L("menu.statistics"));
+        SetButtonLabel(mutatorsButton, L("menu.mutators"));
+        SetButtonLabel(achievementsButton, L("menu.achievements"));
+        SetButtonLabel(legacyButton, L("menu.legacy"));
+        SetButtonLabel(commanderButton, L("menu.commander"));
+        SetButtonLabel(metaProgressionButton, L("menu.upgrades"));
+        SetButtonLabel(bestiaryButton, L("menu.bestiary"));
+        SetButtonLabel(exitButton, L("menu.exit"));
+        SetButtonLabel(bugReportButton, L("menu.report_bug"));
+        UpdateDifficultyLabel(difficultySlider != null ? difficultySlider.value : 1);
+
+        // Refresh title text
+        var canvas = FindAnyObjectByType<Canvas>();
+        if (canvas != null)
+        {
+            var titleTransform = canvas.transform.Find("TitleText");
+            if (titleTransform != null)
+            {
+                var tmp = titleTransform.GetComponent<TextMeshProUGUI>();
+                if (tmp != null) tmp.text = L("menu.title");
+            }
+
+            // Refresh "DIFFICULTY" header
+            var diffPanel = canvas.transform.Find("DifficultyPanel");
+            if (diffPanel != null)
+            {
+                var headerTransform = diffPanel.Find("DifficultyHeader");
+                if (headerTransform != null)
+                {
+                    var tmp = headerTransform.GetComponent<TextMeshProUGUI>();
+                    if (tmp != null) tmp.text = L("menu.difficulty");
+                }
+
+                // Refresh difficulty tick labels (Easy/Normal/Hard/Nightmare)
+                // Labels are created in order in the hierarchy
+                string[] diffKeys = { "difficulty.easy", "difficulty.normal", "difficulty.hard", "difficulty.nightmare" };
+                int labelIdx = 0;
+                foreach (Transform child in diffPanel)
+                {
+                    if (child.name.StartsWith("DiffLabel_") && labelIdx < diffKeys.Length)
+                    {
+                        var labelTmp = child.GetComponent<TextMeshProUGUI>();
+                        if (labelTmp != null)
+                            labelTmp.text = L(diffKeys[labelIdx]);
+                        labelIdx++;
+                    }
+                }
+            }
+        }
+
+        // Version label
+        if (versionLabel != null)
+            versionLabel.text = L("menu.version", Application.version);
+
+        Debug.Log("[MainMenuManager] Labels refreshed for language change.");
+    }
+
+    private void CreateVersionLabel()
+    {
+        var canvas = FindAnyObjectByType<Canvas>();
+        if (canvas == null) return;
+
+        var versionObj = new GameObject("VersionLabel");
+        versionObj.transform.SetParent(canvas.transform, false);
+        var rect = versionObj.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1f, 0f);
+        rect.anchorMax = new Vector2(1f, 0f);
+        rect.pivot = new Vector2(1f, 0f);
+        rect.anchoredPosition = new Vector2(-10f, 10f);
+        rect.sizeDelta = new Vector2(200f, 25f);
+
+        versionLabel = versionObj.AddComponent<TextMeshProUGUI>();
+        versionLabel.text = L("menu.version", Application.version);
+        versionLabel.fontSize = 16;
+        versionLabel.color = new Color(0.5f, 0.48f, 0.4f, 0.7f);
+        versionLabel.alignment = TextAlignmentOptions.BottomRight;
+        versionLabel.raycastTarget = false;
+        Debug.Log($"[MainMenuManager] Version label created: {Application.version}");
+    }
+
+    private void SetButtonLabel(Button button, string text)
+    {
+        if (button == null) return;
+        var tmp = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (tmp != null) tmp.text = text;
     }
 
     private void OnDifficultyChanged(float value)

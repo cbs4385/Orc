@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static LocalizationManager;
 
 public class BuildModeManager : MonoBehaviour
 {
@@ -130,7 +131,7 @@ public class BuildModeManager : MonoBehaviour
         // Must be night
         if (DayNightCycle.Instance == null || !DayNightCycle.Instance.IsNight)
         {
-            GameHUD.ShowBanner("Can only build at night", HINT_BANNER_DURATION);
+            GameHUD.ShowBanner(L("build.only_at_night"), HINT_BANNER_DURATION);
             Debug.Log("[BuildModeManager] B key pressed — not night, cannot enter build mode.");
             return;
         }
@@ -144,14 +145,14 @@ public class BuildModeManager : MonoBehaviour
         {
             string upgKey = InputBindingManager.Instance != null
                 ? InputBindingManager.Instance.GetKeyboardDisplayName(GameAction.ToggleUpgrades) : "U";
-            GameHUD.ShowBanner($"No engineer — hire one from Upgrades ({upgKey})", HINT_BANNER_DURATION);
+            GameHUD.ShowBanner(L("build.no_engineer", upgKey), HINT_BANNER_DURATION);
             Debug.Log("[BuildModeManager] B key pressed — no engineer.");
             return;
         }
 
         if (!canAfford)
         {
-            GameHUD.ShowBanner($"Not enough gold for walls (need {WallCost}g, have {currentGold}g)", HINT_BANNER_DURATION);
+            GameHUD.ShowBanner(L("build.not_enough_gold", WallCost, currentGold), HINT_BANNER_DURATION);
             Debug.Log($"[BuildModeManager] B key pressed — can't afford walls. Need {WallCost}g, have {currentGold}g.");
             return;
         }
@@ -218,7 +219,7 @@ public class BuildModeManager : MonoBehaviour
         {
             string buildKey = InputBindingManager.Instance != null
                 ? InputBindingManager.Instance.GetKeyboardDisplayName(GameAction.ToggleBuildMode) : "B";
-            GameHUD.ShowBanner($"Press {buildKey} to build walls", HINT_BANNER_DURATION);
+            GameHUD.ShowBanner(L("build.press_to_build", buildKey), HINT_BANNER_DURATION);
             Debug.Log($"[BuildModeManager] Night hint: Press {buildKey} to build walls.");
         }
     }
@@ -266,7 +267,7 @@ public class BuildModeManager : MonoBehaviour
         IsBuildMode = false;
         Time.timeScale = 1f;
         Debug.Log("[BuildModeManager] Build mode ENDED. timeScale=1.");
-        GameHUD.ShowBanner("BUILD COMPLETE", EXIT_BANNER_DURATION);
+        GameHUD.ShowBanner(L("build.complete"), EXIT_BANNER_DURATION);
         OnBuildModeEnded?.Invoke();
     }
 

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 /// <summary>
 /// Code-generated Legacy Rank panel for the main menu.
@@ -50,11 +51,11 @@ public class LegacyUI : MonoBehaviour
 
         // Rank title
         AddCenteredText($"<size=40>{title}</size>", goldColor, 55);
-        AddCenteredText($"Rank {rank} / {maxRank}", textColor, 28);
+        AddCenteredText(L("legacy.ui.rank", rank, maxRank), textColor, 28);
         AddSpacer(10);
 
         // Points
-        AddCenteredText($"Legacy Points: {points}", textColor, 22);
+        AddCenteredText(L("legacy.ui.points", points), textColor, 22);
 
         // Progress bar to next rank
         if (rank < maxRank)
@@ -63,24 +64,24 @@ public class LegacyUI : MonoBehaviour
             float progress = LegacyProgressionManager.GetProgressToNextRank();
             AddSpacer(8);
             AddProgressBar(progress);
-            AddCenteredText($"{toNext} points to next rank", dimTextColor, 16);
+            AddCenteredText(L("legacy.ui.to_next", toNext), dimTextColor, 16);
         }
         else
         {
             AddSpacer(8);
             AddProgressBar(1f);
-            AddCenteredText("MAX RANK ACHIEVED", goldColor, 18);
+            AddCenteredText(L("legacy.ui.max_rank"), goldColor, 18);
         }
 
         AddSpacer(15);
 
         // Bonuses section
-        AddSectionHeader("ACTIVE BONUSES");
+        AddSectionHeader(L("legacy.ui.active_bonuses"));
 
         if (rank == 0)
         {
-            AddCenteredText("Complete runs to earn Legacy Points and unlock bonuses.", dimTextColor, 16);
-            AddCenteredText("Points earned = Score / 1000", dimTextColor, 14);
+            AddCenteredText(L("legacy.ui.no_bonuses"), dimTextColor, 16);
+            AddCenteredText(L("legacy.ui.points_formula"), dimTextColor, 14);
         }
         else
         {
@@ -96,9 +97,11 @@ public class LegacyUI : MonoBehaviour
         AddSpacer(15);
 
         // Rank tiers reference
-        AddSectionHeader("RANK TIERS");
-        string[] rankNames = { "Recruit", "Militia", "Sergeant", "Captain", "Commander",
-                               "Warden", "Champion", "Marshal", "Grand Marshal", "Legendary", "Mythic" };
+        AddSectionHeader(L("legacy.ui.rank_tiers"));
+        string[] rankKeys = { "legacy.rank.recruit", "legacy.rank.militia", "legacy.rank.sergeant",
+                               "legacy.rank.captain", "legacy.rank.commander", "legacy.rank.warden",
+                               "legacy.rank.champion", "legacy.rank.marshal", "legacy.rank.grand_marshal",
+                               "legacy.rank.legendary", "legacy.rank.mythic" };
         int[] thresholds = { 0, 10, 30, 60, 100, 160, 240, 350, 500, 700 };
 
         for (int i = 0; i <= maxRank; i++)
@@ -107,7 +110,7 @@ public class LegacyUI : MonoBehaviour
             string pts = i == 0 ? "0" : thresholds[i - 1].ToString();
             Color rowColor = isCurrent ? goldColor : (i < rank ? dimTextColor : textColor);
             string marker = isCurrent ? " <<" : "";
-            AddStatRow($"Rank {i}: {rankNames[i]}", $"{pts} pts{marker}", rowColor);
+            AddStatRow(L("legacy.ui.rank_row", i, L(rankKeys[i])), $"{pts} {L("legacy.ui.pts")}{marker}", rowColor);
         }
     }
 
@@ -226,6 +229,7 @@ public class LegacyUI : MonoBehaviour
         valTmp.alignment = TextAlignmentOptions.MidlineRight;
         var valLe = valObj.AddComponent<LayoutElement>();
         valLe.preferredWidth = 120;
+        valLe.minWidth = 120;
     }
 
     private void AddProgressBar(float fraction)
@@ -301,7 +305,7 @@ public class LegacyUI : MonoBehaviour
         var titleObj = new GameObject("Title");
         titleObj.transform.SetParent(dialogPanel.transform, false);
         var titleTmp = titleObj.AddComponent<TextMeshProUGUI>();
-        titleTmp.text = "LEGACY RANK";
+        titleTmp.text = L("legacy.ui.title");
         titleTmp.fontSize = 36;
         titleTmp.fontStyle = FontStyles.Bold;
         titleTmp.color = goldColor;
@@ -364,7 +368,7 @@ public class LegacyUI : MonoBehaviour
         var closeTxtObj = new GameObject("Text");
         closeTxtObj.transform.SetParent(closeObj.transform, false);
         var closeTmp = closeTxtObj.AddComponent<TextMeshProUGUI>();
-        closeTmp.text = "CLOSE";
+        closeTmp.text = L("legacy.ui.close");
         closeTmp.fontSize = 24;
         closeTmp.fontStyle = FontStyles.Bold;
         closeTmp.color = goldColor;

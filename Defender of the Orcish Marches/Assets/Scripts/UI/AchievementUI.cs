@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 /// <summary>
 /// Code-generated achievement panel for the main menu.
@@ -51,7 +52,7 @@ public class AchievementUI : MonoBehaviour
         int totalEarned = AchievementManager.GetTotalTiersEarned();
         int goldCount = AchievementManager.GetGoldCount();
         if (summaryText != null)
-            summaryText.text = $"Achievements: {totalEarned}/{AchievementDefs.All.Length}  |  Gold: {goldCount}";
+            summaryText.text = L("achievement.ui.summary", totalEarned, AchievementDefs.All.Length, goldCount);
 
         // Group by category
         AchievementCategory? lastCategory = null;
@@ -59,7 +60,7 @@ public class AchievementUI : MonoBehaviour
         {
             if (lastCategory == null || lastCategory != def.category)
             {
-                AddCategoryHeader(def.category.ToString().ToUpper());
+                AddCategoryHeader(L("achievement.category." + def.category.ToString().ToLower()));
                 lastCategory = def.category;
             }
             AddAchievementRow(def);
@@ -136,8 +137,8 @@ public class AchievementUI : MonoBehaviour
         var nameObj = new GameObject("Name");
         nameObj.transform.SetParent(infoObj.transform, false);
         var nameTmp = nameObj.AddComponent<TextMeshProUGUI>();
-        string tierStr = tier != AchievementTier.None ? $" <color=#{ColorUtility.ToHtmlStringRGB(GetTierColor(tier))}>[{tier}]</color>" : "";
-        nameTmp.text = $"{def.name}{tierStr}";
+        string tierStr = tier != AchievementTier.None ? $" <color=#{ColorUtility.ToHtmlStringRGB(GetTierColor(tier))}>[{L($"achievement.tier.{tier.ToString().ToLower()}")}]</color>" : "";
+        nameTmp.text = $"{AchievementDefs.GetLocalizedName(def.id)}{tierStr}";
         nameTmp.fontSize = 18;
         nameTmp.fontStyle = FontStyles.Bold;
         nameTmp.color = tier == AchievementTier.Gold ? goldColor : textColor;
@@ -148,7 +149,7 @@ public class AchievementUI : MonoBehaviour
         var descObj = new GameObject("Desc");
         descObj.transform.SetParent(infoObj.transform, false);
         var descTmp = descObj.AddComponent<TextMeshProUGUI>();
-        descTmp.text = def.description;
+        descTmp.text = AchievementDefs.GetLocalizedDesc(def.id);
         descTmp.fontSize = 14;
         descTmp.color = dimTextColor;
         var descLe = descObj.AddComponent<LayoutElement>();
@@ -191,14 +192,15 @@ public class AchievementUI : MonoBehaviour
         progTextObj.transform.SetParent(progRowObj.transform, false);
         var progTmp = progTextObj.AddComponent<TextMeshProUGUI>();
         if (tier == AchievementTier.Gold)
-            progTmp.text = "COMPLETE";
+            progTmp.text = L("achievement.ui.complete");
         else
-            progTmp.text = $"{progress}/{nextThreshold}";
+            progTmp.text = L("achievement.ui.progress", progress, nextThreshold);
         progTmp.fontSize = 12;
         progTmp.color = tier == AchievementTier.Gold ? goldColor : dimTextColor;
         progTmp.alignment = TextAlignmentOptions.MidlineRight;
         var progTextLe = progTextObj.AddComponent<LayoutElement>();
-        progTextLe.preferredWidth = 80;
+        progTextLe.preferredWidth = 120;
+        progTextLe.minWidth = 120;
     }
 
     private float GetProgressFraction(AchievementDef def, AchievementTier tier, int progress, int nextThreshold)
@@ -287,7 +289,7 @@ public class AchievementUI : MonoBehaviour
         var titleObj = new GameObject("Title");
         titleObj.transform.SetParent(dialogPanel.transform, false);
         var titleTmp = titleObj.AddComponent<TextMeshProUGUI>();
-        titleTmp.text = "ACHIEVEMENTS";
+        titleTmp.text = L("achievement.ui.title");
         titleTmp.fontSize = 36;
         titleTmp.fontStyle = FontStyles.Bold;
         titleTmp.color = goldColor;
@@ -360,7 +362,7 @@ public class AchievementUI : MonoBehaviour
         var closeTxtObj = new GameObject("Text");
         closeTxtObj.transform.SetParent(closeObj.transform, false);
         var closeTmp = closeTxtObj.AddComponent<TextMeshProUGUI>();
-        closeTmp.text = "CLOSE";
+        closeTmp.text = L("achievement.ui.close");
         closeTmp.fontSize = 24;
         closeTmp.fontStyle = FontStyles.Bold;
         closeTmp.color = goldColor;

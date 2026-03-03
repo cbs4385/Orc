@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 public class OptionsManager : MonoBehaviour
 {
@@ -19,6 +20,18 @@ public class OptionsManager : MonoBehaviour
     private SceneLoader sceneLoader;
     private InputBindingsUI bindingsUI;
     private Toggle onScreenControlsToggle;
+
+    // Language selector UI
+    private TextMeshProUGUI languageNameLabel;
+    private TextMeshProUGUI languageHeaderLabel;
+
+    // References to localized labels for refresh
+    private TextMeshProUGUI audioHeaderLabel;
+    private TextMeshProUGUI sfxLabel;
+    private TextMeshProUGUI musicLabel;
+    private TextMeshProUGUI videoHeaderLabel;
+    private TextMeshProUGUI fullscreenLabel;
+    private TextMeshProUGUI onScreenControlsLabel;
 
     private void Awake()
     {
@@ -60,6 +73,19 @@ public class OptionsManager : MonoBehaviour
 
         // Build input bindings UI dynamically
         BuildInputBindingsSection();
+
+        // Refresh baked scene labels (title, back button) to current language
+        RefreshAllLabels();
+    }
+
+    private void OnEnable()
+    {
+        LocalizationManager.OnLanguageChanged += RefreshAllLabels;
+    }
+
+    private void OnDisable()
+    {
+        LocalizationManager.OnLanguageChanged -= RefreshAllLabels;
     }
 
     private void OnDestroy()
@@ -130,16 +156,20 @@ public class OptionsManager : MonoBehaviour
         csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         scrollView.content = contentRect;
 
+        // -- Add Language Section --
+        languageHeaderLabel = AddSectionHeader(contentObj.transform, L("options.language"));
+        BuildLanguageSelector(contentObj.transform);
+
         // -- Add Audio Section --
-        AddSectionHeader(contentObj.transform, "AUDIO");
-        AddAudioRow(contentObj.transform, "SFX Volume", sfxVolumeSlider, sfxValueText);
-        AddAudioRow(contentObj.transform, "Music Volume", musicVolumeSlider, musicValueText);
+        audioHeaderLabel = AddSectionHeader(contentObj.transform, L("options.audio"));
+        sfxLabel = AddAudioRow(contentObj.transform, L("options.sfx_volume"), sfxVolumeSlider, sfxValueText);
+        musicLabel = AddAudioRow(contentObj.transform, L("options.music_volume"), musicVolumeSlider, musicValueText);
 
         // -- Add Video Section --
-        AddSectionHeader(contentObj.transform, "VIDEO");
-        AddToggleRow(contentObj.transform, "Fullscreen", fullscreenToggle);
+        videoHeaderLabel = AddSectionHeader(contentObj.transform, L("options.video"));
+        fullscreenLabel = AddToggleRow(contentObj.transform, L("options.fullscreen"), fullscreenToggle);
         if (onScreenControlsToggle != null)
-            AddToggleRow(contentObj.transform, "On-Screen Controls", onScreenControlsToggle);
+            onScreenControlsLabel = AddToggleRow(contentObj.transform, L("options.onscreen_controls"), onScreenControlsToggle);
 
         // -- Add spacer --
         AddSpacer(contentObj.transform, 20);
@@ -167,7 +197,7 @@ public class OptionsManager : MonoBehaviour
         }
     }
 
-    private void AddSectionHeader(Transform parent, string text)
+    private TextMeshProUGUI AddSectionHeader(Transform parent, string text)
     {
         var obj = new GameObject($"Header_{text}");
         obj.transform.SetParent(parent, false);
@@ -180,11 +210,12 @@ public class OptionsManager : MonoBehaviour
         tmp.raycastTarget = false;
         var le = obj.AddComponent<LayoutElement>();
         le.preferredHeight = 50;
+        return tmp;
     }
 
-    private void AddAudioRow(Transform parent, string label, Slider slider, TextMeshProUGUI valueText)
+    private TextMeshProUGUI AddAudioRow(Transform parent, string label, Slider slider, TextMeshProUGUI valueText)
     {
-        if (slider == null) return;
+        if (slider == null) return null;
 
         var rowObj = new GameObject($"Row_{label.Replace(" ", "")}");
         rowObj.transform.SetParent(parent, false);
@@ -224,11 +255,13 @@ public class OptionsManager : MonoBehaviour
             if (vtLE == null) vtLE = valueText.gameObject.AddComponent<LayoutElement>();
             vtLE.preferredWidth = 80;
         }
+
+        return labelTmp;
     }
 
-    private void AddToggleRow(Transform parent, string label, Toggle toggle)
+    private TextMeshProUGUI AddToggleRow(Transform parent, string label, Toggle toggle)
     {
-        if (toggle == null) return;
+        if (toggle == null) return null;
 
         var rowObj = new GameObject($"Row_{label}");
         rowObj.transform.SetParent(parent, false);
@@ -253,6 +286,7 @@ public class OptionsManager : MonoBehaviour
         labelLE.preferredWidth = 200;
 
         toggle.transform.SetParent(rowObj.transform, false);
+        return labelTmp;
     }
 
     private void AddSpacer(Transform parent, float height)
@@ -261,6 +295,163 @@ public class OptionsManager : MonoBehaviour
         obj.transform.SetParent(parent, false);
         var le = obj.AddComponent<LayoutElement>();
         le.preferredHeight = height;
+    }
+
+    private void BuildLanguageSelector(Transform parent)
+    {
+        var rowObj = new GameObject("LanguageRow");
+        rowObj.transform.SetParent(parent, false);
+        var le = rowObj.AddComponent<LayoutElement>();
+        le.preferredHeight = 50;
+        var hlg = rowObj.AddComponent<HorizontalLayoutGroup>();
+        hlg.spacing = 10;
+        hlg.childAlignment = TextAnchor.MiddleCenter;
+        hlg.childControlWidth = true;
+        hlg.childControlHeight = true;
+        hlg.childForceExpandHeight = true;
+
+        // Left arrow button
+        var leftBtnObj = new GameObject("LanguageLeftBtn");
+        leftBtnObj.transform.SetParent(rowObj.transform, false);
+        var leftBtnImg = leftBtnObj.AddComponent<Image>();
+        leftBtnImg.color = new Color(0.3f, 0.2f, 0.1f, 0.9f);
+        var leftBtn = leftBtnObj.AddComponent<Button>();
+        var leftColors = leftBtn.colors;
+        leftColors.normalColor = new Color(0.3f, 0.2f, 0.1f, 0.9f);
+        leftColors.highlightedColor = new Color(0.5f, 0.35f, 0.15f, 1f);
+        leftColors.pressedColor = new Color(0.6f, 0.4f, 0.1f, 1f);
+        leftBtn.colors = leftColors;
+        var leftLE = leftBtnObj.AddComponent<LayoutElement>();
+        leftLE.preferredWidth = 50;
+
+        var leftTextObj = new GameObject("Text");
+        leftTextObj.transform.SetParent(leftBtnObj.transform, false);
+        var leftTmp = leftTextObj.AddComponent<TextMeshProUGUI>();
+        leftTmp.text = "<";
+        leftTmp.fontSize = 32;
+        leftTmp.fontStyle = FontStyles.Bold;
+        leftTmp.color = new Color(0.9f, 0.8f, 0.5f);
+        leftTmp.alignment = TextAlignmentOptions.Center;
+        var leftTextRect = leftTextObj.GetComponent<RectTransform>();
+        leftTextRect.anchorMin = Vector2.zero;
+        leftTextRect.anchorMax = Vector2.one;
+        leftTextRect.offsetMin = Vector2.zero;
+        leftTextRect.offsetMax = Vector2.zero;
+
+        // Language name label
+        var nameLabelObj = new GameObject("LanguageNameLabel");
+        nameLabelObj.transform.SetParent(rowObj.transform, false);
+        languageNameLabel = nameLabelObj.AddComponent<TextMeshProUGUI>();
+        languageNameLabel.text = LocalizationManager.GetLanguageNativeName(LocalizationManager.CurrentLanguage);
+        languageNameLabel.fontSize = 28;
+        languageNameLabel.fontStyle = FontStyles.Bold;
+        languageNameLabel.color = new Color(0.9f, 0.75f, 0.3f);
+        languageNameLabel.alignment = TextAlignmentOptions.Center;
+        var nameLE = nameLabelObj.AddComponent<LayoutElement>();
+        nameLE.preferredWidth = 200;
+
+        // Right arrow button
+        var rightBtnObj = new GameObject("LanguageRightBtn");
+        rightBtnObj.transform.SetParent(rowObj.transform, false);
+        var rightBtnImg = rightBtnObj.AddComponent<Image>();
+        rightBtnImg.color = new Color(0.3f, 0.2f, 0.1f, 0.9f);
+        var rightBtn = rightBtnObj.AddComponent<Button>();
+        var rightColors = rightBtn.colors;
+        rightColors.normalColor = new Color(0.3f, 0.2f, 0.1f, 0.9f);
+        rightColors.highlightedColor = new Color(0.5f, 0.35f, 0.15f, 1f);
+        rightColors.pressedColor = new Color(0.6f, 0.4f, 0.1f, 1f);
+        rightBtn.colors = rightColors;
+        var rightLE = rightBtnObj.AddComponent<LayoutElement>();
+        rightLE.preferredWidth = 50;
+
+        var rightTextObj = new GameObject("Text");
+        rightTextObj.transform.SetParent(rightBtnObj.transform, false);
+        var rightTmp = rightTextObj.AddComponent<TextMeshProUGUI>();
+        rightTmp.text = ">";
+        rightTmp.fontSize = 32;
+        rightTmp.fontStyle = FontStyles.Bold;
+        rightTmp.color = new Color(0.9f, 0.8f, 0.5f);
+        rightTmp.alignment = TextAlignmentOptions.Center;
+        var rightTextRect = rightTextObj.GetComponent<RectTransform>();
+        rightTextRect.anchorMin = Vector2.zero;
+        rightTextRect.anchorMax = Vector2.one;
+        rightTextRect.offsetMin = Vector2.zero;
+        rightTextRect.offsetMax = Vector2.zero;
+
+        // Wire button listeners
+        leftBtn.onClick.AddListener(OnLanguagePrevious);
+        rightBtn.onClick.AddListener(OnLanguageNext);
+
+        Debug.Log($"[OptionsManager] Language selector built. Current: {LocalizationManager.GetLanguageNativeName(LocalizationManager.CurrentLanguage)}");
+    }
+
+    private void OnLanguagePrevious()
+    {
+        int current = (int)LocalizationManager.CurrentLanguage;
+        int count = LocalizationManager.LanguageCount;
+        int prev = (current - 1 + count) % count;
+        ApplyLanguage((LocalizationManager.Language)prev);
+    }
+
+    private void OnLanguageNext()
+    {
+        int current = (int)LocalizationManager.CurrentLanguage;
+        int count = LocalizationManager.LanguageCount;
+        int next = (current + 1) % count;
+        ApplyLanguage((LocalizationManager.Language)next);
+    }
+
+    private void ApplyLanguage(LocalizationManager.Language newLang)
+    {
+        // SetLanguage handles saving to GameSettings and firing OnLanguageChanged
+        LocalizationManager.SetLanguage(newLang);
+        Debug.Log($"[OptionsManager] Language changed to {LocalizationManager.GetLanguageNativeName(newLang)}");
+    }
+
+    private void RefreshAllLabels()
+    {
+        // Update language selector display
+        if (languageNameLabel != null)
+            languageNameLabel.text = LocalizationManager.GetLanguageNativeName(LocalizationManager.CurrentLanguage);
+        if (languageHeaderLabel != null)
+            languageHeaderLabel.text = L("options.language");
+
+        // Update section headers
+        if (audioHeaderLabel != null)
+            audioHeaderLabel.text = L("options.audio");
+        if (videoHeaderLabel != null)
+            videoHeaderLabel.text = L("options.video");
+
+        // Update row labels
+        if (sfxLabel != null)
+            sfxLabel.text = L("options.sfx_volume");
+        if (musicLabel != null)
+            musicLabel.text = L("options.music_volume");
+        if (fullscreenLabel != null)
+            fullscreenLabel.text = L("options.fullscreen");
+        if (onScreenControlsLabel != null)
+            onScreenControlsLabel.text = L("options.onscreen_controls");
+
+        // Update title
+        var canvas = FindAnyObjectByType<Canvas>();
+        if (canvas != null)
+        {
+            var titleTransform = canvas.transform.Find("TitleText");
+            if (titleTransform != null)
+            {
+                var tmp = titleTransform.GetComponent<TextMeshProUGUI>();
+                if (tmp != null) tmp.text = L("menu.options");
+            }
+        }
+
+        // Update back button label
+        if (backButton != null)
+        {
+            var tmp = backButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (tmp != null) tmp.text = L("menu.back");
+        }
+
+        Debug.Log("[OptionsManager] All labels refreshed for language change.");
     }
 
     private void OnSfxVolumeChanged(float value)
@@ -272,7 +463,7 @@ public class OptionsManager : MonoBehaviour
     private void UpdateSfxText(float value)
     {
         if (sfxValueText != null)
-            sfxValueText.text = Mathf.RoundToInt(value * 100) + "%";
+            sfxValueText.text = L("options.volume_pct", Mathf.RoundToInt(value * 100));
     }
 
     private void OnMusicVolumeChanged(float value)
@@ -286,7 +477,7 @@ public class OptionsManager : MonoBehaviour
     private void UpdateMusicText(float value)
     {
         if (musicValueText != null)
-            musicValueText.text = Mathf.RoundToInt(value * 100) + "%";
+            musicValueText.text = L("options.volume_pct", Mathf.RoundToInt(value * 100));
     }
 
     private void OnFullscreenChanged(bool isOn)

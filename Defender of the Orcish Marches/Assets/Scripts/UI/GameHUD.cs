@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
+using static LocalizationManager;
 
 public class GameHUD : MonoBehaviour
 {
@@ -128,11 +129,11 @@ public class GameHUD : MonoBehaviour
             bool idleSpeedup = BuildModeManager.Instance != null && BuildModeManager.Instance.IsIdleSpeedup;
 
             if (inBuild)
-                timerText.text = string.Format("{0}:{1:00} [x0.1]", minutes, seconds);
+                timerText.text = L("hud.time_build", minutes, seconds);
             else if (idleSpeedup)
-                timerText.text = string.Format("{0}:{1:00} [x3]", minutes, seconds);
+                timerText.text = L("hud.time_idle", minutes, seconds);
             else
-                timerText.text = string.Format("{0}:{1:00}", minutes, seconds);
+                timerText.text = L("hud.time", minutes, seconds);
         }
 
         // Update enemy count (always show enemies, no build mode override)
@@ -140,7 +141,7 @@ public class GameHUD : MonoBehaviour
         {
             int remaining = EnemySpawnManager.Instance.DayEnemiesRemaining;
             int total = EnemySpawnManager.Instance.DayTotalEnemies;
-            enemyCountText.text = string.Format("Enemies: {0}/{1}", remaining, total);
+            enemyCountText.text = L("hud.enemies", remaining, total);
         }
 
         // Update build mode panel
@@ -255,7 +256,7 @@ public class GameHUD : MonoBehaviour
         titleRect.anchorMax = new Vector2(1f, 1f);
         titleRect.offsetMin = new Vector2(10, 0);
         titleRect.offsetMax = new Vector2(-10, -5);
-        titleTMP.text = "BUILD MODE";
+        titleTMP.text = L("hud.build_mode");
         titleTMP.fontSize = 22;
         titleTMP.fontStyle = FontStyles.Bold;
         titleTMP.color = new Color(1f, 0.85f, 0.2f);
@@ -323,8 +324,8 @@ public class GameHUD : MonoBehaviour
         int gold = GameManager.Instance != null ? GameManager.Instance.Treasure : 0;
         bool canAfford = gold >= wallCost;
 
-        buildPanelCostText.text = string.Format("Wall cost: {0}g", wallCost);
-        buildPanelGoldText.text = string.Format("Gold: {0}g", gold);
+        buildPanelCostText.text = L("hud.wall_cost", wallCost);
+        buildPanelGoldText.text = L("hud.gold_amount", gold);
         buildPanelGoldText.color = canAfford ? new Color(0.4f, 1f, 0.4f) : new Color(1f, 0.4f, 0.4f);
 
         // Update hint text based on active input method
@@ -332,7 +333,7 @@ public class GameHUD : MonoBehaviour
         {
             var pointer = PointerInputManager.Instance;
             if (pointer != null && pointer.IsTouchActive)
-                buildHintTMP.text = "Drag to position, lift to place";
+                buildHintTMP.text = L("hud.build_hint_touch");
             else
                 buildHintTMP.text = GetBuildHintText();
         }
@@ -357,13 +358,13 @@ public class GameHUD : MonoBehaviour
                 case DefenderType.Wizard: wizCount++; break;
             }
         }
-        defenderCountText.text = string.Format("Eng:{0} Pike:{1} Xbow:{2} Wiz:{3}", engCount, pikeCount, xbowCount, wizCount);
+        defenderCountText.text = L("hud.defenders", engCount, pikeCount, xbowCount, wizCount);
     }
 
     private void UpdateTreasure(int amount)
     {
         if (treasureText != null)
-            treasureText.text = "Gold: " + amount;
+            treasureText.text = L("hud.gold", amount);
     }
 
     private void UpdateMenials(int amount)
@@ -371,14 +372,14 @@ public class GameHUD : MonoBehaviour
         if (menialText != null)
         {
             int idle = GameManager.Instance != null ? GameManager.Instance.IdleMenialCount : 0;
-            menialText.text = string.Format("Menials: {0}/{1}", idle, amount);
+            menialText.text = L("hud.menials", idle, amount);
         }
     }
 
     private void UpdateKills(int amount)
     {
         if (killsText != null)
-            killsText.text = "Kills: " + amount;
+            killsText.text = L("hud.kills", amount);
     }
 
     private void OnPauseClicked()
@@ -390,11 +391,11 @@ public class GameHUD : MonoBehaviour
     private static string GetBuildHintText()
     {
         if (InputBindingManager.Instance == null)
-            return "A/D rotate  B to exit";
+            return L("hud.build_hint", "A", "D", "B");
         string left = InputBindingManager.Instance.GetKeyboardDisplayName(GameAction.RotateWallLeft);
         string right = InputBindingManager.Instance.GetKeyboardDisplayName(GameAction.RotateWallRight);
         string exit = InputBindingManager.Instance.GetKeyboardDisplayName(GameAction.ToggleBuildMode);
-        return $"{left}/{right} rotate  {exit} to exit";
+        return L("hud.build_hint", left, right, exit);
     }
 
     private void UpdatePauseButton(bool isPaused)

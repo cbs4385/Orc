@@ -1,4 +1,5 @@
 using System;
+using static LocalizationManager;
 
 public enum AchievementTier { None, Bronze, Silver, Gold }
 public enum AchievementCategory { Survival, Combat, Economy, Defender, Special }
@@ -182,5 +183,20 @@ public static class AchievementDefs
             if (a.id == id) return a;
         }
         return null;
+    }
+
+    public static string GetLocalizedName(string id)
+    {
+        return L($"achievement.{id}.name");
+    }
+
+    public static string GetLocalizedDesc(string id)
+    {
+        return L($"achievement.{id}.desc");
+    }
+
+    public static string GetLocalizedCategoryName(AchievementCategory category)
+    {
+        return L($"achievement.category.{category.ToString().ToLower()}");
     }
 }

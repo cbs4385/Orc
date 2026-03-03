@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
+using static LocalizationManager;
 
 public class TooltipSystem : MonoBehaviour
 {
@@ -88,25 +89,25 @@ public class TooltipSystem : MonoBehaviour
         var enemy = obj.GetComponentInParent<Enemy>();
         if (enemy != null && !enemy.IsDead)
         {
-            return string.Format("{0}\nHP: {1}/{2}", enemy.Data.enemyName, enemy.CurrentHP, enemy.Data.maxHP);
+            return L("tooltip.enemy", BestiaryManager.GetLocalizedEnemyName(enemy.Data.enemyName), enemy.CurrentHP, enemy.Data.maxHP);
         }
 
         var wall = obj.GetComponent<Wall>();
         if (wall != null && !wall.IsDestroyed)
         {
-            return string.Format("Wall\nHP: {0}/{1}", wall.CurrentHP, wall.MaxHP);
+            return L("tooltip.wall", wall.CurrentHP, wall.MaxHP);
         }
 
         var loot = obj.GetComponent<TreasurePickup>();
         if (loot != null && !loot.IsCollected)
         {
-            return string.Format("Treasure: {0} gold", loot.Value);
+            return L("tooltip.treasure", loot.Value);
         }
 
         var menial = obj.GetComponent<Menial>();
         if (menial != null && !menial.IsDead)
         {
-            return string.Format("Menial ({0})", menial.CurrentState);
+            return L("tooltip.menial", L($"menial.state.{menial.CurrentState.ToString().ToLower()}"));
         }
 
         return null;

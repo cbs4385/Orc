@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.0.0
+
+### First Stable Release
+- Defender of the Orcish Marches reaches v1.0 — all core systems complete and stable
+- 4 difficulty modes: Easy, Normal, Hard, Nightmare (first-person ballista mode)
+- Full fortress defense loop: day/night cycle, wall building, defender hiring, ballista combat
+- 6 enemy types with specialized AI (melee, ranged, suicide, siege, boss)
+- 4 defender classes: Pikeman, Crossbowman, Wizard, Engineer
+- Commander class system with 4 selectable commanders
+- Relic/boon system with 11 night-phase choices
+- Meta-progression: War Trophies, 9 permanent upgrades, Legacy Ranks
+- 10 unlockable mutators with stacking score multipliers
+- 20 achievements across 5 categories with Bronze/Silver/Gold tiers
+- 26 milestones tracking survival, combat, boss, economy, and commander feats
+- Enemy bestiary with kill tracking and unlockable lore tips
+- Rebindable input system with full gamepad support
+- 3-slot mid-game save/load system with auto-save
+- 25-page interactive tutorial
+- In-game bug reporting with log capture
+
 ## 0.17.0
 
 ### Mid-Game Save & Load System
