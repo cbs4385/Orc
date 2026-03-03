@@ -11,6 +11,10 @@ public class EnemyMovement : MonoBehaviour
     private Vector3 lastRetargetPos;
     private const float RETARGET_DISTANCE = 1f;
     private float stuckTimer;
+    private float velocityStuckTimer;
+    private float defaultAgentRadius;
+    private float wallIdleTimer; // Time spent near a wall without attacking
+    private Wall lastBlockedWall; // Avoid ping-ponging between two walls
 
     // Tower position - enemies walk here when walls are breached
     private static Vector3 TowerPosition => GameManager.FortressCenter;
@@ -33,6 +37,32 @@ public class EnemyMovement : MonoBehaviour
         enemy = GetComponent<Enemy>();
     }
 
+    private void OnEnable()
+    {
+        Enemy.OnEnemyDied += OnNearbyEnemyDied;
+    }
+
+    private void OnDisable()
+    {
+        Enemy.OnEnemyDied -= OnNearbyEnemyDied;
+    }
+
+    private void OnNearbyEnemyDied(Enemy deadEnemy)
+    {
+        if (deadEnemy == enemy) return; // Ignore own death
+        if (enemy.IsDead || IsRetreating) return;
+
+        float dist = Vector3.Distance(transform.position, deadEnemy.transform.position);
+        if (dist < 3f)
+        {
+            // Nearby enemy died — retarget to advance into the gap
+            lastRetargetPos = transform.position;
+            velocityStuckTimer = 0f;
+            FindTarget();
+            Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} retargeting — nearby enemy {deadEnemy.Data?.enemyName} died at dist={dist:F1}");
+        }
+    }
+
     private void Start()
     {
         if (enemy.Data != null)
@@ -44,6 +74,7 @@ public class EnemyMovement : MonoBehaviour
             agent.stoppingDistance = enemy.Data.attackRange * 0.9f;
         }
 
+        defaultAgentRadius = agent.radius;
         lastRetargetPos = transform.position;
         Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} started at {transform.position}, speed={agent.speed}, stoppingDist={agent.stoppingDistance}");
         FindTarget();
@@ -63,6 +94,29 @@ public class EnemyMovement : MonoBehaviour
                 OnReachedRetreatEdge?.Invoke(enemy);
             }
             return;
+        }
+
+        // Blocked detection: if enemy has stopped moving and is not attacking, it's blocked.
+        // Retarget using normal targeting priorities after a short delay.
+        bool isStopped = agent.velocity.sqrMagnitude < 0.1f;
+        bool isAttacking = HasReachedTarget && currentTarget != null &&
+            Vector3.Distance(transform.position, currentTarget.position) <= enemy.Data.attackRange * 1.5f;
+
+        if (isStopped && !isAttacking && !agent.pathPending)
+        {
+            wallIdleTimer += Time.deltaTime;
+            if (wallIdleTimer >= 3.0f)
+            {
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} stopped but not attacking for {wallIdleTimer:F1}s at {transform.position} — retargeting");
+                wallIdleTimer = 0f;
+                currentTarget = null;
+                lastRetargetPos = transform.position;
+                FindTarget();
+            }
+        }
+        else
+        {
+            wallIdleTimer = 0f;
         }
 
         // Re-target if current target was destroyed (e.g. refugee arrived/died)
@@ -99,6 +153,52 @@ public class EnemyMovement : MonoBehaviour
         else
         {
             stuckTimer = 0f;
+        }
+
+        // Velocity-based stuck detection — enemy is barely moving but hasn't reached target
+        if (agent.isOnNavMesh && !agent.pathPending && !HasReachedTarget &&
+            agent.velocity.sqrMagnitude < 0.1f && agent.remainingDistance > agent.stoppingDistance + 0.2f)
+        {
+            velocityStuckTimer += Time.deltaTime;
+            if (velocityStuckTimer >= 1.0f)
+            {
+                var wallTarget = currentTarget != null ? currentTarget.GetComponent<Wall>() : null;
+                if (wallTarget != null && !wallTarget.IsDestroyed)
+                {
+                    // Blocked by other enemies near wall — move to adjacent wall segment
+                    Wall alternate = FindAdjacentWall(wallTarget);
+                    if (alternate != null)
+                    {
+                        currentTarget = alternate.transform;
+                        NavigateToWallExterior(alternate);
+                        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} velocity-stuck near {wallTarget.name} — moving to adjacent {alternate.name}");
+                    }
+                    else
+                    {
+                        // No adjacent wall — slide sideways on current wall
+                        Vector3 wallPos = wallTarget.transform.position;
+                        Vector3 outward = (wallPos - TowerPosition).normalized;
+                        Vector3 lateral = Vector3.Cross(Vector3.up, outward);
+                        float slideDir = (UnityEngine.Random.value > 0.5f) ? 1f : -1f;
+                        Vector3 slidePoint = wallPos + outward * 1f + lateral * slideDir * 1f;
+                        slidePoint.y = 0;
+                        agent.SetDestination(slidePoint);
+                        Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} velocity-stuck near {wallTarget.name} — sliding sideways (no adjacent wall)");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[EnemyMovement] {enemy.Data?.enemyName} velocity-stuck for {velocityStuckTimer:F1}s at {transform.position} — retargeting");
+                    lastRetargetPos = transform.position;
+                    currentTarget = null;
+                    FindTarget();
+                }
+                velocityStuckTimer = 0f;
+            }
+        }
+        else
+        {
+            velocityStuckTimer = 0f;
         }
 
         // If any enemy reaches the tower area after a breach, game over
@@ -393,11 +493,17 @@ public class EnemyMovement : MonoBehaviour
     {
         Vector3 wallPos = wall.transform.position;
         Vector3 outward = (wallPos - TowerPosition).normalized;
-        Vector3 exteriorPoint = wallPos + outward * 1f;
+
+        // Per-enemy lateral offset to spread enemies along wall face (within attack range)
+        Vector3 lateral = Vector3.Cross(Vector3.up, outward);
+        int hash = Mathf.Abs(GetInstanceID());
+        float offset = ((hash % 5) - 2) * 0.5f; // spread ±1.0 units along wall
+        Vector3 exteriorPoint = wallPos + outward * 1f + lateral * offset;
         exteriorPoint.y = 0;
+
         agent.SetDestination(exteriorPoint);
         Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} NavigateToWallExterior: wall={wall.name} at {wallPos}, " +
-            $"outwardDir={outward}, exteriorPoint={exteriorPoint}, distFromEnemy={Vector3.Distance(transform.position, exteriorPoint):F1}");
+            $"outwardDir={outward}, lateralOffset={offset:F1}, exteriorPoint={exteriorPoint}, distFromEnemy={Vector3.Distance(transform.position, exteriorPoint):F1}");
     }
 
     /// <summary>
@@ -529,17 +635,68 @@ public class EnemyMovement : MonoBehaviour
     }
 
     /// <summary>
-    /// Clears the current target and picks a new one. Called by EnemyAttack
-    /// when the enemy is stuck at a position where it can't actually attack.
+    /// Called by EnemyAttack when the enemy is stuck at a position where it can't
+    /// actually attack. If the current target is a wall, pick a DIFFERENT adjacent
+    /// wall segment so the enemy doesn't just return to the same blocked position.
     /// </summary>
     public void ForceRetarget()
     {
         string prev = currentTarget != null ? currentTarget.name : "tower";
+
+        // If blocked at a wall, try an adjacent wall segment instead of re-picking the same one
+        if (currentTarget != null)
+        {
+            var blockedWall = currentTarget.GetComponent<Wall>();
+            if (blockedWall != null)
+            {
+                Wall alternate = FindAdjacentWall(blockedWall);
+                if (alternate != null)
+                {
+                    currentTarget = alternate.transform;
+                    NavigateToWallExterior(alternate);
+                    Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} ForceRetarget (attack blocked): {prev} → adjacent wall {alternate.name}");
+                    return;
+                }
+            }
+        }
+
         currentTarget = null;
         lastRetargetPos = transform.position;
         FindTarget();
         string next = currentTarget != null ? currentTarget.name : "tower";
         Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} ForceRetarget (attack blocked): {prev} → {next}");
+    }
+
+    /// <summary>
+    /// Find a different wall segment to attack, preferring ones adjacent to the excluded wall
+    /// and close to this enemy. Scoring: distance from enemy + distance from original wall.
+    /// </summary>
+    private Wall FindAdjacentWall(Wall excludeWall)
+    {
+        if (WallManager.Instance == null) return null;
+
+        Wall best = null;
+        float bestScore = float.MaxValue;
+
+        foreach (var wall in WallManager.Instance.AllWalls)
+        {
+            if (wall == excludeWall || wall.IsDestroyed || wall.IsUnderConstruction) continue;
+            // Skip the wall we just came from to prevent ping-ponging
+            if (wall == lastBlockedWall) continue;
+
+            float distFromExcluded = Vector3.Distance(wall.transform.position, excludeWall.transform.position);
+            float distFromEnemy = Vector3.Distance(transform.position, wall.transform.position);
+
+            // Score favors walls close to both the enemy and the original wall (adjacent)
+            float score = distFromEnemy + distFromExcluded;
+            if (score < bestScore)
+            {
+                bestScore = score;
+                best = wall;
+            }
+        }
+
+        return best;
     }
 
     public void Stop()

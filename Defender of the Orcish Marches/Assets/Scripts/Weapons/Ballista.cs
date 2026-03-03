@@ -84,11 +84,12 @@ public class Ballista : MonoBehaviour
         // Hard mode aim wobble
         hasAimWobble = GameSettings.CurrentDifficulty == Difficulty.Hard;
 
+        // Face west (-X direction) initially — enemies typically approach from the west
+        transform.rotation = Quaternion.Euler(0f, 270f, 0f);
+
         if (isNightmareMode)
         {
-            // Face west (-X direction) initially
             yaw = 270f;
-            transform.rotation = Quaternion.Euler(0f, yaw, 0f);
             Debug.Log($"[Ballista] Nightmare FPS mode enabled. Initial yaw={yaw}");
         }
 

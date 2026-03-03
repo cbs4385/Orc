@@ -127,6 +127,8 @@ public class Enemy : MonoBehaviour
         // Convert world height to local space (collider is in local coords)
         float scaleY = Mathf.Max(transform.lossyScale.y, 0.001f);
         float localHeight = worldBounds.size.y / scaleY;
+        // Pad height by 30% so capsule covers heads, weapons, and animation extremes
+        localHeight *= 1.3f;
         Vector3 localCenter = transform.InverseTransformPoint(worldBounds.center);
         // Keep XZ center at zero so collider stays centered on the pivot
         localCenter.x = 0f;

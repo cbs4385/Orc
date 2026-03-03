@@ -101,6 +101,9 @@ public class GameOverScreen : MonoBehaviour
         if (titleText != null)
             titleText.text = L("gameover.title");
 
+        SetButtonLabel(restartButton, L("gameover.restart"));
+        SetButtonLabel(exitButton, L("gameover.exit"));
+
         // Get previous bests BEFORE saving this run
         var prevBest = RunHistoryManager.GetBestByCategory();
         bool hasPrevRuns = RunHistoryManager.GetRunCount() > 0;
@@ -250,6 +253,13 @@ public class GameOverScreen : MonoBehaviour
         }
 
         Debug.Log($"[GameOverScreen] Game over. Score={current.compositeScore}, Rank={rank + 1}, Days={current.days}, Kills={current.kills}, BossKills={current.bossKills}, Gold={current.goldEarned}, Hires={current.hires}, MenialsLost={current.menialsLost}");
+    }
+
+    private void SetButtonLabel(Button button, string text)
+    {
+        if (button == null) return;
+        var tmp = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (tmp != null) tmp.text = text;
     }
 
     private void OnRestartClicked()

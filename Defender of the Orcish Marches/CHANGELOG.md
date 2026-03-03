@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.1.0
+
+### Cylindrical Fog System
+- Replaced flat radial fog disc with concentric cylinder fog walls centered on the fortress
+- Fog now properly obscures objects at all heights (trees, enemies, towers) instead of just ground level
+- 16 layered transparent cylinder shells create a smooth volumetric opacity gradient
+- Custom URP shader (`Custom/RadialFog`) uses per-vertex alpha baked into UVs — no per-frame vertex rebuild
+- Fog color updates only touch the material uniform, improving performance over the old vertex-color approach
+- Day/night color transition, build-mode visibility toggle, and camera background sync preserved
+
+### Enemy AI — Stuck Prevention & Spreading
+- Enemies now retarget when a nearby enemy dies within 3 units, advancing into gaps left by fallen allies
+- Velocity-based stuck detection: enemies blocked near walls for 1 second slide to adjacent wall segments instead of idling
+- Idle-at-wall detection: enemies stopped but not attacking for 3 seconds retarget to a different objective
+- ForceRetarget now picks adjacent wall segments instead of re-selecting the same blocked wall
+- Added lateral spread offset to wall exterior navigation — enemies distribute along the wall face instead of stacking on a single point
+- Added ping-pong prevention so enemies don't alternate between two blocked walls
+- Reduced attack-skip retarget timer from 1.0s to 0.5s for faster response to blocked attacks
+
+### Enemy Combat
+- Enemies now face their attack target when in attack position (smooth rotation via Slerp)
+- Enemy capsule collider height padded by 30% to cover heads, weapons, and animation extremes
+
+### Ballista
+- Ballista now faces west (-X) on all difficulty modes at startup, not just Nightmare
+
+### Vegetation
+- Scaled Bush and Tree prefabs to 1.5x for better visibility
+- Adjusted Bush and Tree collider sizes and centers to match new scale
+
+### UI
+- Game Over screen restart and exit buttons now display localized labels
+
 ## 1.0.0
 
 ### First Stable Release

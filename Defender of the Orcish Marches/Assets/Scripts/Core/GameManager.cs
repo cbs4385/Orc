@@ -79,6 +79,10 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         Enemy.OnEnemyDied += HandleEnemyDied;
+
+        // Add radial fog for overhead camera mode
+        if (GetComponent<RadialFog>() == null)
+            gameObject.AddComponent<RadialFog>();
         OnTreasureChanged?.Invoke(Treasure);
         OnMenialsChanged?.Invoke(MenialCount);
         OnKillsChanged?.Invoke(EnemyKills);

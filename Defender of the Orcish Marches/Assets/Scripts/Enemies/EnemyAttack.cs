@@ -6,7 +6,7 @@ public class EnemyAttack : MonoBehaviour
     private EnemyMovement movement;
     private float attackCooldown;
     private float attackSkipTimer;
-    private const float RETARGET_AFTER_SKIP = 1.0f;
+    private const float RETARGET_AFTER_SKIP = 0.5f;
 
     private void Awake()
     {
@@ -26,6 +26,18 @@ public class EnemyAttack : MonoBehaviour
         if (enemy.IsDead) return;
         if (movement.IsRetreating) return;
         attackCooldown -= Time.deltaTime;
+
+        // Face the attack target when in position
+        if (movement.HasReachedTarget && movement.CurrentTarget != null)
+        {
+            Vector3 dir = movement.CurrentTarget.position - transform.position;
+            dir.y = 0;
+            if (dir.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetRot = Quaternion.LookRotation(dir);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 10f);
+            }
+        }
 
         if (movement.HasReachedTarget && movement.CurrentTarget != null && attackCooldown <= 0)
         {
