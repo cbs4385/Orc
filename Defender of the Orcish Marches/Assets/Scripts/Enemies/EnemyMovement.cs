@@ -52,6 +52,13 @@ public class EnemyMovement : MonoBehaviour
         if (deadEnemy == enemy) return; // Ignore own death
         if (enemy.IsDead || IsRetreating) return;
 
+        // Suicide enemies are on a one-way mission — don't divert them
+        // Ranged enemies should hold position and keep shooting their current target
+        if (enemy.Data.enemyType == EnemyType.Suicide ||
+            enemy.Data.enemyType == EnemyType.Ranged ||
+            enemy.Data.enemyType == EnemyType.Artillery)
+            return;
+
         float dist = Vector3.Distance(transform.position, deadEnemy.transform.position);
         if (dist < 3f)
         {
@@ -98,25 +105,32 @@ public class EnemyMovement : MonoBehaviour
 
         // Blocked detection: if enemy has stopped moving and is not attacking, it's blocked.
         // Retarget using normal targeting priorities after a short delay.
-        bool isStopped = agent.velocity.sqrMagnitude < 0.1f;
-        bool isAttacking = HasReachedTarget && currentTarget != null &&
-            Vector3.Distance(transform.position, currentTarget.position) <= enemy.Data.attackRange * 1.5f;
+        // Skip for suicide (they explode on arrival) and ranged (they stand still to shoot).
+        bool isMeleeType = enemy.Data.enemyType == EnemyType.Melee ||
+                           enemy.Data.enemyType == EnemyType.WallBreaker;
 
-        if (isStopped && !isAttacking && !agent.pathPending)
+        if (isMeleeType)
         {
-            wallIdleTimer += Time.deltaTime;
-            if (wallIdleTimer >= 3.0f)
+            bool isStopped = agent.velocity.sqrMagnitude < 0.1f;
+            bool isAttacking = HasReachedTarget && currentTarget != null &&
+                Vector3.Distance(transform.position, currentTarget.position) <= enemy.Data.attackRange * 1.5f;
+
+            if (isStopped && !isAttacking && !agent.pathPending)
             {
-                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} stopped but not attacking for {wallIdleTimer:F1}s at {transform.position} — retargeting");
-                wallIdleTimer = 0f;
-                currentTarget = null;
-                lastRetargetPos = transform.position;
-                FindTarget();
+                wallIdleTimer += Time.deltaTime;
+                if (wallIdleTimer >= 3.0f)
+                {
+                    Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} stopped but not attacking for {wallIdleTimer:F1}s at {transform.position} — retargeting");
+                    wallIdleTimer = 0f;
+                    currentTarget = null;
+                    lastRetargetPos = transform.position;
+                    FindTarget();
+                }
             }
-        }
-        else
-        {
-            wallIdleTimer = 0f;
+            else
+            {
+                wallIdleTimer = 0f;
+            }
         }
 
         // Re-target if current target was destroyed (e.g. refugee arrived/died)
@@ -155,8 +169,9 @@ public class EnemyMovement : MonoBehaviour
             stuckTimer = 0f;
         }
 
-        // Velocity-based stuck detection — enemy is barely moving but hasn't reached target
-        if (agent.isOnNavMesh && !agent.pathPending && !HasReachedTarget &&
+        // Velocity-based stuck detection — enemy is barely moving but hasn't reached target.
+        // Only for melee types. Suicide explodes on arrival; ranged stands still to shoot.
+        if (isMeleeType && agent.isOnNavMesh && !agent.pathPending && !HasReachedTarget &&
             agent.velocity.sqrMagnitude < 0.1f && agent.remainingDistance > agent.stoppingDistance + 0.2f)
         {
             velocityStuckTimer += Time.deltaTime;
@@ -196,7 +211,7 @@ public class EnemyMovement : MonoBehaviour
                 velocityStuckTimer = 0f;
             }
         }
-        else
+        else if (isMeleeType)
         {
             velocityStuckTimer = 0f;
         }
@@ -356,6 +371,22 @@ public class EnemyMovement : MonoBehaviour
     /// </summary>
     private void FindTarget_Ranged()
     {
+        // Stick with current target if still valid (alive and active)
+        if (currentTarget != null && currentTarget.gameObject.activeInHierarchy)
+        {
+            var curWall = currentTarget.GetComponent<Wall>();
+            if (curWall != null && !curWall.IsDestroyed) return;
+
+            var curDefender = currentTarget.GetComponent<Defender>();
+            if (curDefender != null && !curDefender.IsDead) return;
+
+            var curMenial = currentTarget.GetComponent<Menial>();
+            if (curMenial != null && !curMenial.IsDead) return;
+
+            var curRefugee = currentTarget.GetComponent<Refugee>();
+            if (curRefugee != null) return; // refugees don't have IsDead
+        }
+
         // --- Primary: find nearest hireling/menial/defender/refugee ---
         Transform unitTarget = FindNearestUnit();
 
