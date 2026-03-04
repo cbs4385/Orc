@@ -50,6 +50,7 @@ public class MainMenuManager : MonoBehaviour
     private SceneLoader sceneLoader;
     private SaveSlotPicker saveSlotPicker;
     private TextMeshProUGUI versionLabel;
+    private TextMeshProUGUI languageNameLabel;
 
     private void Awake()
     {
@@ -58,6 +59,7 @@ public class MainMenuManager : MonoBehaviour
             sceneLoader = gameObject.AddComponent<SceneLoader>();
 
         CreateVersionLabel();
+        CreateLanguageSelector();
         Debug.Log("[MainMenuManager] Initialized.");
     }
 
@@ -213,6 +215,10 @@ public class MainMenuManager : MonoBehaviour
         if (versionLabel != null)
             versionLabel.text = L("menu.version", Application.version);
 
+        // Language selector
+        if (languageNameLabel != null)
+            languageNameLabel.text = LocalizationManager.GetLanguageNativeName(LocalizationManager.CurrentLanguage);
+
         Debug.Log("[MainMenuManager] Labels refreshed for language change.");
     }
 
@@ -237,6 +243,102 @@ public class MainMenuManager : MonoBehaviour
         versionLabel.alignment = TextAlignmentOptions.BottomRight;
         versionLabel.raycastTarget = false;
         Debug.Log($"[MainMenuManager] Version label created: {Application.version}");
+    }
+
+    private void CreateLanguageSelector()
+    {
+        var canvas = FindAnyObjectByType<Canvas>();
+        if (canvas == null) return;
+
+        // Container anchored to bottom center
+        var rowObj = new GameObject("LanguageSelector");
+        rowObj.transform.SetParent(canvas.transform, false);
+        var rowRect = rowObj.AddComponent<RectTransform>();
+        rowRect.anchorMin = new Vector2(0.5f, 0f);
+        rowRect.anchorMax = new Vector2(0.5f, 0f);
+        rowRect.pivot = new Vector2(0.5f, 0f);
+        rowRect.anchoredPosition = new Vector2(0f, 10f);
+        rowRect.sizeDelta = new Vector2(300f, 40f);
+
+        var hlg = rowObj.AddComponent<HorizontalLayoutGroup>();
+        hlg.spacing = 8;
+        hlg.childAlignment = TextAnchor.MiddleCenter;
+        hlg.childControlWidth = true;
+        hlg.childControlHeight = true;
+        hlg.childForceExpandHeight = true;
+
+        // Left arrow button
+        var leftBtn = CreateArrowButton(rowObj.transform, "<", 40f);
+        leftBtn.onClick.AddListener(OnLanguagePrevious);
+
+        // Language name label
+        var nameLabelObj = new GameObject("LanguageNameLabel");
+        nameLabelObj.transform.SetParent(rowObj.transform, false);
+        languageNameLabel = nameLabelObj.AddComponent<TextMeshProUGUI>();
+        languageNameLabel.text = LocalizationManager.GetLanguageNativeName(LocalizationManager.CurrentLanguage);
+        languageNameLabel.fontSize = 20;
+        languageNameLabel.fontStyle = FontStyles.Bold;
+        languageNameLabel.color = new Color(0.9f, 0.75f, 0.3f);
+        languageNameLabel.alignment = TextAlignmentOptions.Center;
+        languageNameLabel.raycastTarget = false;
+        var nameLE = nameLabelObj.AddComponent<LayoutElement>();
+        nameLE.preferredWidth = 160;
+
+        // Right arrow button
+        var rightBtn = CreateArrowButton(rowObj.transform, ">", 40f);
+        rightBtn.onClick.AddListener(OnLanguageNext);
+
+        Debug.Log($"[MainMenuManager] Language selector created. Current: {LocalizationManager.GetLanguageNativeName(LocalizationManager.CurrentLanguage)}");
+    }
+
+    private Button CreateArrowButton(Transform parent, string label, float width)
+    {
+        var btnObj = new GameObject(label == "<" ? "LanguageLeftBtn" : "LanguageRightBtn");
+        btnObj.transform.SetParent(parent, false);
+        var btnImg = btnObj.AddComponent<Image>();
+        btnImg.color = new Color(0.3f, 0.2f, 0.1f, 0.9f);
+        var btn = btnObj.AddComponent<Button>();
+        var colors = btn.colors;
+        colors.normalColor = new Color(0.3f, 0.2f, 0.1f, 0.9f);
+        colors.highlightedColor = new Color(0.5f, 0.35f, 0.15f, 1f);
+        colors.pressedColor = new Color(0.6f, 0.4f, 0.1f, 1f);
+        btn.colors = colors;
+        var le = btnObj.AddComponent<LayoutElement>();
+        le.preferredWidth = width;
+
+        var txtObj = new GameObject("Text");
+        txtObj.transform.SetParent(btnObj.transform, false);
+        var tmp = txtObj.AddComponent<TextMeshProUGUI>();
+        tmp.text = label;
+        tmp.fontSize = 24;
+        tmp.fontStyle = FontStyles.Bold;
+        tmp.color = new Color(0.9f, 0.8f, 0.5f);
+        tmp.alignment = TextAlignmentOptions.Center;
+        var txtRect = txtObj.GetComponent<RectTransform>();
+        txtRect.anchorMin = Vector2.zero;
+        txtRect.anchorMax = Vector2.one;
+        txtRect.offsetMin = Vector2.zero;
+        txtRect.offsetMax = Vector2.zero;
+
+        return btn;
+    }
+
+    private void OnLanguagePrevious()
+    {
+        int current = (int)LocalizationManager.CurrentLanguage;
+        int count = LocalizationManager.LanguageCount;
+        int prev = (current - 1 + count) % count;
+        LocalizationManager.SetLanguage((LocalizationManager.Language)prev);
+        Debug.Log($"[MainMenuManager] Language changed to {LocalizationManager.GetLanguageNativeName(LocalizationManager.CurrentLanguage)}");
+    }
+
+    private void OnLanguageNext()
+    {
+        int current = (int)LocalizationManager.CurrentLanguage;
+        int count = LocalizationManager.LanguageCount;
+        int next = (current + 1) % count;
+        LocalizationManager.SetLanguage((LocalizationManager.Language)next);
+        Debug.Log($"[MainMenuManager] Language changed to {LocalizationManager.GetLanguageNativeName(LocalizationManager.CurrentLanguage)}");
     }
 
     private void SetButtonLabel(Button button, string text)

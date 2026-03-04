@@ -29,6 +29,7 @@ public class Ballista : MonoBehaviour
     // Nightmare FPS mode
     private bool isNightmareMode;
     private float yaw;
+    private bool skipNextDelta;
 
     // Hard mode aim wobble
     private bool hasAimWobble;
@@ -90,6 +91,7 @@ public class Ballista : MonoBehaviour
         if (isNightmareMode)
         {
             yaw = 270f;
+            skipNextDelta = true;
             Debug.Log($"[Ballista] Nightmare FPS mode enabled. Initial yaw={yaw}");
         }
 
@@ -183,6 +185,17 @@ public class Ballista : MonoBehaviour
     {
         var pointer = PointerInputManager.Instance;
         if (pointer == null) return;
+
+        // Skip the first frame's delta to avoid accumulated mouse movement during scene load
+        if (skipNextDelta)
+        {
+            skipNextDelta = false;
+            float initPitch = NightmareCamera.Instance != null ? NightmareCamera.Instance.Pitch : 0f;
+            transform.rotation = Quaternion.Euler(initPitch, yaw, 0f);
+            Debug.Log($"[Ballista] Skipped initial delta, applied yaw={yaw}");
+            return;
+        }
+
         Vector2 delta = pointer.PointerDelta;
         yaw += delta.x * 0.2f;
         // Read pitch from NightmareCamera so the ballista model visually tilts

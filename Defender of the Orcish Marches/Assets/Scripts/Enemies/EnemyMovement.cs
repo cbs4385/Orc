@@ -523,7 +523,9 @@ public class EnemyMovement : MonoBehaviour
     private void NavigateToWallExterior(Wall wall)
     {
         Vector3 wallPos = wall.transform.position;
-        Vector3 outward = (wallPos - TowerPosition).normalized;
+        Vector3 outward = wallPos - TowerPosition;
+        outward.y = 0f; // Flatten to XZ — wall Y=1 inflates outward direction
+        outward.Normalize();
 
         // Per-enemy lateral offset to spread enemies along wall face (within attack range)
         Vector3 lateral = Vector3.Cross(Vector3.up, outward);

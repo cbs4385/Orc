@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.1.2
+
+### Bug Fixes
+- Fixed game over screen format errors — `gameover.time_days` passed 2 args to a 3-placeholder format string; now passes minutes, seconds, and days separately with zero-padded seconds (`{1:D2}`)
+- Fixed `gameover.legacy` passing 1 arg to a 2-placeholder format string, then double-formatting the result via `AppendFormat`; now passes both legacy points and rank title directly to `L()`
+- Fixed `gameover.rank` duplicating `<size=85%>` tag (once in localization string, once in code wrapper)
+- Fixed `gameover.synergy` duplicating `<color=#FFD700>` tag (once in localization string, once in code wrapper)
+
+### UI
+- Save & Quit button now sets `sizeDelta` directly instead of `LayoutElement.preferredWidth` for correct width when parent layout group has `childControlWidth` disabled
+- Pause menu button width growth (`GrowAllButtonsToFitText`) now sets `sizeDelta.x` directly to accommodate localized text
+
+## 1.1.1
+
+### Enemy AI
+- Suicide, ranged, and artillery enemies no longer divert when a nearby enemy dies — they stay on mission
+- Stuck detection and idle retargeting now only apply to melee and wall-breaker enemies — ranged enemies standing still to shoot are no longer incorrectly flagged as stuck
+
 ## 1.1.0
 
 ### Cylindrical Fog System
