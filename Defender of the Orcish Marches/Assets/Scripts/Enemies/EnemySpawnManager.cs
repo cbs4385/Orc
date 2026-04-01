@@ -296,6 +296,15 @@ public class EnemySpawnManager : MonoBehaviour
             }
         }
 
+        // ML mode: skip regular spawning — OrcCommanderAgent handles it
+        if (MLTrainingManager.IsMLControlled)
+        {
+            // Still allow night harassment check for ML night spawning
+            if (DayNightCycle.Instance != null && DayNightCycle.Instance.IsNight)
+                UpdateNightHarassment();
+            return;
+        }
+
         // Night: only harassment spawns (no regular spawns)
         if (DayNightCycle.Instance != null && DayNightCycle.Instance.IsNight)
         {
@@ -383,6 +392,7 @@ public class EnemySpawnManager : MonoBehaviour
             enemy.Initialize(data);
             ApplyDayScaling(enemy);
             activeEnemies.Add(enemy);
+            Debug.Log($"[EnemySpawnManager] Spawned: {data.enemyName} at {spawnPos}, type={data.enemyType}");
         }
     }
 
@@ -412,21 +422,34 @@ public class EnemySpawnManager : MonoBehaviour
 
         // Day 5+: cannoneers (5%)
         if (dayNumber >= 5 && roll < 0.05f && goblinCannoneerData != null)
+        {
+            Debug.Log($"[EnemySpawnManager] ChooseEnemyType: roll={roll:F3}, day={dayNumber}, chosen={goblinCannoneerData.enemyName}");
             return goblinCannoneerData;
+        }
 
         // Day 4+: suicide goblins (10%)
         if (dayNumber >= 4 && roll < 0.15f && suicideGoblinData != null)
+        {
+            Debug.Log($"[EnemySpawnManager] ChooseEnemyType: roll={roll:F3}, day={dayNumber}, chosen={suicideGoblinData.enemyName}");
             return suicideGoblinData;
+        }
 
         // Day 3+: trolls (15%)
         if (dayNumber >= 3 && roll < 0.25f && trollData != null)
+        {
+            Debug.Log($"[EnemySpawnManager] ChooseEnemyType: roll={roll:F3}, day={dayNumber}, chosen={trollData.enemyName}");
             return trollData;
+        }
 
         // Day 2+: bow orcs (30%)
         if (dayNumber >= 2 && roll < 0.45f && bowOrcData != null)
+        {
+            Debug.Log($"[EnemySpawnManager] ChooseEnemyType: roll={roll:F3}, day={dayNumber}, chosen={bowOrcData.enemyName}");
             return bowOrcData;
+        }
 
         // Default: orc grunts
+        Debug.Log($"[EnemySpawnManager] ChooseEnemyType: roll={roll:F3}, day={dayNumber}, chosen={orcGruntData?.enemyName}");
         return orcGruntData;
     }
 
@@ -450,6 +473,7 @@ public class EnemySpawnManager : MonoBehaviour
     {
         activeEnemies.Remove(enemy);
         dayKills++;
+        Debug.Log($"[EnemySpawnManager] Enemy died: {enemy?.Data?.enemyName}. dayKills={dayKills}");
         CheckAllEnemiesCleared();
     }
 
@@ -466,6 +490,94 @@ public class EnemySpawnManager : MonoBehaviour
     }
 
     public int GetActiveEnemyCount() => activeEnemies.Count;
+    public int RegularSpawnsRemaining => regularSpawnsRemaining;
+    public float MapRadius => mapRadius;
+
+    /// <summary>Returns current spawn arc center angle and half-spread for ML agents.</summary>
+    public (float centerAngle, float halfSpread) GetCurrentArcBounds()
+    {
+        int dayNumber = DayNightCycle.Instance != null ? DayNightCycle.Instance.DayNumber : 1;
+        float halfSpread = Mathf.Min(5f + 10f * (dayNumber - 1), 180f);
+        return (180f, halfSpread);
+    }
+
+    /// <summary>Maps a type index (0-5) to the corresponding EnemyData reference.</summary>
+    public EnemyData GetEnemyDataByType(int typeIndex)
+    {
+        switch (typeIndex)
+        {
+            case 0: return orcGruntData;
+            case 1: return bowOrcData;
+            case 2: return trollData;
+            case 3: return suicideGoblinData;
+            case 4: return goblinCannoneerData;
+            case 5: return orcWarBossData;
+            default:
+                Debug.LogWarning($"[EnemySpawnManager] Invalid typeIndex {typeIndex}, returning orcGruntData");
+                return orcGruntData;
+        }
+    }
+
+    /// <summary>Spawns a specific enemy type at a specific angle. Used by ML OrcCommanderAgent.</summary>
+    public Enemy SpawnEnemyML(EnemyData data, float angleDeg)
+    {
+        if (enemyPrefab == null)
+        {
+            Debug.LogError("[EnemySpawnManager] enemyPrefab is null! Cannot spawn ML enemy.");
+            return null;
+        }
+        if (data == null)
+        {
+            Debug.LogError("[EnemySpawnManager] ML spawn called with null EnemyData.");
+            return null;
+        }
+
+        // Add random spread so enemies from the same angle bin don't stack on the exact same spot
+        float spreadAngle = angleDeg + Random.Range(-5f, 5f);
+        float spreadRadius = mapRadius + Random.Range(-3f, 3f);
+        float angleRad = spreadAngle * Mathf.Deg2Rad;
+        Vector3 spawnPos = new Vector3(Mathf.Cos(angleRad) * spreadRadius, 0, Mathf.Sin(angleRad) * spreadRadius);
+
+        GameObject go = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        Enemy enemy = go.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.Initialize(data);
+            ApplyDayScaling(enemy);
+            activeEnemies.Add(enemy);
+            Debug.Log($"[EnemySpawnManager] ML spawned: {data.enemyName} at angle={angleDeg:F1}° pos={spawnPos}");
+        }
+        return enemy;
+    }
+
+    /// <summary>Resets spawn state for a new ML training episode without scene reload.</summary>
+    public void ResetForNewEpisode()
+    {
+        activeEnemies.Clear();
+        dayTotalEnemies = 0;
+        dayKills = 0;
+        regularSpawnsRemaining = 0;
+        Debug.Log("[EnemySpawnManager] ResetForNewEpisode complete.");
+    }
+
+    /// <summary>Explicitly sets the spawn budget for a given day. Called by MLTrainingManager after reset.</summary>
+    public void InitSpawnBudgetForDay(int dayNumber)
+    {
+        regularSpawnsRemaining = CalculateSpawnCount(dayNumber);
+        bossSpawnedThisDay = false;
+        clearedFiredThisDay = false;
+        dayKills = 0;
+        dayTotalEnemies = regularSpawnsRemaining;
+        Debug.Log($"[EnemySpawnManager] InitSpawnBudgetForDay({dayNumber}): spawns={regularSpawnsRemaining}");
+    }
+
+    /// <summary>Decrements the regular spawn budget by 1. Called by ML spawn proxy after each spawn.</summary>
+    public void DecrementSpawnBudget()
+    {
+        if (regularSpawnsRemaining > 0)
+            regularSpawnsRemaining--;
+        Debug.Log($"[EnemySpawnManager] DecrementSpawnBudget: remaining={regularSpawnsRemaining}");
+    }
 
     /// <summary>
     /// Logs full spawn state: active enemies, remnants, spawn budget, per-enemy details.

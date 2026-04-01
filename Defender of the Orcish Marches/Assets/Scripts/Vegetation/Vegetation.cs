@@ -37,6 +37,7 @@ public class Vegetation : MonoBehaviour
     {
         currentHP = maxHP;
         growthTimer = Random.Range(15f, 30f);
+        Debug.Log($"[Vegetation] Initialized: type={vegetationType}, HP={currentHP}/{maxHP} at {transform.position}");
 
         renderers = GetComponentsInChildren<Renderer>();
         originalColors = new Color[renderers.Length];

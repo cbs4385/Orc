@@ -115,6 +115,7 @@ public class BallistaManager : MonoBehaviour
         if (ballista != null)
         {
             ballistas.Add(ballista);
+            Debug.Log($"[BallistaManager] Ballista added at slot {ballistas.Count - 1}. Total count={ballistas.Count}");
             return true;
         }
         return false;

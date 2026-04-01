@@ -18,6 +18,16 @@ public class UpgradeManager : MonoBehaviour
 
     public IReadOnlyList<UpgradeData> AvailableUpgrades => availableUpgrades;
 
+    /// <summary>Look up an UpgradeData by its UpgradeType. Returns null if not found.</summary>
+    public UpgradeData GetUpgradeByType(UpgradeType type)
+    {
+        foreach (var upgrade in availableUpgrades)
+        {
+            if (upgrade.upgradeType == type) return upgrade;
+        }
+        return null;
+    }
+
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -170,17 +180,38 @@ public class UpgradeManager : MonoBehaviour
         {
             case UpgradeType.NewBallista:
                 if (BallistaManager.Instance != null)
+                {
                     BallistaManager.Instance.AddBallista();
+                    Debug.Log($"[UpgradeManager] Applied NewBallista upgrade — added ballista via BallistaManager");
+                }
+                else
+                {
+                    Debug.LogError("[UpgradeManager] Cannot apply NewBallista — BallistaManager.Instance is null!");
+                }
                 break;
 
             case UpgradeType.BallistaDamage:
                 if (BallistaManager.Instance != null && BallistaManager.Instance.ActiveBallista != null)
+                {
                     BallistaManager.Instance.ActiveBallista.UpgradeDamage(10);
+                    Debug.Log($"[UpgradeManager] Applied BallistaDamage +10 to {BallistaManager.Instance.ActiveBallista.name}");
+                }
+                else
+                {
+                    Debug.LogError($"[UpgradeManager] Cannot apply BallistaDamage — BallistaManager={BallistaManager.Instance != null}, ActiveBallista={BallistaManager.Instance?.ActiveBallista != null}");
+                }
                 break;
 
             case UpgradeType.BallistaFireRate:
                 if (BallistaManager.Instance != null && BallistaManager.Instance.ActiveBallista != null)
+                {
                     BallistaManager.Instance.ActiveBallista.UpgradeFireRate(0.5f);
+                    Debug.Log($"[UpgradeManager] Applied BallistaFireRate +0.5 to {BallistaManager.Instance.ActiveBallista.name}");
+                }
+                else
+                {
+                    Debug.LogError($"[UpgradeManager] Cannot apply BallistaFireRate — BallistaManager={BallistaManager.Instance != null}, ActiveBallista={BallistaManager.Instance?.ActiveBallista != null}");
+                }
                 break;
 
             default:
@@ -215,11 +246,11 @@ public class UpgradeManager : MonoBehaviour
         if (defender != null && defender.Data != null)
         {
             defender.Initialize(defender.Data);
-            Debug.Log($"[UpgradeManager] {defender.Data.defenderName} emerged from the tower at {spawnPos}!");
+            Debug.Log($"[UpgradeManager] SpawnDefenderAtTower: {defender.Data.defenderName} (type={defender.Data.defenderType}) spawned at {spawnPos}, prefab={prefab.name}");
         }
         else
         {
-            Debug.LogWarning($"[UpgradeManager] Spawned defender at tower but no DefenderData assigned!");
+            Debug.LogWarning($"[UpgradeManager] SpawnDefenderAtTower: spawned {prefab.name} at {spawnPos} but no DefenderData assigned!");
         }
     }
 

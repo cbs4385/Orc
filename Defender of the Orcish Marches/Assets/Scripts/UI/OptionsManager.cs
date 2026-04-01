@@ -20,6 +20,7 @@ public class OptionsManager : MonoBehaviour
     private SceneLoader sceneLoader;
     private InputBindingsUI bindingsUI;
     private Toggle onScreenControlsToggle;
+    private Toggle autoBallistaToggle;
 
     // References to localized labels for refresh
     private TextMeshProUGUI audioHeaderLabel;
@@ -28,6 +29,8 @@ public class OptionsManager : MonoBehaviour
     private TextMeshProUGUI videoHeaderLabel;
     private TextMeshProUGUI fullscreenLabel;
     private TextMeshProUGUI onScreenControlsLabel;
+    private TextMeshProUGUI gameplayHeaderLabel;
+    private TextMeshProUGUI autoBallistaLabel;
 
     private void Awake()
     {
@@ -64,8 +67,9 @@ public class OptionsManager : MonoBehaviour
         if (backButton != null)
             backButton.onClick.AddListener(OnBackClicked);
 
-        // Create on-screen controls toggle programmatically
+        // Create toggles programmatically
         CreateOnScreenControlsToggle();
+        CreateAutoBallistaToggle();
 
         // Build input bindings UI dynamically
         BuildInputBindingsSection();
@@ -94,6 +98,8 @@ public class OptionsManager : MonoBehaviour
             fullscreenToggle.onValueChanged.RemoveListener(OnFullscreenChanged);
         if (onScreenControlsToggle != null)
             onScreenControlsToggle.onValueChanged.RemoveListener(OnOnScreenControlsChanged);
+        if (autoBallistaToggle != null)
+            autoBallistaToggle.onValueChanged.RemoveListener(OnAutoBallistaChanged);
         if (backButton != null)
             backButton.onClick.RemoveListener(OnBackClicked);
     }
@@ -162,6 +168,11 @@ public class OptionsManager : MonoBehaviour
         fullscreenLabel = AddToggleRow(contentObj.transform, L("options.fullscreen"), fullscreenToggle);
         if (onScreenControlsToggle != null)
             onScreenControlsLabel = AddToggleRow(contentObj.transform, L("options.onscreen_controls"), onScreenControlsToggle);
+
+        // -- Add Gameplay Section --
+        gameplayHeaderLabel = AddSectionHeader(contentObj.transform, L("options.gameplay"));
+        if (autoBallistaToggle != null)
+            autoBallistaLabel = AddToggleRow(contentObj.transform, L("options.auto_ballista"), autoBallistaToggle);
 
         // -- Add spacer --
         AddSpacer(contentObj.transform, 20);
@@ -306,6 +317,10 @@ public class OptionsManager : MonoBehaviour
             fullscreenLabel.text = L("options.fullscreen");
         if (onScreenControlsLabel != null)
             onScreenControlsLabel.text = L("options.onscreen_controls");
+        if (gameplayHeaderLabel != null)
+            gameplayHeaderLabel.text = L("options.gameplay");
+        if (autoBallistaLabel != null)
+            autoBallistaLabel.text = L("options.auto_ballista");
 
         // Update title
         var canvas = FindAnyObjectByType<Canvas>();
@@ -405,6 +420,43 @@ public class OptionsManager : MonoBehaviour
     {
         PlatformDetector.ShowOnScreenControls = isOn;
         Debug.Log($"[OptionsManager] On-Screen Controls changed to {isOn}");
+    }
+
+    private void CreateAutoBallistaToggle()
+    {
+        var toggleObj = new GameObject("AutoBallistaToggle");
+        toggleObj.transform.SetParent(transform, false);
+        autoBallistaToggle = toggleObj.AddComponent<Toggle>();
+
+        var bgObj = new GameObject("Background");
+        bgObj.transform.SetParent(toggleObj.transform, false);
+        var bgRect = bgObj.AddComponent<RectTransform>();
+        bgRect.sizeDelta = new Vector2(30, 30);
+        var bgImage = bgObj.AddComponent<Image>();
+        bgImage.color = new Color(0.2f, 0.2f, 0.2f);
+
+        var checkObj = new GameObject("Checkmark");
+        checkObj.transform.SetParent(bgObj.transform, false);
+        var checkRect = checkObj.AddComponent<RectTransform>();
+        checkRect.anchorMin = Vector2.zero;
+        checkRect.anchorMax = Vector2.one;
+        checkRect.offsetMin = new Vector2(4, 4);
+        checkRect.offsetMax = new Vector2(-4, -4);
+        var checkImage = checkObj.AddComponent<Image>();
+        checkImage.color = new Color(0.8f, 0.7f, 0.5f);
+
+        autoBallistaToggle.targetGraphic = bgImage;
+        autoBallistaToggle.graphic = checkImage;
+        autoBallistaToggle.isOn = GameSettings.AutoBallista;
+        autoBallistaToggle.onValueChanged.AddListener(OnAutoBallistaChanged);
+
+        Debug.Log($"[OptionsManager] Auto Ballista toggle created. isOn={autoBallistaToggle.isOn}");
+    }
+
+    private void OnAutoBallistaChanged(bool isOn)
+    {
+        GameSettings.AutoBallista = isOn;
+        Debug.Log($"[OptionsManager] Auto Ballista changed to {isOn}");
     }
 
     private void OnBackClicked()

@@ -27,6 +27,8 @@
 {"k":"options.onscreen_controls","v":"Controles en pantalla"},
 {"k":"options.volume_pct","v":"{0}%"},
 {"k":"options.language","v":"IDIOMA"},
+{"k":"options.gameplay","v":"JUEGO"},
+{"k":"options.auto_ballista","v":"Ballesta automática"},
 {"k":"hud.gold","v":"Oro: {0}"},
 {"k":"hud.menials","v":"Siervos: {0}/{1}"},
 {"k":"hud.kills","v":"Bajas: {0}"},

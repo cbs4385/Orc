@@ -17,6 +17,7 @@ public class EnemyProjectile : MonoBehaviour
         maxRange = range;
         startPosition = transform.position;
         initialized = true;
+        Debug.Log($"[EnemyProjectile] Initialized: damage={dmg}, speed={spd}, range={range}, dir={dir.normalized}, pos={startPosition}");
     }
 
     private void Update()
@@ -26,6 +27,7 @@ public class EnemyProjectile : MonoBehaviour
 
         if (Vector3.Distance(startPosition, transform.position) >= maxRange)
         {
+            Debug.Log($"[EnemyProjectile] Expired at max range ({maxRange}) at {transform.position}");
             Destroy(gameObject);
         }
     }
@@ -35,6 +37,7 @@ public class EnemyProjectile : MonoBehaviour
         var wall = other.GetComponent<Wall>();
         if (wall != null)
         {
+            Debug.Log($"[EnemyProjectile] Hit wall {wall.name} for {damage} damage at {transform.position}");
             wall.TakeDamage(damage);
             Destroy(gameObject);
             return;
@@ -43,6 +46,7 @@ public class EnemyProjectile : MonoBehaviour
         var menial = other.GetComponent<Menial>();
         if (menial != null)
         {
+            Debug.Log($"[EnemyProjectile] Hit menial for {damage} damage at {transform.position}");
             menial.TakeDamage(damage);
             Destroy(gameObject);
             return;
@@ -51,6 +55,7 @@ public class EnemyProjectile : MonoBehaviour
         var refugee = other.GetComponent<Refugee>();
         if (refugee != null)
         {
+            Debug.Log($"[EnemyProjectile] Hit refugee for {damage} damage at {transform.position}");
             refugee.TakeDamage(damage);
             Destroy(gameObject);
             return;

@@ -31,6 +31,8 @@ public class Defender : MonoBehaviour
     private float guardLastDist = float.MaxValue;
     private const float GUARD_STUCK_TIMEOUT = 5f;
 
+    public static event System.Action<Defender> OnDefenderDied;
+
     public DefenderData Data => data;
     public bool IsDead { get; private set; }
     public bool IsGuarding => isGuarding;
@@ -965,6 +967,8 @@ public class Defender : MonoBehaviour
         guardTarget = null;
 
         Debug.Log($"[Defender] {(data != null ? data.defenderName : name)} died at {transform.position}");
+
+        OnDefenderDied?.Invoke(this);
 
         if (animator != null)
         {

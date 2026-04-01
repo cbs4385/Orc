@@ -274,13 +274,16 @@ public class EnemyMovement : MonoBehaviour
         {
             case EnemyType.Melee:
             case EnemyType.WallBreaker:
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} FindTarget dispatching to Melee strategy (type={enemy.Data.enemyType})");
                 FindTarget_Melee();
                 break;
             case EnemyType.Ranged:
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} FindTarget dispatching to Ranged strategy");
                 FindTarget_Ranged();
                 break;
             case EnemyType.Suicide:
             case EnemyType.Artillery:
+                Debug.Log($"[EnemyMovement] {enemy.Data?.enemyName} FindTarget dispatching to Goblin strategy (type={enemy.Data.enemyType})");
                 FindTarget_Goblin();
                 break;
         }

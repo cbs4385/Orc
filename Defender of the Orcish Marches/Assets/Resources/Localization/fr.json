@@ -27,6 +27,8 @@
 {"k":"options.onscreen_controls","v":"Commandes à l'écran"},
 {"k":"options.volume_pct","v":"{0} %"},
 {"k":"options.language","v":"LANGUE"},
+{"k":"options.gameplay","v":"JEU"},
+{"k":"options.auto_ballista","v":"Baliste automatique"},
 {"k":"hud.gold","v":"Or : {0}"},
 {"k":"hud.menials","v":"Servants : {0}/{1}"},
 {"k":"hud.kills","v":"Victimes : {0}"},

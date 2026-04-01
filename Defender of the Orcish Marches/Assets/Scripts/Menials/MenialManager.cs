@@ -307,10 +307,10 @@ public class MenialManager : MonoBehaviour
         }
         else
         {
-            // Spawn outside the tower (radius ~1.5) but inside walls (wall ring at ~4.5)
+            // Spawn in the courtyard ring — inside walls (wall ring at ~4.5) but outside tower
             Vector3 fc = GameManager.FortressCenter;
             float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-            float dist = Random.Range(3f, 4f);
+            float dist = Random.Range(2f, 3f);
             spawnPos = fc + new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
         }
 

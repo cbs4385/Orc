@@ -119,12 +119,27 @@ public class Ballista : MonoBehaviour
     {
         if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameManager.GameState.Playing) return;
 
+        // ML training mode: only tick cooldown
+        if (MLTrainingManager.IsTraining)
+        {
+            fireCooldown -= Time.deltaTime;
+            return;
+        }
+
         // In nightmare + build mode, skip all input (don't rotate/fire while placing walls)
         if (isNightmareMode && BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildMode) return;
 
-        if (!isNightmareMode && mainCam == null) { mainCam = UnityEngine.Camera.main; return; }
-
         fireCooldown -= Time.deltaTime;
+
+        // Auto-ballista mode: computer aims and fires at nearest enemy
+        if (GameSettings.AutoBallista && !isNightmareMode)
+        {
+            UpdateAutoBallista();
+            UpdateAimLines();
+            return;
+        }
+
+        if (!isNightmareMode && mainCam == null) { mainCam = UnityEngine.Camera.main; return; }
 
         RotateTowardsMouse();
         if (!isNightmareMode) UpdateAimLines();
@@ -133,6 +148,83 @@ public class Ballista : MonoBehaviour
         if (pointer != null && pointer.IsPointerDown && !pointer.IsPointerOverUI && fireCooldown <= 0f)
         {
             Fire();
+        }
+    }
+
+    private void UpdateAutoBallista()
+    {
+        Enemy bestTarget = FindNearestEnemy();
+        if (bestTarget == null) return;
+
+        // Aim at enemy with lead prediction
+        Vector3 targetPos = bestTarget.transform.position;
+        var agent = bestTarget.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent != null && agent.velocity.sqrMagnitude > 0.1f)
+        {
+            float dist = Vector3.Distance(firePoint.position, targetPos);
+            float flightTime = dist / projectileSpeed;
+            targetPos += agent.velocity * flightTime;
+        }
+
+        Vector3 direction = targetPos - transform.position;
+        direction.y = 0;
+        if (direction.sqrMagnitude > 0.01f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 15f);
+        }
+
+        // Fire when cooldown is ready and target is in range
+        float range = Vector3.Distance(firePoint.position, bestTarget.transform.position);
+        if (fireCooldown <= 0f && range <= maxRange)
+        {
+            AutoFire(targetPos);
+        }
+    }
+
+    private Enemy FindNearestEnemy()
+    {
+        Enemy best = null;
+        float bestDist = float.MaxValue;
+        foreach (var enemy in Enemy.ActiveEnemies)
+        {
+            if (enemy == null || enemy.IsDead) continue;
+            float dist = Vector3.Distance(firePoint.position, enemy.transform.position);
+            if (dist < bestDist && dist <= maxRange)
+            {
+                bestDist = dist;
+                best = enemy;
+            }
+        }
+        return best;
+    }
+
+    private void AutoFire(Vector3 targetPos)
+    {
+        fireCooldown = 1f / fireRate;
+        OnBallistaShotFired?.Invoke();
+
+        if (projectilePrefab == null)
+        {
+            Debug.LogError("[Ballista] projectilePrefab is null! Cannot fire.");
+            return;
+        }
+
+        Vector3 direction = targetPos - firePoint.position;
+        direction.y = 0;
+        if (direction.sqrMagnitude < 0.01f) return;
+        direction.Normalize();
+
+        Vector3 spawnPos = new Vector3(firePoint.position.x, 0.5f, firePoint.position.z);
+
+        Debug.Log($"[Ballista] Auto-fired at {direction}, damage={damage}, doubleShot={hasDoubleShot}");
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayScorpioFire(spawnPos);
+        SpawnProjectile(spawnPos, direction);
+
+        if (hasDoubleShot)
+        {
+            Vector3 spreadDir = Quaternion.Euler(0, doubleShotSpreadAngle, 0) * direction;
+            SpawnProjectile(spawnPos, spreadDir);
         }
     }
 
@@ -241,7 +333,7 @@ public class Ballista : MonoBehaviour
             direction = Quaternion.Euler(wobblePitch, wobbleYaw, 0f) * direction;
         }
 
-        Debug.Log($"[Ballista] Firing. dir={direction}, doubleShot={hasDoubleShot}, burstDamage={hasBurstDamage}, wobble={hasAimWobble}");
+        Debug.Log($"[Ballista] Fired at {direction}, damage={damage}, canFire={CanFire}, doubleShot={hasDoubleShot}, burstDamage={hasBurstDamage}, wobble={hasAimWobble}");
 
         // Fire main projectile
         if (SoundManager.Instance != null) SoundManager.Instance.PlayScorpioFire(spawnPos);
@@ -299,6 +391,50 @@ public class Ballista : MonoBehaviour
     {
         hasBurstDamage = true;
         Debug.Log("[Ballista] Burst damage enabled.");
+    }
+
+    /// <summary>Whether the ballista is ready to fire (cooldown expired).</summary>
+    public bool CanFire => fireCooldown <= 0f;
+
+    /// <summary>Sets the ballista rotation to aim at a world position. Used by ML agents.</summary>
+    public void SetAimTarget(Vector3 worldPos)
+    {
+        Vector3 direction = worldPos - transform.position;
+        direction.y = 0;
+        if (direction.sqrMagnitude > 0.01f)
+        {
+            transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
+        }
+    }
+
+    /// <summary>Fires the ballista in a given direction. Used by ML agents.</summary>
+    public void FireAtDirection(Vector3 direction)
+    {
+        if (fireCooldown > 0f) return;
+        direction.y = 0;
+        if (direction.sqrMagnitude < 0.01f) return;
+        direction.Normalize();
+
+        fireCooldown = 1f / fireRate;
+        OnBallistaShotFired?.Invoke();
+
+        if (projectilePrefab == null)
+        {
+            Debug.LogError("[Ballista] projectilePrefab is null! Cannot fire.");
+            return;
+        }
+
+        Vector3 spawnPos = new Vector3(firePoint.position.x, 0.5f, firePoint.position.z);
+
+        Debug.Log($"[Ballista] Fired at {direction}, damage={damage}, canFire={CanFire}");
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayScorpioFire(spawnPos);
+        SpawnProjectile(spawnPos, direction);
+
+        if (hasDoubleShot)
+        {
+            Vector3 spreadDir = Quaternion.Euler(0, doubleShotSpreadAngle, 0) * direction;
+            SpawnProjectile(spawnPos, spreadDir);
+        }
     }
 
     /// <summary>Restore stats from a save file.</summary>

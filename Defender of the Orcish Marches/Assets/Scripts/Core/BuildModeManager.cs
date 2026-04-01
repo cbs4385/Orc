@@ -170,7 +170,8 @@ public class BuildModeManager : MonoBehaviour
         bool noEnemies = EnemySpawnManager.Instance != null
             && EnemySpawnManager.Instance.DayTotalEnemies > 0
             && EnemySpawnManager.Instance.DayEnemiesRemaining == 0;
-        bool noLoot = !HasUncollectedLoot();
+        // In ML training, don't block speedup for uncollected loot — menials can't reach loot outside walls
+        bool noLoot = MLTrainingManager.IsTraining || !HasUncollectedLoot();
         bool canSpeedup = noEnemies && noLoot && !IsBuildMode;
 
         bool wasIdle = IsIdleSpeedup;
@@ -185,9 +186,21 @@ public class BuildModeManager : MonoBehaviour
     private bool HasUncollectedLoot()
     {
         var pickups = FindObjectsByType<TreasurePickup>(FindObjectsSortMode.None);
+        Vector3 fc = GameManager.FortressCenter;
         foreach (var p in pickups)
         {
-            if (p != null && !p.IsCollected) return true;
+            if (p == null || p.IsCollected) continue;
+            // In ML mode, only count loot inside walls as blocking speedup.
+            // Loot outside walls won't be collected (auto-loot is restricted to 4f).
+            if (MLTrainingManager.IsTraining)
+            {
+                float dist = Vector3.Distance(p.transform.position, fc);
+                if (dist <= 4f) return true;
+            }
+            else
+            {
+                return true;
+            }
         }
         return false;
     }

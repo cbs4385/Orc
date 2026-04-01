@@ -74,6 +74,9 @@ public class InputBindingManager : MonoBehaviour
         { GameAction.Upgrade2,         new GamepadBinding(GamepadButton.DpadRight) },
         { GameAction.Upgrade3,         new GamepadBinding(GamepadButton.DpadDown) },
         { GameAction.Upgrade4,         new GamepadBinding(GamepadButton.DpadLeft) },
+        { GameAction.Upgrade5,         new GamepadBinding(GamepadButton.LeftTrigger) },
+        { GameAction.Upgrade6,         new GamepadBinding(GamepadButton.RightTrigger) },
+        { GameAction.Upgrade7,         new GamepadBinding(GamepadButton.Select) },
     };
 
     // Runtime bindings

@@ -64,12 +64,26 @@ public class Wall : MonoBehaviour
             Debug.Log($"[Wall] Model bounds: worldTop={worldBounds.max.y:F2}, localTop={modelLocalTop:F2}, colliderHeight={colliderHeight:F2}");
         }
 
-        // Set BoxCollider from wall root (local y=0) up to model top
+        // Set BoxCollider from wall root (local y=0) up to model top.
         var boxCol = GetComponent<BoxCollider>();
         if (boxCol != null)
         {
             boxCol.center = new Vector3(0, colliderCenterY, 0);
             boxCol.size = new Vector3(1f, colliderHeight, 0.5f);
+        }
+
+        // Set NavMeshObstacle to carve the friendly navmesh.
+        // Width (local X) = 1.0 matches BoxCollider. Gap between adjacent segments:
+        // WALL_SPACING(2.2072) - 1.0 = 1.2072, minus 2×agentRadius(0.2) = 0.8 passable.
+        // Depth (local Z) = 0.5 matches BoxCollider depth — must fully block the wall body.
+        var navObstacle = GetComponent<UnityEngine.AI.NavMeshObstacle>();
+        if (navObstacle != null)
+        {
+            navObstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
+            navObstacle.size = new Vector3(1f, colliderHeight, 0.5f);
+            navObstacle.center = new Vector3(0, colliderCenterY, 0);
+            navObstacle.carving = true;
+            Debug.Log($"[Wall] NavMeshObstacle: size=(1.0, {colliderHeight:F2}, 0.5), carving=true");
         }
 
         // Add capsule colliders for the octagonal towers at each end
@@ -95,8 +109,13 @@ public class Wall : MonoBehaviour
         // blocking enemies at tower endpoints without sealing humanoid passage gaps.
         int enemyBlockLayer = LayerMask.NameToLayer("EnemyBlock");
 
-        // Solid (non-trigger) colliders so Physics.OverlapSphere can detect them
-        // for engineer stand position validation.
+        // Trigger colliders — detected by Physics.OverlapSphere (with QueryTriggerInteraction.Collide)
+        // for engineer stand position validation and enemy NavMesh bake, but do NOT physically
+        // block friendly NavMeshAgents. This preserves the gaps between adjacent wall segments
+        // that menials and refugees need to pass through.
+        // Tower centers are at ±TOWER_OFFSET(1.1036) and adjacent walls are WALL_SPACING(2.2072) apart,
+        // so adjacent tower centers are 0 apart — the capsules (radius 0.6036) overlap by 1.2.
+        // Making them triggers prevents this overlap from blocking friendly pathfinding.
         var leftTower = new GameObject("TowerCollider_L");
         leftTower.transform.SetParent(transform, false);
         leftTower.transform.localPosition = new Vector3(-towerOffset, modelLocalCenterY, 0);
@@ -105,6 +124,7 @@ public class Wall : MonoBehaviour
         leftCap.radius = towerRadius;
         leftCap.height = modelHeight;
         leftCap.direction = 1; // Y-axis
+        leftCap.isTrigger = true;
 
         var rightTower = new GameObject("TowerCollider_R");
         rightTower.transform.SetParent(transform, false);
@@ -114,6 +134,7 @@ public class Wall : MonoBehaviour
         rightCap.radius = towerRadius;
         rightCap.height = modelHeight;
         rightCap.direction = 1; // Y-axis
+        rightCap.isTrigger = true;
     }
 
     /// <summary>

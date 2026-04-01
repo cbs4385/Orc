@@ -85,6 +85,24 @@ public class DayNightCycle : MonoBehaviour
         OnNewDay?.Invoke(DayNumber);
     }
 
+    /// <summary>Resets to day 1 for ML training episode restart without scene reload.</summary>
+    public void ResetToDay1()
+    {
+        ResetToDay(1);
+    }
+
+    /// <summary>Resets to a specific day for ML training.</summary>
+    public void ResetToDay(int day)
+    {
+        CurrentPhase = Phase.Day;
+        DayNumber = day;
+        phaseTimer = 0f;
+        isFirstDay = (day == 1);
+        Debug.Log($"[DayNightCycle] ResetToDay({day}): Day {DayNumber} started.");
+        OnDayStarted?.Invoke();
+        OnNewDay?.Invoke(DayNumber);
+    }
+
     private void Update()
     {
         if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameManager.GameState.Playing)

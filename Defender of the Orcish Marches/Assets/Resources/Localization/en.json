@@ -27,6 +27,8 @@
 {"k":"options.onscreen_controls","v":"On-Screen Controls"},
 {"k":"options.volume_pct","v":"{0}%"},
 {"k":"options.language","v":"LANGUAGE"},
+{"k":"options.gameplay","v":"GAMEPLAY"},
+{"k":"options.auto_ballista","v":"Auto Ballista"},
 {"k":"hud.gold","v":"Gold: {0}"},
 {"k":"hud.menials","v":"Menials: {0}/{1}"},
 {"k":"hud.kills","v":"Kills: {0}"},

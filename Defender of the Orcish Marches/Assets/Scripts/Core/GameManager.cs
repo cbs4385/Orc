@@ -134,6 +134,7 @@ public class GameManager : MonoBehaviour
     {
         if (CurrentState != GameState.Playing) return;
         Treasure += amount;
+        Debug.Log($"[GameManager] Gold gained: +{amount}, total={Treasure}");
         OnTreasureChanged?.Invoke(Treasure);
         OnTreasureGained?.Invoke(amount);
     }
@@ -142,6 +143,7 @@ public class GameManager : MonoBehaviour
     {
         if (CurrentState != GameState.Playing || Treasure < amount) return false;
         Treasure -= amount;
+        Debug.Log($"[GameManager] Gold spent: -{amount}, total={Treasure}");
         OnTreasureChanged?.Invoke(Treasure);
         OnTreasureSpent?.Invoke(amount);
         return true;
@@ -152,12 +154,14 @@ public class GameManager : MonoBehaviour
         if (CurrentState != GameState.Playing) return;
         MenialCount += count;
         IdleMenialCount += count;
+        Debug.Log($"[GameManager] Menial added: +{count}, total={MenialCount}, idle={IdleMenialCount}");
     }
 
     public void RemoveMenial(int count = 1)
     {
         if (CurrentState != GameState.Playing) return;
         MenialCount = Mathf.Max(0, MenialCount - count);
+        Debug.Log($"[GameManager] Menial removed: -{count}, total={MenialCount}, idle={IdleMenialCount}");
         // Don't touch IdleMenialCount here — callers (Die, SendToTower, AssignLoot)
         // already handle idle count transitions before calling this.
         OnMenialsChanged?.Invoke(MenialCount);
@@ -168,6 +172,7 @@ public class GameManager : MonoBehaviour
         if (CurrentState != GameState.Playing || IdleMenialCount < count) return false;
         MenialCount -= count;
         IdleMenialCount -= count;
+        Debug.Log($"[GameManager] Menials spent: -{count}, idle={IdleMenialCount}, total={MenialCount}");
         return true;
     }
 
@@ -179,6 +184,7 @@ public class GameManager : MonoBehaviour
     public void TogglePause()
     {
         if (CurrentState == GameState.GameOver) return;
+        if (MLTrainingManager.IsTraining) return; // No pause during ML training
 
         if (CurrentState == GameState.Paused)
         {
@@ -200,14 +206,37 @@ public class GameManager : MonoBehaviour
     {
         if (CurrentState == GameState.GameOver) return;
         CurrentState = GameState.GameOver;
-        Time.timeScale = 0f;
+        Debug.Log($"[GameManager] GAME OVER triggered. State={CurrentState}, kills={EnemyKills}, gold={Treasure}");
+        // Don't freeze time in ML mode — the training loop needs Unity to keep responding
+        if (!MLTrainingManager.IsTraining)
+            Time.timeScale = 0f;
         OnGameOver?.Invoke();
     }
 
     public void RestartGame()
     {
+        Debug.Log("[GameManager] Restarting game (scene reload).");
         Time.timeScale = 1f;
         UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
+    }
+
+    /// <summary>
+    /// Resets GameManager state for a new ML training episode without scene reload.
+    /// </summary>
+    public void ResetForMLEpisode()
+    {
+        CurrentState = GameState.Playing;
+        Treasure = GameSettings.GetStartingGold();
+        MenialCount = GameSettings.GetStartingMenials();
+        MenialCount = Mathf.Max(1, MenialCount);
+        IdleMenialCount = MenialCount;
+        EnemyKills = 0;
+        GameTime = 0f;
+        Time.timeScale = 1f;
+        OnTreasureChanged?.Invoke(Treasure);
+        OnMenialsChanged?.Invoke(MenialCount);
+        OnKillsChanged?.Invoke(EnemyKills);
+        Debug.Log($"[GameManager] ResetForMLEpisode: gold={Treasure}, menials={MenialCount}");
     }
 
     // ─── Auto-Save ───

@@ -80,6 +80,9 @@ public class WallManager : MonoBehaviour
         // Rebake enemy NavMesh to include tower colliders created at runtime in Wall.Awake()
         RebakeEnemyNavMesh();
 
+        // Rebake friendly NavMesh with walls included so menials/refugees path through gaps
+        RebakeFriendlyNavMesh();
+
         // Log initial wall state for bug report reproduction
         LogAllWallState();
     }
@@ -299,6 +302,236 @@ public class WallManager : MonoBehaviour
 
         if (!found)
             Debug.LogWarning("[WallManager] No enemy NavMeshSurface found for rebake");
+
+        // Also rebake the friendly NavMesh (agentTypeID=0) so menials/refugees
+        // path through wall gaps instead of through wall geometry.
+        RebakeFriendlyNavMesh();
+    }
+
+    private void RebakeFriendlyNavMesh()
+    {
+        // Disable ALL tower colliders during the friendly bake.
+        // Confirmed via gap walkability test: all 12 gaps are BLOCKED because
+        // tower CapsuleColliders (radius ~0.6, TOWER_OFFSET=1.1) overlap between
+        // adjacent wall segments, closing every gap.
+        var disabledTowers = new List<GameObject>();
+        foreach (var wall in allWalls)
+        {
+            if (wall == null) continue;
+            foreach (string towerName in new[] { "TowerCollider_L", "TowerCollider_R" })
+            {
+                var tower = wall.transform.Find(towerName);
+                if (tower != null && tower.gameObject.activeSelf)
+                {
+                    tower.gameObject.SetActive(false);
+                    disabledTowers.Add(tower.gameObject);
+                }
+            }
+        }
+
+        var surfaces = FindObjectsByType<NavMeshSurface>(FindObjectsSortMode.None);
+        int count = 0;
+        foreach (var surface in surfaces)
+        {
+            if (surface.agentTypeID == 0) // Humanoid / friendly agent type
+            {
+                // Include ALL layers (including wall layer 9).
+                // Ignore NavMeshObstacles — use only physics colliders to define wall boundaries.
+                // With ignoreNavMeshObstacle=false, both colliders AND obstacles contribute,
+                // double-blocking the gaps. Using colliders only preserves the physical gap width.
+                surface.layerMask = -1;
+                surface.ignoreNavMeshObstacle = true;
+
+                if (surface.useGeometry != NavMeshCollectGeometry.PhysicsColliders)
+                    surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+
+                surface.BuildNavMesh();
+                count++;
+
+                // Verify: test multiple points across each wall to check NavMesh blocking
+                int walkablePoints = 0, blockedPoints = 0;
+                var testResults = new System.Text.StringBuilder();
+                foreach (var wall in allWalls)
+                {
+                    if (wall == null) continue;
+                    Vector3 center = wall.transform.position;
+                    Vector3 right = wall.transform.right;
+                    Vector3 fwd = wall.transform.forward;
+                    Vector3[] testOffsets = {
+                        Vector3.zero,
+                        right * 0.4f,
+                        -right * 0.4f,
+                        fwd * 0.2f,
+                        -fwd * 0.2f
+                    };
+                    foreach (var offset in testOffsets)
+                    {
+                        Vector3 testPos = new Vector3(center.x + offset.x, 0, center.z + offset.z);
+                        UnityEngine.AI.NavMeshHit hit;
+                        if (UnityEngine.AI.NavMesh.SamplePosition(testPos, out hit, 0.3f, UnityEngine.AI.NavMesh.AllAreas))
+                        {
+                            walkablePoints++;
+                            testResults.Append($"\n  WALKABLE: {wall.name} offset=({offset.x:F2},0,{offset.z:F2}) testPos=({testPos.x:F2},0,{testPos.z:F2}) hitPos={hit.position}");
+                        }
+                        else
+                        {
+                            blockedPoints++;
+                        }
+                    }
+                }
+                Debug.Log($"[WallManager] Rebaked friendly NavMesh on '{surface.gameObject.name}' (layerMask={surface.layerMask.value}, ignoreObstacles={surface.ignoreNavMeshObstacle}). Points: {blockedPoints} blocked, {walkablePoints} WALKABLE");
+                if (walkablePoints > 0)
+                    Debug.LogWarning($"[WallManager] WALKABLE points found at walls:{testResults}");
+                // Don't break — rebake ALL friendly surfaces
+            }
+        }
+        // Re-enable tower colliders after bake
+        foreach (var go in disabledTowers)
+            if (go != null) go.SetActive(true);
+        Debug.Log($"[WallManager] Re-enabled {disabledTowers.Count} tower colliders after friendly bake.");
+
+        // Test gap walkability
+        TestGapWalkability();
+
+        Debug.Log($"[WallManager] Rebaked {count} friendly NavMesh surface(s).");
+    }
+
+    private void TestGapWalkability()
+    {
+        // Test at the midpoint of each gap between adjacent wall segments on each side
+        // South side: walls at z=-4.41, segments at x=-3.31, -1.10, 1.10, 3.31
+        // Gaps at x=-2.2, 0.0, 2.2 (midpoints between segments)
+        float[][] sideGaps = {
+            new float[] { -4.41f },  // South Z
+            new float[] { 4.41f },   // North Z
+        };
+        float[] gapXPositions = { -2.2f, 0f, 2.2f };
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append("[WallManager] Gap walkability test:");
+        int walkable = 0, blocked = 0;
+
+        // Test N/S gaps at multiple Z offsets through the wall depth
+        // Wall BoxCollider is 0.5 deep centered at wall Z. Test outside, at wall, and inside.
+        foreach (float wallZ in new[] { -4.41f, 4.41f })
+        {
+            string side = wallZ < 0 ? "S" : "N";
+            float sign = wallZ < 0 ? -1f : 1f;
+            foreach (float x in gapXPositions)
+            {
+                // Test at 3 Z positions: outside wall, at wall center, inside wall
+                foreach (float zOffset in new[] { 0.5f, 0f, -0.5f })
+                {
+                    Vector3 pos = new Vector3(x, 0, wallZ + sign * zOffset);
+                    UnityEngine.AI.NavMeshHit hit;
+                    bool w = UnityEngine.AI.NavMesh.SamplePosition(pos, out hit, 0.3f, UnityEngine.AI.NavMesh.AllAreas);
+                    sb.Append($"\n  {side} gap x={x:F1} z={pos.z:F2}: {(w ? "WALKABLE" : "BLOCKED")}");
+                    if (w) walkable++; else blocked++;
+                }
+            }
+        }
+        // Test E/W gaps at multiple X offsets
+        foreach (float wallX in new[] { -4.41f, 4.41f })
+        {
+            string side = wallX < 0 ? "W" : "E";
+            float sign = wallX < 0 ? -1f : 1f;
+            float[] gapZPositions = { -2.2f, 0f, 2.2f };
+            foreach (float z in gapZPositions)
+            {
+                foreach (float xOffset in new[] { 0.5f, 0f, -0.5f })
+                {
+                    Vector3 pos = new Vector3(wallX + sign * xOffset, 0, z);
+                    UnityEngine.AI.NavMeshHit hit;
+                    bool w = UnityEngine.AI.NavMesh.SamplePosition(pos, out hit, 0.3f, UnityEngine.AI.NavMesh.AllAreas);
+                    sb.Append($"\n  {side} gap z={z:F1} x={pos.x:F2}: {(w ? "WALKABLE" : "BLOCKED")}");
+                    if (w) walkable++; else blocked++;
+                }
+            }
+        }
+        sb.Append($"\n  TOTAL: {walkable} walkable, {blocked} blocked");
+
+        // Path connectivity test: can we compute a path from outside each wall side to center?
+        // Use NavMeshQueryFilter with Humanoid agent type (agentTypeID=0) to avoid ambiguity
+        // when multiple NavMeshSurfaces exist for different agent types.
+        int cardinalConnected = 0, cardinalDisconnected = 0;
+        int cornerConnected = 0, cornerDisconnected = 0;
+        Vector3 center = GameManager.FortressCenter;
+
+        var filter = new UnityEngine.AI.NavMeshQueryFilter();
+        filter.agentTypeID = 0; // Humanoid
+        filter.areaMask = UnityEngine.AI.NavMesh.AllAreas;
+
+        // Cardinal paths — test from outside the wall ring. NavMeshSurface bake volume is 100×100.
+        // Use SamplePosition to snap test points to the nearest navmesh point before pathing,
+        // since raw world positions may not sit on the Humanoid navmesh surface.
+        Vector3[] cardinalPositions = {
+            new Vector3(0, 0, -6f),   // south
+            new Vector3(0, 0, 6f),    // north
+            new Vector3(-6f, 0, 0),   // west
+            new Vector3(6f, 0, 0),    // east
+        };
+        foreach (var outsidePos in cardinalPositions)
+        {
+            string label = $"({outsidePos.x:F0},{outsidePos.z:F0})";
+            UnityEngine.AI.NavMeshHit startHit;
+            if (!UnityEngine.AI.NavMesh.SamplePosition(outsidePos, out startHit, 2f, filter.areaMask))
+            {
+                sb.Append($"\n  PATH {label}->center: NO NAVMESH within 2m of start point");
+                cardinalDisconnected++;
+                continue;
+            }
+            UnityEngine.AI.NavMeshHit endHit;
+            if (!UnityEngine.AI.NavMesh.SamplePosition(center, out endHit, 2f, filter.areaMask))
+            {
+                sb.Append($"\n  PATH {label}->center: NO NAVMESH within 2m of center");
+                cardinalDisconnected++;
+                continue;
+            }
+            var path = new UnityEngine.AI.NavMeshPath();
+            UnityEngine.AI.NavMesh.CalculatePath(startHit.position, endHit.position, filter, path);
+            sb.Append($"\n  PATH {label}->center: status={path.status}, corners={path.corners.Length} (snapped from {outsidePos} to {startHit.position})");
+            if (path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete) cardinalConnected++;
+            else cardinalDisconnected++;
+        }
+
+        // Corner paths
+        Vector3[] cornerPositions = {
+            new Vector3(5f, 0, -5f),  // SE
+            new Vector3(-5f, 0, 5f),  // NW
+            new Vector3(5f, 0, 5f),   // NE
+            new Vector3(-5f, 0, -5f), // SW
+        };
+        foreach (var outsidePos in cornerPositions)
+        {
+            string label = $"({outsidePos.x:F0},{outsidePos.z:F0})";
+            UnityEngine.AI.NavMeshHit startHit;
+            if (!UnityEngine.AI.NavMesh.SamplePosition(outsidePos, out startHit, 2f, filter.areaMask))
+            {
+                sb.Append($"\n  CORNER {label}->center: NO NAVMESH within 2m of start point");
+                cornerDisconnected++;
+                continue;
+            }
+            UnityEngine.AI.NavMeshHit endHit;
+            if (!UnityEngine.AI.NavMesh.SamplePosition(center, out endHit, 2f, filter.areaMask))
+            {
+                sb.Append($"\n  CORNER {label}->center: NO NAVMESH within 2m of center");
+                cornerDisconnected++;
+                continue;
+            }
+            var path = new UnityEngine.AI.NavMeshPath();
+            UnityEngine.AI.NavMesh.CalculatePath(startHit.position, endHit.position, filter, path);
+            sb.Append($"\n  CORNER {label}->center: status={path.status}, corners={path.corners.Length} (snapped from {outsidePos} to {startHit.position})");
+            if (path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete) cornerConnected++;
+            else cornerDisconnected++;
+        }
+
+        int totalDisconnected = cardinalDisconnected + cornerDisconnected;
+        sb.Append($"\n  CARDINAL: {cardinalConnected} connected, {cardinalDisconnected} disconnected");
+        sb.Append($"\n  CORNERS: {cornerConnected} connected, {cornerDisconnected} disconnected");
+
+        Debug.Log(sb.ToString());
+        if (totalDisconnected > 0)
+            Debug.LogError($"[WallManager] {totalDisconnected} approach paths are DISCONNECTED — refugees cannot reach fortress center!");
     }
 
     /// <summary>

@@ -195,11 +195,13 @@ public class RunStatsTracker : MonoBehaviour
     private void HandleTreasureGained(int amount)
     {
         GoldEarned += amount;
+        Debug.Log($"[RunStatsTracker] Gold earned: +{amount}, totalEarned={GoldEarned}");
     }
 
     private void HandleTreasureSpent(int amount)
     {
         GoldSpent += amount;
+        Debug.Log($"[RunStatsTracker] Gold spent: +{amount}, totalSpent={GoldSpent}");
     }
 
     private void HandleNewDay(int dayNumber)
@@ -233,26 +235,31 @@ public class RunStatsTracker : MonoBehaviour
     private void HandleWallBuilt()
     {
         WallsBuilt++;
+        Debug.Log($"[RunStatsTracker] Wall built. Total walls={WallsBuilt}");
     }
 
     private void HandleWallRepaired(int amount)
     {
         WallHPRepaired += amount;
+        Debug.Log($"[RunStatsTracker] Wall repaired: +{amount}HP, totalRepaired={WallHPRepaired}");
     }
 
     private void HandleBallistaShotFired()
     {
         BallistaShotsFired++;
+        Debug.Log($"[RunStatsTracker] Ballista shot fired. Total shots={BallistaShotsFired}");
     }
 
     private void HandleRefugeeSaved()
     {
         RefugeesSaved++;
+        Debug.Log($"[RunStatsTracker] Refugee saved. Total saved={RefugeesSaved}");
     }
 
     private void HandleVegetationCleared()
     {
         VegetationCleared++;
+        Debug.Log($"[RunStatsTracker] Vegetation cleared. Total cleared={VegetationCleared}");
     }
 
     /// <summary>Restore all stats from a save file.</summary>

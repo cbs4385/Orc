@@ -27,6 +27,8 @@
 {"k":"options.onscreen_controls","v":"Bildschirmsteuerung"},
 {"k":"options.volume_pct","v":"{0} %"},
 {"k":"options.language","v":"SPRACHE"},
+{"k":"options.gameplay","v":"SPIELABLAUF"},
+{"k":"options.auto_ballista","v":"Auto-Balliste"},
 {"k":"hud.gold","v":"Gold: {0}"},
 {"k":"hud.menials","v":"Knechte: {0}/{1}"},
 {"k":"hud.kills","v":"Kills: {0}"},

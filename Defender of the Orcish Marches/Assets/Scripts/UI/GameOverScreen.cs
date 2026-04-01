@@ -96,6 +96,13 @@ public class GameOverScreen : MonoBehaviour
 
     private void ShowGameOver()
     {
+        // Skip the game over UI entirely in ML training — training handles episode resets
+        if (MLTrainingManager.IsTraining)
+        {
+            Debug.Log("[GameOverScreen] ML mode — suppressing game over screen.");
+            return;
+        }
+
         if (panelRoot != null) panelRoot.SetActive(true);
 
         if (titleText != null)

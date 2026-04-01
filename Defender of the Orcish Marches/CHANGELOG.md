@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.0
+
+### ML-Agents Integration — OrcCommander AI
+- OrcCommander trained ONNX brains now drive enemy spawning during normal gameplay based on difficulty (Easy=random heuristic, Normal=early-training brain, Hard/Nightmare=fully trained brain)
+- Removed DefenderAgent, MLBallistaController, and MLWallPlanner — the ML defender that was auto-purchasing upgrades, auto-firing the ballista, and dispatching menials without player input
+- Cleaned up MLRewardTracker and MLTrainingManager to remove all defender agent reward signals and registration
+
+### Gameplay Options
+- Added Auto Ballista setting — when enabled, the ballista automatically targets and fires at the nearest enemy in range with lead prediction
+- New GAMEPLAY section in Options screen with Auto Ballista toggle
+- Auto Ballista defaults to off; persisted via PlayerPrefs
+
+### Input
+- Added default gamepad bindings for upgrade slots 5 (Left Trigger), 6 (Right Trigger), and 7 (Select)
+
+### Localization
+- Added `options.gameplay` and `options.auto_ballista` keys to all 5 languages (EN, DE, ES, FR, IT)
+
 ## 1.1.2
 
 ### Bug Fixes

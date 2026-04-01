@@ -122,6 +122,7 @@ public class BallistaProjectile : MonoBehaviour
                 // Burst damage still splashes to nearby enemies
                 if (burstDamage && burstRadius > 0)
                 {
+                    int splashCount = 0;
                     BurstDamageVFX.Spawn(transform.position, burstRadius);
                     var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
                     foreach (var nearby in allEnemies)
@@ -131,8 +132,10 @@ public class BallistaProjectile : MonoBehaviour
                         if (dist <= burstRadius)
                         {
                             nearby.TakeDamage(damage / 2);
+                            splashCount++;
                         }
                     }
+                    Debug.Log($"[BallistaProjectile] Wall-blocked burst splash hit {splashCount} enemies for {damage / 2} each, radius={burstRadius}");
                 }
                 StopAndLinger();
                 return;
@@ -148,6 +151,7 @@ public class BallistaProjectile : MonoBehaviour
                 // Burst damage still splashes to nearby enemies
                 if (burstDamage && burstRadius > 0)
                 {
+                    int splashCount = 0;
                     BurstDamageVFX.Spawn(transform.position, burstRadius);
                     var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
                     foreach (var nearby in allEnemies)
@@ -157,8 +161,10 @@ public class BallistaProjectile : MonoBehaviour
                         if (dist <= burstRadius)
                         {
                             nearby.TakeDamage(damage / 2);
+                            splashCount++;
                         }
                     }
+                    Debug.Log($"[BallistaProjectile] Vegetation-hit burst splash hit {splashCount} enemies for {damage / 2} each, radius={burstRadius}");
                 }
                 StopAndLinger();
                 return;
@@ -177,6 +183,7 @@ public class BallistaProjectile : MonoBehaviour
                 Debug.Log($"[BallistaProjectile] Hit ground at {transform.position}");
                 if (burstDamage && burstRadius > 0)
                 {
+                    int splashCount = 0;
                     BurstDamageVFX.Spawn(transform.position, burstRadius);
                     var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
                     foreach (var nearby in allEnemies)
@@ -186,8 +193,10 @@ public class BallistaProjectile : MonoBehaviour
                         if (dist <= burstRadius)
                         {
                             nearby.TakeDamage(damage / 2);
+                            splashCount++;
                         }
                     }
+                    Debug.Log($"[BallistaProjectile] Ground-hit burst splash hit {splashCount} enemies for {damage / 2} each, radius={burstRadius}");
                 }
                 StopAndLinger();
                 return;
@@ -215,6 +224,7 @@ public class BallistaProjectile : MonoBehaviour
         var enemy = other.GetComponentInParent<Enemy>();
         if (enemy != null && !enemy.IsDead)
         {
+            Debug.Log($"[BallistaProjectile] OnTriggerEnter hit enemy {enemy.name} at {transform.position}");
             HandleHit(enemy);
             return;
         }
@@ -226,6 +236,7 @@ public class BallistaProjectile : MonoBehaviour
             Debug.Log($"[BallistaProjectile] Trigger blocked by wall {wall.name} at {transform.position}");
             if (burstDamage && burstRadius > 0)
             {
+                int splashCount = 0;
                 BurstDamageVFX.Spawn(transform.position, burstRadius);
                 var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
                 foreach (var nearby in allEnemies)
@@ -235,8 +246,10 @@ public class BallistaProjectile : MonoBehaviour
                     if (dist <= burstRadius)
                     {
                         nearby.TakeDamage(damage / 2);
+                        splashCount++;
                     }
                 }
+                Debug.Log($"[BallistaProjectile] Trigger wall-blocked burst splash hit {splashCount} enemies for {damage / 2} each, radius={burstRadius}");
             }
             StopAndLinger();
             return;
@@ -250,6 +263,7 @@ public class BallistaProjectile : MonoBehaviour
 
             if (burstDamage && burstRadius > 0)
             {
+                int splashCount = 0;
                 BurstDamageVFX.Spawn(transform.position, burstRadius);
                 var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
                 foreach (var nearby in allEnemies)
@@ -259,8 +273,10 @@ public class BallistaProjectile : MonoBehaviour
                     if (dist <= burstRadius)
                     {
                         nearby.TakeDamage(damage / 2);
+                        splashCount++;
                     }
                 }
+                Debug.Log($"[BallistaProjectile] Trigger vegetation-hit burst splash hit {splashCount} enemies for {damage / 2} each, radius={burstRadius}");
             }
             StopAndLinger();
         }
@@ -268,6 +284,7 @@ public class BallistaProjectile : MonoBehaviour
 
     private void HandleHit(Enemy enemy)
     {
+        Debug.Log($"[BallistaProjectile] Hit enemy {enemy.name} at {transform.position} for {damage} damage");
         enemy.TakeDamage(damage);
 
         // Burst damage: deal half damage to all enemies in radius
@@ -275,6 +292,8 @@ public class BallistaProjectile : MonoBehaviour
         {
             BurstDamageVFX.Spawn(transform.position, burstRadius);
 
+            int burstCount = 0;
+            int burstTotalDmg = 0;
             var allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
             foreach (var nearby in allEnemies)
             {
@@ -283,9 +302,11 @@ public class BallistaProjectile : MonoBehaviour
                 if (dist <= burstRadius)
                 {
                     nearby.TakeDamage(damage / 2);
+                    burstCount++;
+                    burstTotalDmg += damage / 2;
                 }
             }
-            Debug.Log($"[BallistaProjectile] Burst damage at {transform.position}, radius={burstRadius}");
+            Debug.Log($"[BallistaProjectile] Burst damage at {transform.position}, radius={burstRadius}, hit {burstCount} additional enemies for {burstTotalDmg} total splash damage");
         }
 
         StopAndLinger(hitEnemy: true);

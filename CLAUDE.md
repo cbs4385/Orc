@@ -1,5 +1,13 @@
 # Defender of the Orcish Marches - Development Guidelines
 
+## Reading Unity Logs
+
+When the MCP console is unresponsive or logs are truncated, read the Unity Editor.log file directly:
+```
+tail -100 "$LOCALAPPDATA/Unity/Editor/Editor.log"
+```
+Use `grep` on this file to search for specific log entries. Do NOT rely solely on the MCP `read_console` tool — it drops old entries and times out under load.
+
 ## Logging Standards
 
 All scripts MUST include comprehensive Debug.Log statements for diagnosing issues quickly. Follow these conventions:

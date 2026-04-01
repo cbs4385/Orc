@@ -310,7 +310,7 @@ public class Engineer : Defender
     private bool IsInsideWallGeometry(Vector3 pos)
     {
         // Physics check for walls with enabled colliders
-        var overlaps = Physics.OverlapSphere(pos + Vector3.up * 0.5f, ENGINEER_CHECK_RADIUS);
+        var overlaps = Physics.OverlapSphere(pos + Vector3.up * 0.5f, ENGINEER_CHECK_RADIUS, ~0, QueryTriggerInteraction.Collide);
         foreach (var col in overlaps)
         {
             if (col.GetComponentInParent<Wall>() != null)

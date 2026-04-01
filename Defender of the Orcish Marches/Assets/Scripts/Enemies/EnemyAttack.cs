@@ -146,6 +146,11 @@ public class EnemyAttack : MonoBehaviour
             if (projectile != null)
             {
                 projectile.Initialize(dir, projectileSpeed, enemy.ScaledDamage, enemy.Data.attackRange * 1.5f);
+                Debug.Log($"[EnemyAttack] {enemy.Data.enemyName} projectile spawned successfully at {proj.transform.position}");
+            }
+            else
+            {
+                Debug.LogError($"[EnemyAttack] {enemy.Data.enemyName} projectile prefab missing EnemyProjectile component!");
             }
         }
         else

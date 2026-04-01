@@ -97,7 +97,7 @@ public class Enemy : MonoBehaviour
 
         transform.localScale = data.bodyScale;
         FitColliderToModel();
-        Debug.Log($"[Enemy] Initialized: {data.enemyName}, HP={data.maxHP}, type={data.enemyType}");
+        Debug.Log($"[Enemy] Initialized: {data.enemyName}, HP={data.maxHP}, type={data.enemyType}, pos={transform.position}");
         OnEnemySpawned?.Invoke(this);
     }
 

@@ -127,15 +127,22 @@ public static class GameSettings
     }
 
     /// <summary>Multiplier on refugee spawn interval. Higher = longer waits = fewer refugees = harder.</summary>
+    /// <summary>
+    /// Multiplier applied to refugee spawn interval.
+    /// Higher = longer intervals = fewer refugees.
+    /// Easy: ~4/day, Normal: ~2/day, Hard/Nightmare: ~1/day.
+    /// </summary>
     public static float GetRefugeeSpawnMultiplier()
     {
         switch (CurrentDifficulty)
         {
-            case Difficulty.Easy:      return 0.7f;
-            case Difficulty.Normal:    return 1.0f;
-            case Difficulty.Hard:      return 1.3f;
-            case Difficulty.Nightmare: return 1.3f;
-            default:                   return 1.0f;
+            // Timer uses Time.deltaTime (game time), matching gameplay speed.
+            // Measured: original 0.7 mult gave ~5/day on Easy. Scale from there.
+            case Difficulty.Easy:      return 0.85f;  // ~4/day
+            case Difficulty.Normal:    return 1.7f;   // ~2/day
+            case Difficulty.Hard:      return 3.4f;   // ~1/day
+            case Difficulty.Nightmare: return 6.8f;   // ~0.5/day
+            default:                   return 1.7f;
         }
     }
 
@@ -170,6 +177,21 @@ public static class GameSettings
             PlayerPrefs.SetFloat(KEY_MUSIC_VOLUME, Mathf.Clamp01(value));
             PlayerPrefs.Save();
             Debug.Log($"[GameSettings] MusicVolume set to {value:F2}");
+        }
+    }
+
+    // --- Gameplay ---
+    private const string KEY_AUTO_BALLISTA = "AutoBallista";
+
+    /// <summary>When true, the ballista auto-aims and fires at enemies without player input.</summary>
+    public static bool AutoBallista
+    {
+        get => PlayerPrefs.GetInt(KEY_AUTO_BALLISTA, 0) == 1;
+        set
+        {
+            PlayerPrefs.SetInt(KEY_AUTO_BALLISTA, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Debug.Log($"[GameSettings] AutoBallista set to {value}");
         }
     }
 
